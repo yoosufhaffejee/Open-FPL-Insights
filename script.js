@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-const proxyURL = 'https://corsproxy.io/?';
+const proxyURL = 'https://gh-pages-cors.haffejeeyoosuf1.workers.dev/?';
 const baseURL = 'https://fantasy.premierleague.com/api/';
 
 const reqType = {
