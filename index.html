@@ -6,93 +6,383 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Open FPL Insights</title>
     <link href="https://cdn.jsdelivr.net/npm/gridjs/dist/theme/mermaid.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <h1>Open FPL Insights</h1>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Open FPL Insights</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Team</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Lineup</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Fixtures</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Table</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Game Week and Navigation -->
+    <div class="gameweek-container">
+        <button class="arrow-button" id="prevGameweek">&lt;</button>
+        <div class="gameweek-info-container">
+            <span class="gameweek-info">Gameweek 2</span>
+            <span class="gameweek-deadline">Deadline: Sat 24 Aug 12:00</span>
+        </div>
+        <button class="arrow-button" id="nextGameweek">&gt;</button>
+    </div>
+
+    
+    <!-- Team Information -->
+    <div class="team-info-container">
+        <div class="team-info">
+            <div class="team-info-item">
+                <span class="label">Overall Rating</span>
+                <span class="value">0%</span>
+            </div>
+            <div class="team-info-item">
+                <span class="label">GW Rating</span>
+                <span class="value">0%</span>
+            </div>
+            <div class="team-info-item">
+                <span class="label">Predicted Points</span>
+                <span class="value">0</span>
+            </div>
+            <div class="team-info-item">
+                <span class="label">Bank Balance</span>
+                <span class="value">100.0m</span>
+            </div>
+        </div>
+    </div>
 
     <div class="pitch-container">
         <div class="pitch">
             <!-- Goalkeeper Row -->
             <div class="row gk">
-                <div class="player">
-                    <img src="assets/empty-jersey.png" alt="Goalkeeper">
+                <div id="gk1" class="player">
+                    <img src="assets/empty-jersey.png" alt="Defender">
                     <h5>Player</h5>
-                    <h6>FIX (H)</h6>
-                    <button class="actionButton">Select</button>
+                    <!-- Fixtures and predicted points -->
+                    <div class="fixtures">
+                        <div class="fixture">
+                            <span class="predicted-points">3</span>
+                            <span class="fixture-detail">FIX (H)</span>
+                        </div>
+                        <div class="fixture">
+                            <span class="predicted-points">2</span>
+                            <span class="fixture-detail">FIX (A)</span>
+                        </div>
+                        <div class="fixture">
+                            <span class="predicted-points">1</span>
+                            <span class="fixture-detail">FIX (H)</span>
+                        </div>
+                    </div>
+                    <!-- Icon buttons -->
+                    <div class="icon-buttons">
+                        <button class="icon-button"><i class="fas fa-exchange-alt"></i></button>
+                        <button class="icon-button"><i class="fas fa-trash"></i></button>
+                        <button class="icon-button"><i class="fas fa-crown"></i></button>
+                        <button class="icon-button"><i class="fas fa-star"></i></button>
+                        <button class="icon-button"><i class="fas fa-info-circle"></i></button>
+                    </div>
                 </div>
             </div>
 
             <!-- Defense Row -->
             <div class="row defense">
-                <div class="player">
+                <div id="def1" class="player">
                     <img src="assets/empty-jersey.png" alt="Defender">
                     <h5>Player</h5>
-                    <h6>FIX (H)</h6>
-                    <button class="actionButton">Select</button>
+                    <!-- Fixtures and predicted points -->
+                    <div class="fixtures">
+                        <div class="fixture">
+                            <span class="predicted-points">3</span>
+                            <span class="fixture-detail">FIX (H)</span>
+                        </div>
+                        <div class="fixture">
+                            <span class="predicted-points">2</span>
+                            <span class="fixture-detail">FIX (A)</span>
+                        </div>
+                        <div class="fixture">
+                            <span class="predicted-points">1</span>
+                            <span class="fixture-detail">FIX (H)</span>
+                        </div>
+                    </div>
+                    <!-- Icon buttons -->
+                    <div class="icon-buttons">
+                        <button class="icon-button"><i class="fas fa-exchange-alt"></i></button>
+                        <button class="icon-button"><i class="fas fa-trash"></i></button>
+                        <button class="icon-button"><i class="fas fa-crown"></i></button>
+                        <button class="icon-button"><i class="fas fa-star"></i></button>
+                        <button class="icon-button"><i class="fas fa-info-circle"></i></button>
+                    </div>
                 </div>
-                <div class="player">
+                <div id="def2" class="player">
                     <img src="assets/empty-jersey.png" alt="Defender">
                     <h5>Player</h5>
-                    <h6>FIX (H)</h6>
-                    <button class="actionButton">Select</button>
+                    <!-- Fixtures and predicted points -->
+                    <div class="fixtures">
+                        <div class="fixture">
+                            <span class="predicted-points">3</span>
+                            <span class="fixture-detail">FIX (H)</span>
+                        </div>
+                        <div class="fixture">
+                            <span class="predicted-points">2</span>
+                            <span class="fixture-detail">FIX (A)</span>
+                        </div>
+                        <div class="fixture">
+                            <span class="predicted-points">1</span>
+                            <span class="fixture-detail">FIX (H)</span>
+                        </div>
+                    </div>
+                    <!-- Icon buttons -->
+                    <div class="icon-buttons">
+                        <button class="icon-button"><i class="fas fa-exchange-alt"></i></button>
+                        <button class="icon-button"><i class="fas fa-trash"></i></button>
+                        <button class="icon-button"><i class="fas fa-crown"></i></button>
+                        <button class="icon-button"><i class="fas fa-star"></i></button>
+                        <button class="icon-button"><i class="fas fa-info-circle"></i></button>
+                    </div>
                 </div>
-                <div class="player">
+                <div id="def3" class="player">
                     <img src="assets/empty-jersey.png" alt="Defender">
                     <h5>Player</h5>
-                    <h6>FIX (H)</h6>
-                    <button class="actionButton">Select</button>
+                    <!-- Fixtures and predicted points -->
+                    <div class="fixtures">
+                        <div class="fixture">
+                            <span class="predicted-points">3</span>
+                            <span class="fixture-detail">FIX (H)</span>
+                        </div>
+                        <div class="fixture">
+                            <span class="predicted-points">2</span>
+                            <span class="fixture-detail">FIX (A)</span>
+                        </div>
+                        <div class="fixture">
+                            <span class="predicted-points">1</span>
+                            <span class="fixture-detail">FIX (H)</span>
+                        </div>
+                    </div>
+                    <!-- Icon buttons -->
+                    <div class="icon-buttons">
+                        <button class="icon-button"><i class="fas fa-exchange-alt"></i></button>
+                        <button class="icon-button"><i class="fas fa-trash"></i></button>
+                        <button class="icon-button"><i class="fas fa-crown"></i></button>
+                        <button class="icon-button"><i class="fas fa-star"></i></button>
+                        <button class="icon-button"><i class="fas fa-info-circle"></i></button>
+                    </div>
                 </div>
-                <div class="player">
+                <div id="def4" class="player">
                     <img src="assets/empty-jersey.png" alt="Defender">
                     <h5>Player</h5>
-                    <h6>FIX (H)</h6>
-                    <button class="actionButton">Select</button>
+                    <!-- Fixtures and predicted points -->
+                    <div class="fixtures">
+                        <div class="fixture">
+                            <span class="predicted-points">3</span>
+                            <span class="fixture-detail">FIX (H)</span>
+                        </div>
+                        <div class="fixture">
+                            <span class="predicted-points">2</span>
+                            <span class="fixture-detail">FIX (A)</span>
+                        </div>
+                        <div class="fixture">
+                            <span class="predicted-points">1</span>
+                            <span class="fixture-detail">FIX (H)</span>
+                        </div>
+                    </div>
+                    <!-- Icon buttons -->
+                    <div class="icon-buttons">
+                        <button class="icon-button"><i class="fas fa-exchange-alt"></i></button>
+                        <button class="icon-button"><i class="fas fa-trash"></i></button>
+                        <button class="icon-button"><i class="fas fa-crown"></i></button>
+                        <button class="icon-button"><i class="fas fa-star"></i></button>
+                        <button class="icon-button"><i class="fas fa-info-circle"></i></button>
+                    </div>
                 </div>
             </div>
 
             <!-- Midfield Row -->
             <div class="row midfield">
-                <div class="player">
+                <div id="mid1" class="player">
                     <img src="assets/empty-jersey.png" alt="Midfielder">
                     <h5>Player</h5>
-                    <h6>FIX (H)</h6>
-                    <button class="actionButton">Select</button>
+                    <!-- Fixtures and predicted points -->
+                    <div class="fixtures">
+                        <div class="fixture">
+                            <span class="predicted-points">3</span>
+                            <span class="fixture-detail">FIX (H)</span>
+                        </div>
+                        <div class="fixture">
+                            <span class="predicted-points">2</span>
+                            <span class="fixture-detail">FIX (A)</span>
+                        </div>
+                        <div class="fixture">
+                            <span class="predicted-points">1</span>
+                            <span class="fixture-detail">FIX (H)</span>
+                        </div>
+                    </div>
+                    <!-- Icon buttons -->
+                    <div class="icon-buttons">
+                        <button class="icon-button"><i class="fas fa-exchange-alt"></i></button>
+                        <button class="icon-button"><i class="fas fa-trash"></i></button>
+                        <button class="icon-button"><i class="fas fa-crown"></i></button>
+                        <button class="icon-button"><i class="fas fa-star"></i></button>
+                        <button class="icon-button"><i class="fas fa-info-circle"></i></button>
+                    </div>
                 </div>
-                <div class="player">
+                <div id="mid2" class="player">
                     <img src="assets/empty-jersey.png" alt="Midfielder">
                     <h5>Player</h5>
-                    <h6>FIX (H)</h6>
-                    <button class="actionButton">Select</button>
+                    <!-- Fixtures and predicted points -->
+                    <div class="fixtures">
+                        <div class="fixture">
+                            <span class="predicted-points">3</span>
+                            <span class="fixture-detail">FIX (H)</span>
+                        </div>
+                        <div class="fixture">
+                            <span class="predicted-points">2</span>
+                            <span class="fixture-detail">FIX (A)</span>
+                        </div>
+                        <div class="fixture">
+                            <span class="predicted-points">1</span>
+                            <span class="fixture-detail">FIX (H)</span>
+                        </div>
+                    </div>
+                    <!-- Icon buttons -->
+                    <div class="icon-buttons">
+                        <button class="icon-button"><i class="fas fa-exchange-alt"></i></button>
+                        <button class="icon-button"><i class="fas fa-trash"></i></button>
+                        <button class="icon-button"><i class="fas fa-crown"></i></button>
+                        <button class="icon-button"><i class="fas fa-star"></i></button>
+                        <button class="icon-button"><i class="fas fa-info-circle"></i></button>
+                    </div>
                 </div>
-                <div class="player">
+                <div id="mid3" class="player">
                     <img src="assets/empty-jersey.png" alt="Midfielder">
                     <h5>Player</h5>
-                    <h6>FIX (H)</h6>
-                    <button class="actionButton">Select</button>
+                    <!-- Fixtures and predicted points -->
+                    <div class="fixtures">
+                        <div class="fixture">
+                            <span class="predicted-points">3</span>
+                            <span class="fixture-detail">FIX (H)</span>
+                        </div>
+                        <div class="fixture">
+                            <span class="predicted-points">2</span>
+                            <span class="fixture-detail">FIX (A)</span>
+                        </div>
+                        <div class="fixture">
+                            <span class="predicted-points">1</span>
+                            <span class="fixture-detail">FIX (H)</span>
+                        </div>
+                    </div>
+                    <!-- Icon buttons -->
+                    <div class="icon-buttons">
+                        <button class="icon-button"><i class="fas fa-exchange-alt"></i></button>
+                        <button class="icon-button"><i class="fas fa-trash"></i></button>
+                        <button class="icon-button"><i class="fas fa-crown"></i></button>
+                        <button class="icon-button"><i class="fas fa-star"></i></button>
+                        <button class="icon-button"><i class="fas fa-info-circle"></i></button>
+                    </div>
                 </div>
-                <div class="player">
+                <div id="mid4" class="player">
                     <img src="assets/empty-jersey.png" alt="Midfielder">
                     <h5>Player</h5>
-                    <h6>FIX (H)</h6>
-                    <button class="actionButton">Select</button>
+                    <!-- Fixtures and predicted points -->
+                    <div class="fixtures">
+                        <div class="fixture">
+                            <span class="predicted-points">3</span>
+                            <span class="fixture-detail">FIX (H)</span>
+                        </div>
+                        <div class="fixture">
+                            <span class="predicted-points">2</span>
+                            <span class="fixture-detail">FIX (A)</span>
+                        </div>
+                        <div class="fixture">
+                            <span class="predicted-points">1</span>
+                            <span class="fixture-detail">FIX (H)</span>
+                        </div>
+                    </div>
+                    <!-- Icon buttons -->
+                    <div class="icon-buttons">
+                        <button class="icon-button"><i class="fas fa-exchange-alt"></i></button>
+                        <button class="icon-button"><i class="fas fa-trash"></i></button>
+                        <button class="icon-button"><i class="fas fa-crown"></i></button>
+                        <button class="icon-button"><i class="fas fa-star"></i></button>
+                        <button class="icon-button"><i class="fas fa-info-circle"></i></button>
+                    </div>
                 </div>
             </div>
 
             <!-- Attack Row -->
             <div class="row attack">
-                <div class="player">
+                <div id="fwd1" class="player">
                     <img src="assets/empty-jersey.png" alt="Attacker">
                     <h5>Player</h5>
-                    <h6>FIX (H)</h6>
-                    <button class="actionButton">Select</button>
+                    <!-- Fixtures and predicted points -->
+                    <div class="fixtures">
+                        <div class="fixture">
+                            <span class="predicted-points">3</span>
+                            <span class="fixture-detail">FIX (H)</span>
+                        </div>
+                        <div class="fixture">
+                            <span class="predicted-points">2</span>
+                            <span class="fixture-detail">FIX (A)</span>
+                        </div>
+                        <div class="fixture">
+                            <span class="predicted-points">1</span>
+                            <span class="fixture-detail">FIX (H)</span>
+                        </div>
+                    </div>
+                    <!-- Icon buttons -->
+                    <div class="icon-buttons">
+                        <button class="icon-button"><i class="fas fa-exchange-alt"></i></button>
+                        <button class="icon-button"><i class="fas fa-trash"></i></button>
+                        <button class="icon-button"><i class="fas fa-crown"></i></button>
+                        <button class="icon-button"><i class="fas fa-star"></i></button>
+                        <button class="icon-button"><i class="fas fa-info-circle"></i></button>
+                    </div>
                 </div>
-                <div class="player">
+                <div id="fwd2" class="player">
                     <img src="assets/empty-jersey.png" alt="Attacker">
                     <h5>Player</h5>
-                    <h6>FIX (H)</h6>
-                    <button class="actionButton">Select</button>
+                    <!-- Fixtures and predicted points -->
+                    <div class="fixtures">
+                        <div class="fixture">
+                            <span class="predicted-points">3</span>
+                            <span class="fixture-detail">FIX (H)</span>
+                        </div>
+                        <div class="fixture">
+                            <span class="predicted-points">2</span>
+                            <span class="fixture-detail">FIX (A)</span>
+                        </div>
+                        <div class="fixture">
+                            <span class="predicted-points">1</span>
+                            <span class="fixture-detail">FIX (H)</span>
+                        </div>
+                    </div>
+                    <!-- Icon buttons -->
+                    <div class="icon-buttons">
+                        <button class="icon-button"><i class="fas fa-exchange-alt"></i></button>
+                        <button class="icon-button"><i class="fas fa-trash"></i></button>
+                        <button class="icon-button"><i class="fas fa-crown"></i></button>
+                        <button class="icon-button"><i class="fas fa-star"></i></button>
+                        <button class="icon-button"><i class="fas fa-info-circle"></i></button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -101,36 +391,148 @@
     <!-- Subs Row -->
     <div class="subs-container">
         <div class="row subs">
-            <div class="player">
+            <div id="gk2" class="player">
                 <img src="assets/empty-jersey.png" alt="Sub">
                 <h5>Player</h5>
-                <h6>FIX (H)</h6>
-                <button class="actionButton">Select</button>
+                <!-- Fixtures and predicted points -->
+                <div class="fixtures">
+                    <div class="fixture">
+                        <span class="predicted-points">3</span>
+                        <span class="fixture-detail">FIX (H)</span>
+                    </div>
+                    <div class="fixture">
+                        <span class="predicted-points">2</span>
+                        <span class="fixture-detail">FIX (A)</span>
+                    </div>
+                    <div class="fixture">
+                        <span class="predicted-points">1</span>
+                        <span class="fixture-detail">FIX (H)</span>
+                    </div>
+                </div>
+                <!-- Icon buttons -->
+                <div class="icon-buttons">
+                    <button class="icon-button"><i class="fas fa-exchange-alt"></i></button>
+                    <button class="icon-button"><i class="fas fa-trash"></i></button>
+                    <button class="icon-button"><i class="fas fa-crown"></i></button>
+                    <button class="icon-button"><i class="fas fa-star"></i></button>
+                    <button class="icon-button"><i class="fas fa-info-circle"></i></button>
+                </div>
             </div>
-            <div class="player">
+            <div id="def5" class="player">
                 <img src="assets/empty-jersey.png" alt="Sub">
                 <h5>Player</h5>
-                <h6>FIX (H)</h6>
-                <button class="actionButton">Select</button>
+                <!-- Fixtures and predicted points -->
+                <div class="fixtures">
+                    <div class="fixture">
+                        <span class="predicted-points">3</span>
+                        <span class="fixture-detail">FIX (H)</span>
+                    </div>
+                    <div class="fixture">
+                        <span class="predicted-points">2</span>
+                        <span class="fixture-detail">FIX (A)</span>
+                    </div>
+                    <div class="fixture">
+                        <span class="predicted-points">1</span>
+                        <span class="fixture-detail">FIX (H)</span>
+                    </div>
+                </div>
+                <!-- Icon buttons -->
+                <div class="icon-buttons">
+                    <button class="icon-button"><i class="fas fa-exchange-alt"></i></button>
+                    <button class="icon-button"><i class="fas fa-trash"></i></button>
+                    <button class="icon-button"><i class="fas fa-crown"></i></button>
+                    <button class="icon-button"><i class="fas fa-star"></i></button>
+                    <button class="icon-button"><i class="fas fa-info-circle"></i></button>
+                </div>
             </div>
-            <div class="player">
+            <div id="mid5" class="player">
                 <img src="assets/empty-jersey.png" alt="Sub">
                 <h5>Player</h5>
-                <h6>FIX (H)</h6>
-                <button class="actionButton">Select</button>
+                <!-- Fixtures and predicted points -->
+                <div class="fixtures">
+                    <div class="fixture">
+                        <span class="predicted-points">3</span>
+                        <span class="fixture-detail">FIX (H)</span>
+                    </div>
+                    <div class="fixture">
+                        <span class="predicted-points">2</span>
+                        <span class="fixture-detail">FIX (A)</span>
+                    </div>
+                    <div class="fixture">
+                        <span class="predicted-points">1</span>
+                        <span class="fixture-detail">FIX (H)</span>
+                    </div>
+                </div>
+                <!-- Icon buttons -->
+                <div class="icon-buttons">
+                    <button class="icon-button"><i class="fas fa-exchange-alt"></i></button>
+                    <button class="icon-button"><i class="fas fa-trash"></i></button>
+                    <button class="icon-button"><i class="fas fa-crown"></i></button>
+                    <button class="icon-button"><i class="fas fa-star"></i></button>
+                    <button class="icon-button"><i class="fas fa-info-circle"></i></button>
+                </div>
             </div>
-            <div class="player">
+            <div id="fwd3" class="player">
                 <img src="assets/empty-jersey.png" alt="Sub">
                 <h5>Player</h5>
-                <h6>FIX (H)</h6>
-                <button class="actionButton">Select</button>
+                <!-- Fixtures and predicted points -->
+                <div class="fixtures">
+                    <div class="fixture">
+                        <span class="predicted-points">3</span>
+                        <span class="fixture-detail">FIX (H)</span>
+                    </div>
+                    <div class="fixture">
+                        <span class="predicted-points">2</span>
+                        <span class="fixture-detail">FIX (A)</span>
+                    </div>
+                    <div class="fixture">
+                        <span class="predicted-points">1</span>
+                        <span class="fixture-detail">FIX (H)</span>
+                    </div>
+                </div>
+                <!-- Icon buttons -->
+                <div class="icon-buttons">
+                    <button class="icon-button"><i class="fas fa-exchange-alt"></i></button>
+                    <button class="icon-button"><i class="fas fa-trash"></i></button>
+                    <button class="icon-button"><i class="fas fa-crown"></i></button>
+                    <button class="icon-button"><i class="fas fa-star"></i></button>
+                    <button class="icon-button"><i class="fas fa-info-circle"></i></button>
+                </div>
             </div>
         </div>
     </div>
 
-    <br>
-    <div id="wrapper"></div>
+    <!-- Action Buttons -->
+    <div class="button-container text-center">
+        <button id="resetButton" class="btn btn-danger" onclick="resetPlayers()">Reset</button>
+        <button id="saveButton" class="btn btn-primary" onclick="savePlayers()">Save</button>
+    </div>
 
+    <div id="filters">
+        <!-- Position Filter -->
+        <div id="position-filter" class="filter">
+            <label>Position:</label>
+            &nbsp;
+            <div class="position-buttons">
+                <button class="position-button" data-position="0">All</button>
+                <button class="position-button" data-position="1">GK</button>
+                <button class="position-button" data-position="2">DEF</button>
+                <button class="position-button" data-position="3">MID</button>
+                <button class="position-button" data-position="4">FWD</button>
+            </div>
+        </div>
+    
+        <!-- Price Filter -->
+        <div id="price-filter" class="filter">
+            <label for="price-range">Price:</label>
+            <input type="range" id="price-range" min="4.0" max="15.0" step="0.5" value="15.0">
+            <span id="price-value">15.0</span>
+        </div>
+    </div>
+
+    <div id="dataGrid"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gridjs/dist/gridjs.umd.js"></script>
     <script src="script.js"></script>
 </body>
