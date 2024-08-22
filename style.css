@@ -16,32 +16,32 @@ h1 {
 
 .pitch-container {
     background-image: url('assets/soccer-pitch.jpg');
-    background-size: contain;
+    background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    width: 70vw;
-    /* Adjust based on the pitch size */
+    width: 100%;
+    max-width: 800px;
     height: auto;
     margin: 0 auto;
-    /* Center the pitch-container */
     display: flex;
-    justify-content: center;
-    padding: 50px;
+    flex-direction: column;
     align-items: center;
 }
 
 .pitch {
-    width: 100%;
-    height: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: space-evenly;
+    justify-content: space-between;
+    width: 100%;
+    height: auto;
+    max-width: 800px;
 }
 
 .row {
     display: flex;
-    justify-content: space-evenly;
-    align-items: center;
+    justify-content: space-around;
+    width: 100%;
+    margin-bottom: 10px;
 }
 
 .player {
@@ -49,16 +49,23 @@ h1 {
     flex-direction: column;
     align-items: center;
     text-align: center;
+    padding: 5px;
+    width: 100%;
 }
 
 .player img {
-    width: 65px;
-    height: 65px;
+    width: 100%;
+    max-width: 65px;
+    height: auto;
     border-radius: 50%;
 }
 
+h5, h6, .actionButton {
+    font-size: 0.8em;
+}
+
 .actionButton {
-    margin-top: 10px;
+    margin-top: 5px;
     padding: 5px 10px;
     background-color: #00aaff;
     border: none;
@@ -67,19 +74,88 @@ h1 {
     cursor: pointer;
 }
 
-button:hover {
+.actionButton:hover {
     background-color: #0088cc;
 }
 
-.extra-content {
-    margin-top: 40px;
-    text-align: center;
+/* Specific flex layouts for each player row */
+.row.gk {
+    justify-content: center;
 }
 
-.grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 20px;
-    justify-content: center;
-    padding: 0 20px;
+.row.defense {
+    justify-content: space-between;
+}
+
+.row.midfield {
+    justify-content: space-between;
+}
+
+.row.attack {
+    justify-content: space-around;
+}
+
+.subs-container {
+    width: 100%;
+    max-width: 800px; /* Ensure it matches the pitch width */
+    margin: 0 auto;
+    padding: 0 10px; /* Optional: Add padding to prevent overflow */
+}
+
+.subs {
+    display: flex;
+    flex-wrap: nowrap; /* Prevent wrapping */
+    justify-content: space-around;
+    overflow-x: auto; /* Allow horizontal scrolling if needed */
+}
+
+.subs .player {
+    flex: 1;
+    max-width: 80px; /* Adjust max-width to fit in a single row */
+    margin: 0 5px; /* Adjust margin to fit spacing */
+}
+
+.subs .player img {
+    max-width: 100%; /* Scale image to fit within player container */
+}
+
+@media (max-width: 600px) {
+    .pitch-container {
+        width: 100%;
+        max-width: none;
+    }
+
+    .row {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-around;
+    }
+
+    .player {
+        flex: 1 0 20%; /* Adjust player size */
+        margin-bottom: 10px;
+    }
+
+    .player img {
+        max-width: 45px;
+    }
+
+    h5, h6, .actionButton {
+        font-size: 0.6em;
+    }
+
+    .subs-container {
+        padding: 0; /* Remove padding on mobile for better fit */
+    }
+
+    .subs {
+        flex-wrap: nowrap; /* Prevent wrapping on mobile */
+        overflow-x: hidden; /* Remove horizontal scroll bar */
+    }
+
+    .subs .player {
+        flex: 1 0 auto; /* Allow players to scale flexibly */
+        max-width: 20%; /* Adjust to fit single row */
+        margin: 0; /* Remove margins for tighter fit */
+    }
 }
