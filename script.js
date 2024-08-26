@@ -1,4 +1,3 @@
-//https://resources.premierleague.com/premierleague/photos/filteredPlayers/110x140/p118748.png
 document.addEventListener('DOMContentLoaded', () => {
     const rows = document.querySelectorAll('.row');
 
@@ -9,67 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
         row.style.gridTemplateColumns = `repeat(${playerCount}, 1fr)`;
     });
 });
-
-
-const proxyURL = 'https://gh-pages-cors.haffejeeyoosuf1.workers.dev/?';
-const baseURL = 'https://fantasy.premierleague.com/api/';
-
-const reqType = {
-    bootstrap: 'bootstrap-static/', //Overview
-    element: 'element-summary/', //Players (playderID)
-    events: 'events/', // Get all gameweeks
-    event: 'event/',  //A selected gameweek
-    entry: 'entry/', //Get a team
-    elementTypes: 'element-types/', // Get all player positions
-    fixtures: 'fixtures/', //Get all fixtures
-    gameweekFixtures: 'fixtures/?event/', //Get all fixtures for a specified gameweek (gameweek number)
-    gameweekLive: 'event/gw?/live/', //Get GW live data
-    managerTeam: 'entry/teamId?/',
-    teams: 'teams/', //Get all teams,
-    leagueClassicStanding: 'leagues-classic/' //Get league standing at current gameweek.
-}
-
-const doCORSRequest = async (url) => {
-    let endpointUrl = baseURL + url;
-    const response = await fetch(proxyURL + endpointUrl);
-    const myJson = await response.json();
-    return myJson
-}
-
-const getBootstrap = async () => {
-    const data = await doCORSRequest(reqType.bootstrap);
-    return data;
-}
-
-const getGameweeks = async () => {
-    const data = await doCORSRequest(reqType.events);
-    return data;
-}
-
-const getLeague = async (id) => {
-    const data = await doCORSRequest(`${reqType.leagueClassicStanding}${id}/standings/`);
-    return data;
-}
-
-const getPlayer = async (id) => {
-    const data = await doCORSRequest(`${reqType.element}${id}/`);
-    return data;
-}
-
-const getFixtures = async () => {
-    const data = await doCORSRequest(reqType.fixtures);
-    return data;
-}
-
-const getTeam = async (id) => {
-    const data = await doCORSRequest(`${reqType.entry}/${id}/`);
-    return data;
-}
-
-const getTeamyByGW = async (id, gameweek) => {
-    const data = await doCORSRequest(`${reqType.entry}/${id}/${reqType.event}/${gameweek}/picks/`);
-    return data;
-}
 
 document.getElementById('prevGameweek').addEventListener('click', () => {
     // Logic to go to the previous game week
@@ -98,6 +36,7 @@ priceRange.addEventListener('input', function() {
 
 let bankBalance = 100;
 let teams = [];
+let gameweeks = [];
 let fixtures = [];
 let allPlayers = [];
 let myPlayers = [];
@@ -185,11 +124,9 @@ function updateTeamUI() {
 
             // Update the fixtures and predicted points
             const fixtureElements = playerElement.querySelectorAll('.fixture');
-            fixtures.forEach((fixture, index) => {
-                if (fixtureElements[index]) {
-                    fixtureElements[index].querySelector('.predicted-points').textContent = 0;
-                    fixtureElements[index].querySelector('.fixture-detail').textContent = 'FIX (H)';
-                }
+            fixtureElements.forEach(fixtureElement => {
+                fixtureElement.querySelector('.predicted-points').textContent = 0;
+                fixtureElement.querySelector('.fixture-detail').textContent = 'FIX (H)';
             });
         }
     });
@@ -199,9 +136,11 @@ function updateTeamUI() {
     let gameweekRating = 0;
     bankBalance = 100;
 
+    // Determine the upcoming gameweeks
+    const upcomingGameweeks = gameweeks.filter(gw => !gw.finished).slice(0, 3);
+
     // Iterate through each player
     myPlayers.forEach(player => {
-
         // Update bank balance and format to 2 decimal places
         bankBalance -= player.now_cost / 10;
         const formattedBalance = bankBalance.toFixed(1);
@@ -229,14 +168,69 @@ function updateTeamUI() {
 
                 // Update the fixtures and predicted points
                 const fixtureElements = playerElement.querySelectorAll('.fixture');
-                fixtures.forEach((fixture, index) => {
-                    if (fixtureElements[index]) {
-                        fixtureElements[index].querySelector('.predicted-points').textContent = fixture.points || 0;
-                        fixtureElements[index].querySelector('.fixture-detail').textContent = fixture.detail || '';
+                
+                // Loop through each upcoming gameweek and find relevant fixtures for the player
+                upcomingGameweeks.forEach((upcomingGameweek, index) => {
+                    const playerFixture = fixtures.find(fixture => 
+                        fixture.event === upcomingGameweek.id && 
+                        (fixture.team_a === player.team || fixture.team_h === player.team)
+                    );
+
+                    if (playerFixture && fixtureElements[index]) {
+                        let playerTeam = teams.find(team => team.id === player.team);
+
+                        // Determine if the match is home or away
+                        let isHomeFixture = false;
+                        let opponentTeam;
+
+                        if (playerFixture.team_a === player.team) {
+                            const homeTeam = teams.find(team => team.id === playerFixture.team_h);
+                            opponentTeam = homeTeam;
+                            fixtureElements[index].querySelector('.fixture-detail').textContent = `${homeTeam.short_name} (A)`;
+                        } else {
+                            isHomeFixture = true;
+                            const awayTeam = teams.find(team => team.id === playerFixture.team_a);
+                            opponentTeam = awayTeam;
+                            fixtureElements[index].querySelector('.fixture-detail').textContent = `${awayTeam.short_name} (H)`;
+                        }
+
+                        // Set predicted points
+                        if (index === 0) {
+                            fixtureElements[index].querySelector('.predicted-points').textContent = player.ep_next;
+                        }
+                        if (index === 1) {
+                            let expectedPoints = 0;
+                            if (opponentTeam.strength <= 3) {
+                                let initialExpectedPoints = (parseFloat(player.form) + parseFloat(player.ep_next)) / 2;
+                                let strengthAdjustment = (opponentTeam.strength * 10) / 100;
+                                expectedPoints = initialExpectedPoints + (initialExpectedPoints * strengthAdjustment);
+                            }
+                            else {
+                                let initialExpectedPoints = (parseFloat(player.form) + parseFloat(player.ep_next)) / 2;
+                                let strengthAdjustment = (opponentTeam.strength * 10) / 100;
+                                expectedPoints = initialExpectedPoints - (initialExpectedPoints * strengthAdjustment);
+                            }
+
+                            fixtureElements[index].querySelector('.predicted-points').textContent = expectedPoints.toFixed(1);
+                        }
+                        if (index === 2) {
+                            let expectedPoints = 0;
+                            if (opponentTeam.strength <= 3) {
+                                let initialExpectedPoints = (parseFloat(player.form) + parseFloat(player.ep_next)) / 2;
+                                let strengthAdjustment = (opponentTeam.strength * 10) / 100;
+                                expectedPoints = initialExpectedPoints + (initialExpectedPoints * strengthAdjustment);
+                            }
+                            else {
+                                let initialExpectedPoints = (parseFloat(player.form) + parseFloat(player.ep_next)) / 2;
+                                let strengthAdjustment = (opponentTeam.strength * 10) / 100;
+                                expectedPoints = initialExpectedPoints - (initialExpectedPoints * strengthAdjustment);
+                            }
+
+                            fixtureElements[index].querySelector('.predicted-points').textContent = expectedPoints.toFixed(1);
+                        }
                     }
                 });
 
-                //TODO: Use the element not player
                 // Set up event listeners or other dynamic behaviors
                 setupPlayerActions(playerElement, player);
             }
@@ -399,520 +393,333 @@ function displayPlayers(filteredPlayers) {
     filteredPlayers.sort((a, b) => b.total_points - a.total_points);
 
     if (grid) {
-        grid.updateConfig({
-            data: filteredPlayers,
-        }).forceRender();
-
+        grid.updateGridOptions({
+            rowData: filteredPlayers
+        })
         return;
     }
 
-    grid = new gridjs.Grid({
-        columns: [
-            { 
-                name: 'Actions',
-                formatter: (cell, row) => {
-                  return gridjs.h('button', {
-                    className: 'btn btn-primary',
-                    disabled: myPlayers.some(player => player?.web_name === row.cells[5].data) || !canAddPlayer(row.cells[4].data) || bankBalance <= row.cells[8].data,
-                    onClick: () => {
-                        myPlayers.push(allPlayers.find(player => player.id == row.cells[1].data));
-                        grid.forceRender();
-                        updateTeamUI();
-                        document.getElementById('saveButton').disabled = false;
-                    }
-                  }, '+');
-                }
+    // Grid Options: Contains all of the Data Grid configurations
+    const gridOptions = {
+        rowData: filteredPlayers,
+        defaultColDef: { 
+            sortable: true,
+            filter: true,
+            resizable: true,
+        },
+        pagination: true,
+        paginationPageSize: 10,
+        paginationPageSizeSelector: [10, 20, 50, 100, 1000],
+        columnDefs: [
+            {
+              headerName: 'Actions',
+              width: 85,
+              pinned: 'left',
+              filter: false,
+              cellRenderer: (params) => {
+                const button = document.createElement('button');
+                button.className = 'btn btn-primary';
+                button.disabled = myPlayers.some(player => player?.web_name == params.data.web_name) || 
+                                  !canAddPlayer(params.data.element_type) || 
+                                  bankBalance <= params.data.now_cost/10;
+                button.innerText = '+';
+                button.addEventListener('click', () => {
+                  myPlayers.push(allPlayers.find(player => player.id == params.data.id));
+                  grid.refreshCells();
+                  updateTeamUI();
+                  document.getElementById('saveButton').disabled = false;
+                });
+                return button;
+              }
+            },
+            { headerName: 'ID', field: 'id', hide: true },
+            { headerName: 'Code', field: 'code', hide: true },
+            { headerName: 'Photo', field: 'photo', hide: true },
+            { headerName: 'Element Type', field: 'element_type', hide: true },
+            { headerName: 'Web Name', width: 150, field: 'web_name', floatingFilter: true, pinned: 'left' },
+            { headerName: 'First Name', field: 'first_name', hide: true },
+            { headerName: 'Second Name', field: 'second_name', hide: true },
+            {
+              headerName: 'Price',
+              field: 'now_cost',
+              width: 100,
+              valueGetter: (params) => params.data.now_cost / 10
+            },
+            { headerName: 'Total Points', width: 150, field: 'total_points' },
+            {
+              headerName: 'Form',
+              field: 'form',
+              width: 100,
+              valueGetter: (params) => parseFloat(params.data.form)
+            },
+            {
+              headerName: 'Predicted Points',
+              field: 'ep_this',
+              width: 150,
+              valueGetter: (params) => parseFloat(params.data.ep_this)
+            },
+            {
+              headerName: 'Next Predicted Points',
+              field: 'ep_next',
+              width: 150,
+              valueGetter: (params) => parseFloat(params.data.ep_next)
             },
-            {
-                id: 'id',
-                name: "ID",
-                hidden: true
-            },
-            {
-                id: 'code',
-                name: "Code",
-                hidden: true
-            },
-            {
-                id: 'photo',
-                name: "Photo",
-                hidden: true
-            },
-            {
-                id: 'element_type',
-                name: "Element Type",
-                hidden: true
-            },
-            {
-                id: 'web_name',
-                name: "Web Name",
-                width: '150vw'
-            },
-            {
-                id: 'first_name',
-                name: "First Name",
-                hidden: true
-            },
-            {
-                id: 'second_name',
-                name: "Second Name",
-                hidden: true
-            },
-            {
-                id: 'now_cost',
-                name: "Price",
-                data: (row) => (row.now_cost / 10),
-                width: '150vw'
-            },
-            {
-                id: 'total_points',
-                name: "Total Points",
-                width: '200vw'
-            },
-            {
-                id: 'form',
-                name: "Form",
-                data: (row) => parseFloat(row.form),
-                width: '150vw'
-            },
-            {
-                id: 'ep_this',
-                name: "Predicted Points",
-                data: (row) => parseFloat(row.ep_this),
-                width: '200vw'
-            },
-            {
-                id: 'ep_next',
-                name: "Next Predicted Points",
-                data: (row) => parseFloat(row.ep_next),
-                width: '250vw'
-            },
-            {
-                id: 'chance_of_playing_this_round',
-                name: "Chance of Playing This Round (%)",
-                formatter: (cell) => cell == null ? "N/A" : cell,
-                width: '430vw'
-            },
-            {
-                id: 'chance_of_playing_next_round',
-                name: "Chance of Playing Next Round (%)",
-                formatter: (cell) => cell == null ? "N/A" : cell,
-                width: '430vw'
-            },
-            {
-                id: 'dreamteam_count',
-                name: "Dreamteam Count",
-                width: '250vw'
-            },
-            {
-                id: 'event_points',
-                name: "Event Points",
-                width: '200vw'
-            },
-            {
-                id: 'in_dreamteam',
-                name: "In Dreamteam",
-                formatter: (cell) => cell === null ? "N/A" : cell ? "True" : "False",
-                width: '200vw'
-            },
-            {
-                id: 'points_per_game',
-                name: "Points per Game",
-                data: (row) => parseFloat(row.points_per_game),
-                width: '200vw'
-            },
-            {
-                id: 'selected_by_percent',
-                name: "Selected by Percent (%)",
-                data: (row) => parseFloat(row.selected_by_percent),
-                width: '300vw'
-            },
-            {
-                id: 'special',
-                name: "Special",
-                formatter: (cell) => cell === null ? "N/A" : cell ? "True" : "False",
-                width: '150vw'
-            },
-            {
-                id: 'squad_number',
-                name: "Squad Number",
-                formatter: (cell) => cell == null ? "N/A" : cell,
-                width: '200vw'
-            },
-            {
-                id: 'status',
-                name: "Status",
-                width: '150vw'
-            },
-            {
-                id: 'team',
-                name: "Team",
-                width: '150vw'
-            },
-            {
-                id: 'team_code',
-                name: "Team Code",
-                width: '150vw'
-            },
-            {
-                id: 'transfers_in',
-                name: "Transfers In",
-                width: '200vw'
-            },
-            {
-                id: 'transfers_in_event',
-                name: "Transfers In Event",
-                width: '200vw'
-            },
-            {
-                id: 'transfers_out',
-                name: "Transfers Out",
-                width: '200vw'
-            },
-            {
-                id: 'transfers_out_event',
-                name: "Transfers Out Event",
-                width: '300vw'
-            },
-            {
-                id: 'value_form',
-                name: "Value Form",
-                data: (row) => parseFloat(row.value_form),
-                width: '200vw'
-            },
-            {
-                id: 'value_season',
-                name: "Value Season",
-                data: (row) => parseFloat(row.value_season),
-                width: '200vw'
-            },
-            {
-                id: 'minutes',
-                name: "Minutes",
-                width: '150vw'
-            },
-            {
-                id: 'goals_scored',
-                name: "Goals Scored",
-                width: '200vw'
-            },
-            {
-                id: 'assists',
-                name: "Assists",
-                width: '150vw'
-            },
-            {
-                id: 'clean_sheets',
-                name: "Clean Sheets",
-                width: '200vw'
-            },
-            {
-                id: 'goals_conceded',
-                name: "Goals Conceded",
-                width: '200vw'
-            },
-            {
-                id: 'own_goals',
-                name: "Own Goals",
-                width: '150vw'
-            },
-            {
-                id: 'penalties_saved',
-                name: "Penalties Saved",
-                width: '200vw'
-            },
-            {
-                id: 'penalties_missed',
-                name: "Penalties Missed",
-                width: '200vw'
-            },
-            {
-                id: 'yellow_cards',
-                name: "Yellow Cards",
-                width: '200vw'
-            },
-            {
-                id: 'red_cards',
-                name: "Red Cards",
-                width: '150vw'
-            },
-            {
-                id: 'saves',
-                name: "Saves",
-                width: '150vw'
-            },
-            {
-                id: 'bonus',
-                name: "Bonus",
-                width: '150vw'
-            },
-            {
-                id: 'bps',
-                name: "BPS",
-                width: '150vw'
-            },
-            {
-                id: 'influence',
-                name: "Influence",
-                data: (row) => parseFloat(row.influence),
-                width: '150vw'
-            },
-            {
-                id: 'creativity',
-                name: "Creativity",
-                data: (row) => parseFloat(row.creativity),
-                width: '150vw'
-            },
-            {
-                id: 'threat',
-                name: "Threat",
-                data: (row) => parseFloat(row.threat),
-                width: '150vw'
-            },
-            {
-                id: 'ict_index',
-                name: "ICT Index",
-                data: (row) => parseFloat(row.ict_index),
-                width: '150vw'
+            {
+              headerName: 'Chance of Playing This Round (%)',
+              field: 'chance_of_playing_this_round',
+              valueFormatter: (params) => params.value == null ? "N/A" : params.value
             },
             {
-                id: 'starts',
-                name: "Starts",
-                width: '150vw'
+              headerName: 'Chance of Playing Next Round (%)',
+              field: 'chance_of_playing_next_round',
+              valueFormatter: (params) => params.value == null ? "N/A" : params.value
             },
+            { headerName: 'Dreamteam Count', field: 'dreamteam_count', width: 250 },
+            { headerName: 'Event Points', field: 'event_points' },
+            {
+              headerName: 'In Dreamteam',
+              field: 'in_dreamteam',
+              valueFormatter: (params) => params.value === null ? "N/A" : params.value ? "True" : "False"
+            },
+            {
+              headerName: 'Points per Game',
+              field: 'points_per_game',
+              valueGetter: (params) => parseFloat(params.data.points_per_game)
+            },
             {
-                id: 'expected_goals',
-                name: "Expected Goals",
-                data: (row) => parseFloat(row.expected_goals),
-                width: '200vw'
+              headerName: 'Selected by Percent (%)',
+              field: 'selected_by_percent',
+              valueGetter: (params) => parseFloat(params.data.selected_by_percent)
             },
             {
-                id: 'expected_assists',
-                name: "Expected Assists",
-                data: (row) => parseFloat(row.expected_assists),
-                width: '200vw'
+              headerName: 'Special',
+              field: 'special',
+              valueFormatter: (params) => params.value === null ? "N/A" : params.value ? "True" : "False"
             },
             {
-                id: 'expected_goal_involvements',
-                name: "Expected Goal Involvements",
-                data: (row) => parseFloat(row.expected_goal_involvements),
-                width: '430vw'
+              headerName: 'Squad Number',
+              field: 'squad_number',
+              valueFormatter: (params) => params.value == null ? "N/A" : params.value
             },
+            { headerName: 'Status', field: 'status' },
+            { headerName: 'Team', field: 'team' },
+            { headerName: 'Team Code', field: 'team_code' },
+            { headerName: 'Transfers In', field: 'transfers_in' },
+            { headerName: 'Transfers In Event', field: 'transfers_in_event' },
+            { headerName: 'Transfers Out', field: 'transfers_out' },
+            { headerName: 'Transfers Out Event', field: 'transfers_out_event', width: 300 },
             {
-                id: 'expected_goals_conceded',
-                name: "Expected Goals Conceded",
-                data: (row) => parseFloat(row.expected_goals_conceded),
-                width: '430vw'
+              headerName: 'Value Form',
+              field: 'value_form',
+              valueGetter: (params) => parseFloat(params.data.value_form)
             },
             {
-                id: 'influence_rank',
-                name: "Influence Rank",
-                width: '200vw'
+              headerName: 'Value Season',
+              field: 'value_season',
+              valueGetter: (params) => parseFloat(params.data.value_season)
             },
+            { headerName: 'Minutes', field: 'minutes' },
+            { headerName: 'Goals Scored', field: 'goals_scored' },
+            { headerName: 'Assists', field: 'assists' },
+            { headerName: 'Clean Sheets', field: 'clean_sheets' },
+            { headerName: 'Goals Conceded', field: 'goals_conceded' },
+            { headerName: 'Own Goals', field: 'own_goals' },
+            { headerName: 'Penalties Saved', field: 'penalties_saved' },
+            { headerName: 'Penalties Missed', field: 'penalties_missed' },
+            { headerName: 'Yellow Cards', field: 'yellow_cards' },
+            { headerName: 'Red Cards', field: 'red_cards' },
+            { headerName: 'Saves', field: 'saves' },
+            { headerName: 'Bonus', field: 'bonus' },
+            { headerName: 'BPS', field: 'bps' },
             {
-                id: 'influence_rank_type',
-                name: "Influence Rank Type",
-                width: '200vw'
+              headerName: 'Influence',
+              field: 'influence',
+              valueGetter: (params) => parseFloat(params.data.influence)
             },
             {
-                id: 'creativity_rank',
-                name: "Creativity Rank",
-                width: '200vw'
+              headerName: 'Creativity',
+              field: 'creativity',
+              valueGetter: (params) => parseFloat(params.data.creativity)
             },
             {
-                id: 'creativity_rank_type',
-                name: "Creativity Rank Type",
-                width: '200vw'
+              headerName: 'Threat',
+              field: 'threat',
+              valueGetter: (params) => parseFloat(params.data.threat)
             },
             {
-                id: 'threat_rank',
-                name: "Threat Rank",
-                width: '200vw'
+              headerName: 'ICT Index',
+              field: 'ict_index',
+              valueGetter: (params) => parseFloat(params.data.ict_index)
             },
+            { headerName: 'Starts', field: 'starts' },
             {
-                id: 'threat_rank_type',
-                name: "Threat Rank Type",
-                width: '200vw'
+              headerName: 'Expected Goals',
+              field: 'expected_goals',
+              valueGetter: (params) => parseFloat(params.data.expected_goals)
             },
             {
-                id: 'ict_index_rank',
-                name: "ICT Index Rank",
-                width: '200vw'
+              headerName: 'Expected Assists',
+              field: 'expected_assists',
+              valueGetter: (params) => parseFloat(params.data.expected_assists)
             },
             {
-                id: 'ict_index_rank_type',
-                name: "ICT Index Rank Type",
-                width: '200vw'
+              headerName: 'Expected Goal Involvements',
+              field: 'expected_goal_involvements',
+              valueGetter: (params) => parseFloat(params.data.expected_goal_involvements)
             },
             {
-                id: 'corners_and_indirect_freekicks_order',
-                name: "Corners and Indirect Freekicks Order",
-                formatter: (cell) => cell == null ? "N/A" : cell,
-                width: '200vw'
+              headerName: 'Expected Goals Conceded',
+              field: 'expected_goals_conceded',
+              valueGetter: (params) => parseFloat(params.data.expected_goals_conceded)
             },
+            { headerName: 'Influence Rank', field: 'influence_rank' },
+            { headerName: 'Influence Rank Type', field: 'influence_rank_type' },
+            { headerName: 'Creativity Rank', field: 'creativity_rank' },
+            { headerName: 'Creativity Rank Type', field: 'creativity_rank_type' },
+            { headerName: 'Threat Rank', field: 'threat_rank' },
+            { headerName: 'Threat Rank Type', field: 'threat_rank_type' },
+            { headerName: 'ICT Index Rank', field: 'ict_index_rank' },
+            { headerName: 'ICT Index Rank Type', field: 'ict_index_rank_type' },
             {
-                id: 'corners_and_indirect_freekicks_text',
-                name: "Corners and Indirect Freekicks Text",
-                width: '200vw'
+              headerName: 'Corners and Indirect Freekicks Order',
+              field: 'corners_and_indirect_freekicks_order',
+              valueFormatter: (params) => params.value == null ? "N/A" : params.value
             },
             {
-                id: 'direct_freekicks_order',
-                name: "Direct Freekicks Order",
-                formatter: (cell) => cell == null ? "N/A" : cell,
-                width: '200vw'
+                field: 'corners_and_indirect_freekicks_text',
+                headerName: "Corners and Indirect Freekicks Text",
             },
             {
-                id: 'direct_freekicks_text',
-                name: "Direct Freekicks Text",
-                width: '200vw'
+              headerName: 'Direct Freekicks Order',
+              field: 'direct_freekicks_order',
+              valueFormatter: (params) => params.value == null ? "N/A" : params.value
             },
             {
-                id: 'penalties_order',
-                name: "Penalties Order",
-                formatter: (cell) => cell == null ? "N/A" : cell,
-                width: '200vw'
+                field: 'direct_freekicks_text',
+                headerName: "Direct Freekicks Text",
             },
             {
-                id: 'penalties_text',
-                name: "Penalties Text",
-                width: '200vw'
+              headerName: 'Penalties Order',
+              field: 'penalties_order',
+              valueFormatter: (params) => params.value == null ? "N/A" : params.value
             },
             {
-                id: 'expected_goals_per_90',
-                name: "Expected Goals per 90",
-                width: '200vw'
+                field: 'penalties_text',
+                headerName: "Penalties Text",
             },
             {
-                id: 'saves_per_90',
-                name: "Saves per 90",
-                width: '200vw'
+              headerName: 'Expected Goals per 90',
+              field: 'expected_goals_per_90',
+              valueGetter: (params) => parseFloat(params.data.expected_goals_per_90)
             },
             {
-                id: 'expected_assists_per_90',
-                name: "Expected Assists per 90",
-                width: '430vw'
+              headerName: 'Saves per 90',
+              field: 'saves_per_90',
+              valueGetter: (params) => parseFloat(params.data.saves_per_90)
             },
             {
-                id: 'expected_goal_involvements_per_90',
-                name: "Expected Goal Involvements per 90",
-                width: '430vw'
+              headerName: 'Expected Assists per 90',
+              field: 'expected_assists_per_90',
+              valueGetter: (params) => parseFloat(params.data.expected_assists_per_90)
             },
             {
-                id: 'expected_goals_conceded_per_90',
-                name: "Expected Goals Conceded per 90",
-                width: '430vw'
+              headerName: 'Expected Goal Involvements per 90',
+              field: 'expected_goal_involvements_per_90',
+              valueGetter: (params) => parseFloat(params.data.expected_goal_involvements_per_90)
             },
             {
-                id: 'goals_conceded_per_90',
-                name: "Goals Conceded per 90",
-                width: '430vw'
+              headerName: 'Expected Goals Conceded per 90',
+              field: 'expected_goals_conceded_per_90',
+              valueGetter: (params) => parseFloat(params.data.expected_goals_conceded_per_90)
             },
+            { headerName: 'Goals Conceded per 90', field: 'goals_conceded_per_90' },
+            { field: 'now_cost_rank', headerName: "Now Cost Rank" },
+            { field: 'now_cost_rank_type', headerName: "Now Cost Rank Type" },
             {
-                id: 'now_cost_rank',
-                name: "Now Cost Rank",
-                width: '200vw'
+                field: 'form_rank',
+                headerName: "Form Rank",
             },
             {
-                id: 'now_cost_rank_type',
-                name: "Now Cost Rank Type",
-                width: '200vw'
+                field: 'form_rank_type',
+                headerName: "Form Rank Type",
             },
             {
-                id: 'form_rank',
-                name: "Form Rank",
-                width: '200vw'
+                field: 'points_per_game_rank',
+                headerName: "Points per Game Rank",
             },
             {
-                id: 'form_rank_type',
-                name: "Form Rank Type",
-                width: '200vw'
+                field: 'points_per_game_rank_type',
+                headerName: "Points per Game Rank Type",
             },
             {
-                id: 'points_per_game_rank',
-                name: "Points per Game Rank",
-                width: '200vw'
+                field: 'selected_rank',
+                headerName: "Selected Rank",
             },
             {
-                id: 'points_per_game_rank_type',
-                name: "Points per Game Rank Type",
-                width: '200vw'
+                field: 'selected_rank_type',
+                headerName: "Selected Rank Type",
             },
             {
-                id: 'selected_rank',
-                name: "Selected Rank",
-                width: '200vw'
+                field: 'starts_per_90',
+                headerName: "Starts per 90",
             },
             {
-                id: 'selected_rank_type',
-                name: "Selected Rank Type",
-                width: '200vw'
+                field: 'clean_sheets_per_90',
+                headerName: "Clean Sheets per 90",
             },
             {
-                id: 'starts_per_90',
-                name: "Starts per 90",
-                width: '200vw'
+                field: 'news',
+                headerName: "News",
             },
             {
-                id: 'clean_sheets_per_90',
-                name: "Clean Sheets per 90",
-                width: '200vw'
+                field: 'news_added',
+                headerName: "News Added",
             },
             {
-                id: 'news',
-                name: "News",
-                width: '300vw'
+                field: 'cost_change_event',
+                headerName: "Cost Change Event",
             },
             {
-                id: 'news_added',
-                name: "News Added",
-                data: (row) => new Date(row.news_added).toISOString(),
-                width: '200vw'
+                field: 'cost_change_event_fall',
+                headerName: "Cost Change Event Fall",
             },
             {
-                id: 'cost_change_event',
-                name: "Cost Change Event",
-                width: '300vw'
+                field: 'cost_change_start',
+                headerName: "Cost Change Start",
             },
             {
-                id: 'cost_change_event_fall',
-                name: "Cost Change Event Fall",
-                width: '300vw'
+                field: 'cost_change_start_fall',
+                headerName: "Cost Change Start Fall",
             },
-            {
-                id: 'cost_change_start',
-                name: "Cost Change Start",
-                width: '300vw'
-            },
-            {
-                id: 'cost_change_start_fall',
-                name: "Cost Change Start Fall",
-                width: '300vw'
-            }
-        ],
-        data: filteredPlayers,
-        fixedHeader: true,
-        resizable: true,
-        search: true,
-        sort: true,
-        autoWidth: true,
-        pagination: {
-            limit: 10,
-            summary: true
-        }
-    }).render(document.getElementById("dataGrid"));
+          ]
+    };
+
+    // Your Javascript code to create the Data Grid
+    const myGridElement = document.querySelector('#myGrid');
+    grid = agGrid.createGrid(myGridElement, gridOptions);
 }
 
 //Fetch data and render the grid once the data is resolved
-getBootstrap().then(data => {
+getOverview().then(data => {
     teams = data.teams;
     allPlayers = data.elements;
     filteredPlayers = allPlayers;
 
-    // Load the players from the cookie when the page loads
-    loadPlayers();
+    getGameweeks().then(data => {
+        gameweeks = data;
 
-    // Initial display of all filteredPlayers
-    displayPlayers(filteredPlayers);
+        getFixtures().then(data => {
+            fixtures = data;
+
+            selectBestTeam(allPlayers);
+    
+            // Load the players from the cookie when the page loads
+            loadPlayers();
+            
+            // Initial display of all filteredPlayers
+            displayPlayers(filteredPlayers);
+        });
+    });
 }).catch(error => {
     console.error('Error:', error);
 });
