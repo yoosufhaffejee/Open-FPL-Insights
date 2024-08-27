@@ -524,12 +524,12 @@ function displayPlayers(filteredPlayers) {
                 button.className = 'btn btn-primary';
                 button.disabled = myPlayers.some(player => player?.web_name == params.data.web_name) || 
                                   !canAddPlayer(params.data.element_type) || 
-                                  bankBalance <= params.data.now_cost/10;
+                                  bankBalance + 5 <= params.data.now_cost/10;
                 button.innerText = '+';
                 button.addEventListener('click', () => {
                   myPlayers.push(allPlayers.find(player => player.id == params.data.id));
-                  grid.refreshCells();
                   updateTeamUI();
+                  grid.refreshCells();
                   document.getElementById('saveButton').disabled = false;
                   document.getElementById('autoPickButton').disabled = true;
                 });
