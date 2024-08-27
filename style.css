@@ -250,6 +250,7 @@ h5, h6, .actionButton {
 /* Styles for the filters container */
 #filters {
     display: flex;
+    flex-direction: column; /* Stack filters vertically */
     flex-wrap: wrap; /* Allows wrapping of filters on smaller screens */
     justify-content: space-between;
     margin-bottom: 20px;
@@ -270,13 +271,26 @@ h5, h6, .actionButton {
     gap: 10px;
 }
 
+/* Ensure team filter is always above position filter */
+#team-filter {
+    order: 3; /* Flex order property to control placement */
+    margin-bottom: 10px; /* Add space below team filter */
+}
+
+#position-filter {
+    order: 1; /* Flex order property to control placement */
+    margin-bottom: 10px; /* Add space below position filter */
+}
+
 .position-button {
-    padding: 8px 12px;
+    padding: 4px 8px; /* Reduced padding to make the button smaller */
     background-color: #f1f1f1;
     border: 1px solid #ccc;
     border-radius: 4px;
     cursor: pointer;
     transition: background-color 0.3s ease;
+    font-size: 14px; /* Reduced font size to make the text smaller */
+    line-height: 1; /* Adjust line-height for smaller text */
 }
 
 .position-button:hover {
@@ -286,6 +300,7 @@ h5, h6, .actionButton {
 /* Specific styles for the price filter */
 #price-filter {
     display: flex;
+    order: 2; /* Flex order property to control placement */
     align-items: center;
     gap: 10px;
 }
@@ -298,6 +313,7 @@ h5, h6, .actionButton {
     font-weight: bold;
     margin-left: 10px;
 }
+
 
 /* Media Query for Mobile Devices */
 @media (max-width: 768px) {

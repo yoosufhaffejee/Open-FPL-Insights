@@ -9,16 +9,60 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+let selectedGameweek = 1;
+
 document.getElementById('prevGameweek').addEventListener('click', () => {
     // Logic to go to the previous game week
-    console.log('Previous game week');
+    navigateGameweek('prev');
 });
 
 document.getElementById('nextGameweek').addEventListener('click', () => {
     // Logic to go to the next game week
-    console.log('Next game week');
+    navigateGameweek('next');
 });
 
+// Function to handle next and previous gameweek navigation
+function navigateGameweek(direction) {
+    // Update selectedGameweek based on direction
+    if (direction === 'next') {
+        selectedGameweek++;
+    } else if (direction === 'prev') {
+        selectedGameweek--;
+    }
+
+    // Ensure selectedGameweek is within valid range
+    if (selectedGameweek < gameweeks[0].id) {
+        selectedGameweek = gameweeks[gameweeks.length - 1].id;
+    } else if (selectedGameweek > gameweeks[gameweeks.length - 1].id) {
+        selectedGameweek = gameweeks[0].id;
+    }
+
+    // Update gameweek info and deadline
+    updateGameweekInfo();
+    
+    // Call your update function to refresh UI
+    updateTeamUI();
+}
+
+// Function to update the gameweek info and deadline display
+function updateGameweekInfo() {
+    const gameweekInfo = document.getElementById('gameweekInfo');
+    const gameweekDeadline = document.getElementById('gameweekDeadline');
+
+    // Find the gameweek object for the current selected gameweek
+    const currentGameweek = gameweeks.find(gw => gw.id === selectedGameweek);
+
+    if (currentGameweek) {
+        // Update the UI with the current gameweek info
+        gameweekInfo.textContent = `Gameweek ${currentGameweek.id}`;
+        gameweekDeadline.textContent = `Deadline: ${new Date(currentGameweek.deadline_time).toLocaleString()}`;
+    }
+}
+
+// Add event listeners for the filter controls
+document.getElementById('team-select').addEventListener('change', function() {
+    filterByTeam(this.value);
+});
 
 document.querySelectorAll('.position-button').forEach(button => {
     button.addEventListener('click', function() {
@@ -42,6 +86,39 @@ let allPlayers = [];
 let myPlayers = [];
 let filteredPlayers = [];
 
+// Function to populate the team dropdown
+function populateTeamFilter() {
+    const teamSelect = document.getElementById('team-select');
+
+    // Clear any existing options (if needed)
+    teamSelect.innerHTML = ''; 
+
+    // Add the default "All" option
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '0';
+    defaultOption.textContent = 'All';
+    teamSelect.appendChild(defaultOption);
+
+    // Add an option for each team in the teams array
+    teams.forEach(team => {
+        const option = document.createElement('option');
+        option.value = team.id;
+        option.textContent = team.name;
+        teamSelect.appendChild(option);
+    });
+}
+
+
+// Function to filter by team
+function filterByTeam(teamId) {
+    if (teamId === '0') {
+        filteredPlayers = allPlayers;
+    } else {
+        filteredPlayers = allPlayers.filter(player => player.team == teamId);
+    }
+    applyFilters();
+}
+
 // Function to filter by position
 function filterByPosition(position) {
     if (position === '0') {
@@ -60,10 +137,16 @@ function filterByPrice(maxPrice) {
 
 // Function to apply combined filters (position and price)
 function applyFilters() {
+    const teamId = document.getElementById('team-select').value;
     const position = document.querySelector('.position-button[data-position].selected')?.getAttribute('data-position') || '0';
     const maxPrice = document.getElementById('price-range').value;
 
     let result = filteredPlayers;
+
+    // Apply team filter
+    if (teamId !== '0') {
+        result = result.filter(player => player.team == teamId);
+    }
 
     // Apply position filter
     if (position !== '0') {
@@ -136,8 +219,10 @@ function updateTeamUI() {
     let gameweekRating = 0;
     bankBalance = 100;
 
-    // Determine the upcoming gameweeks
-    const upcomingGameweeks = gameweeks.filter(gw => !gw.finished).slice(0, 3);
+    // Determine the upcoming gameweeks based on the selected gameweek
+    const upcomingGameweeks = gameweeks
+        .filter(gw => gw.id >= selectedGameweek) // Get gameweeks from the selected gameweek onwards
+        .slice(0, 3); // Get the current and next two gameweeks
 
     // Iterate through each player
     myPlayers.forEach(player => {
@@ -300,6 +385,10 @@ function removePlayer(player) {
     } else {
         console.log(`Player with ID ${player.Id} not found.`);
     }
+
+    if (myPlayers.length <= 0) {
+        document.getElementById('autoPickButton').disabled = false;
+    }
 }
 
 function captainPlayer(player) {
@@ -356,6 +445,10 @@ function loadPlayers() {
                 ++filledSlots[positionPrefix]
             }
         });
+
+        if (myPlayers.length >= 0) {
+            document.getElementById('autoPickButton').disabled = true;
+        }
         
         updateTeamUI();
     }
@@ -381,10 +474,20 @@ function resetPlayers() {
 
     // Enable the Save button again (if needed)
     document.getElementById('saveButton').disabled = false;
+    document.getElementById('autoPickButton').disabled = false;
+
     updateTeamUI();
 
     // Update Grid
-    grid.forceRender();
+    grid.refreshCells();
+}
+
+function autoPickPlayers() {
+    document.getElementById('autoPickButton').disabled = true;
+    if (myPlayers.length <= 0) {
+        myPlayers = selectBestTeam(allPlayers);
+        updateTeamUI();
+    }
 }
 
 let grid = null;
@@ -428,6 +531,7 @@ function displayPlayers(filteredPlayers) {
                   grid.refreshCells();
                   updateTeamUI();
                   document.getElementById('saveButton').disabled = false;
+                  document.getElementById('autoPickButton').disabled = true;
                 });
                 return button;
               }
@@ -702,16 +806,18 @@ function displayPlayers(filteredPlayers) {
 //Fetch data and render the grid once the data is resolved
 getOverview().then(data => {
     teams = data.teams;
+    populateTeamFilter();
+
     allPlayers = data.elements;
     filteredPlayers = allPlayers;
 
     getGameweeks().then(data => {
         gameweeks = data;
+        selectedGameweek = getUpcomingGameweek(gameweeks).id;
+        updateGameweekInfo();
 
         getFixtures().then(data => {
             fixtures = data;
-
-            selectBestTeam(allPlayers);
     
             // Load the players from the cookie when the page loads
             loadPlayers();
@@ -723,3 +829,9 @@ getOverview().then(data => {
 }).catch(error => {
     console.error('Error:', error);
 });
+
+// Function to get the upcoming gameweek where 'finished' is false
+function getUpcomingGameweek(gameweeks) {
+    // Find the first gameweek where 'finished' is false
+    return gameweeks.find(gameweek => gameweek.finished === false);
+}

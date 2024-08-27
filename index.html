@@ -45,13 +45,12 @@
     <div class="gameweek-container">
         <button class="arrow-button" id="prevGameweek">&lt;</button>
         <div class="gameweek-info-container">
-            <span class="gameweek-info">Gameweek 2</span>
-            <span class="gameweek-deadline">Deadline: Sat 24 Aug 12:00</span>
+            <span class="gameweek-info" id="gameweekInfo">Gameweek 2</span>
+            <span class="gameweek-deadline" id="gameweekDeadline">Deadline: 01/01/2024, 11:00:00</span>
         </div>
         <button class="arrow-button" id="nextGameweek">&gt;</button>
     </div>
 
-    
     <!-- Team Information -->
     <div class="team-info-container">
         <div class="team-info">
@@ -509,6 +508,7 @@
     <div class="button-container text-center">
         <button id="resetButton" class="btn btn-danger" onclick="resetPlayers()">Reset</button>
         <button id="saveButton" class="btn btn-primary" onclick="savePlayers()">Save</button>
+        <button id="autoPickButton" class="btn btn-success" onclick="autoPickPlayers()">Auto Pick</button>
     </div>
 
     <div id="filters">
@@ -528,8 +528,18 @@
         <!-- Price Filter -->
         <div id="price-filter" class="filter">
             <label for="price-range">Price:</label>
-            <input type="range" id="price-range" min="4.0" max="15.0" step="0.5" value="15.0">
-            <span id="price-value">15.0</span>
+            <input type="range" id="price-range" min="3.5" max="15.5" step="0.5" value="15.5">
+            <span id="price-value">15.5</span>
+        </div>
+
+        <!-- Team Filter -->
+        <div id="team-filter" class="filter">
+            <label for="team-select">Team:</label>
+            &nbsp;
+            <select id="team-select">
+                <option value="0">All</option>
+                <!-- Add options dynamically based on the teams array in JavaScript -->
+            </select>
         </div>
     </div>
 
