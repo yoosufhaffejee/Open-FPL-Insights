@@ -66,7 +66,9 @@ const getManagerHistory = async (id) => {
     return data;
 }
 
-const getLeague = async (id) => {
-    const data = await doCORSRequest(`${reqType.league}${id}/standings/`);
+const getLeague = async (id, pageId = 1) => {
+    const baseUrl = `${reqType.league}${id}/standings/`;
+    const url = pageId ? `${baseUrl}?page_new_entries=1&page_standings=${pageId}&phase=1` : baseUrl;
+    const data = await doCORSRequest(url);
     return data;
-}
+};

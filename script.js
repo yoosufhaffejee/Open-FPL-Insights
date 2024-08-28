@@ -498,7 +498,7 @@ function displayPlayers(filteredPlayers) {
     if (grid) {
         grid.updateGridOptions({
             rowData: filteredPlayers
-        })
+        });
         return;
     }
 

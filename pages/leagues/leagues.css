@@ -1,0 +1,15 @@
+body {
+    padding-top: 20px;
+}
+
+#leagueForm {
+    text-align: center;
+}
+
+#playerLeaguesContainer {
+    margin-top: 20px;
+}
+
+.ag-cell-clickable {
+    cursor: pointer;
+}
