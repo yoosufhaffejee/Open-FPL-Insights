@@ -39,7 +39,10 @@ function navigateGameweek(direction) {
 
     // Update gameweek info and deadline
     updateGameweekInfo();
-    
+
+    // Load the team for the current selectedGameweek
+    loadPlayers(selectedGameweek);
+
     // Call your update function to refresh UI
     updateTeamUI();
 }
@@ -184,151 +187,191 @@ const maxSlots = {
     fwd: 3  // Max 3 Forwards
 };
 
+// Track available slots by position
+const availableSlots = {
+    gk: ['pos1', 'pos2'],
+    def: ['pos3', 'pos4', 'pos5', 'pos6', 'pos7'],
+    mid: ['pos8', 'pos9', 'pos10', 'pos11', 'pos12'],
+    fwd: ['pos13', 'pos14', 'pos15']
+};
+
+// Function to check if a player can be added to a specific position
 function canAddPlayer(positionType) {
     const positionPrefix = positionMap[positionType];
-    return filledSlots[positionPrefix] < maxSlots[positionPrefix];
+    return positionPrefix && filledSlots[positionPrefix] < availableSlots[positionPrefix].length;
 }
 
-function updateTeamUI() {
-    // Reset the filledSlots count at the start of each update
-    for (let position in filledSlots) {
-        filledSlots[position] = 0;
+// Function to add a player
+function addPlayer(player) {
+    const positionPrefix = positionMap[player.element_type];
+
+    // Check if the player already exists in the team
+    const playerExists = myPlayers.some(existingPlayer => existingPlayer.id === player.id);
+    if (playerExists) {
+        console.log(`Player ${player.web_name} is already in the team.`);
+        return; // Exit the function if the player is already in the team
     }
 
-    // Clear UI
-    var playerElements = document.querySelectorAll(".player");
-    playerElements.forEach(playerElement => {
-        if (playerElement) {
-            // Update the player name
-            playerElement.querySelector('h5').textContent = 'Player';
+    // Check if there are available slots for this player type
+    if (positionPrefix && canAddPlayer(player.element_type)) {
+        const currentFilledSlots = filledSlots[positionPrefix];
 
-            // Update the player image (e.g., jersey image)
+        // Assign the next available slot for this position
+        const slotId = availableSlots[positionPrefix][currentFilledSlots];
+
+        if (slotId) {  // Ensure slotId is valid and available
+            // Assign the slot ID to the player
+            player.slotId = slotId;
+
+            // Determine if the player is a substitute based on their position
+            player.isSub = ['pos2', 'pos7', 'pos12', 'pos15'].includes(slotId);
+
+            // Add the player to the myPlayers array
+            myPlayers.push(player);
+
+            // Update the filled slots count
+            filledSlots[positionPrefix]++;
+
+            // Update the UI to reflect the new player
+            updateTeamUI();
+        } else {
+            console.log(`No available slots for ${positionPrefix} to add player ${player.web_name}.`);
+        }
+    } else {
+        console.log(`Cannot add player ${player.web_name}. No available slots or invalid position.`);
+    }
+}
+
+// Function to remove a player
+function removePlayer(player) {
+    // Find the index of the player to remove
+    const playerIndex = myPlayers.findIndex(p => p.id === player.id);
+
+    // Check if the player exists in the array
+    if (playerIndex !== -1) {
+        // Get the player's assigned slot ID
+        const positionPrefix = positionMap[player.element_type];
+        const slotId = myPlayers[playerIndex].slotId;
+
+        // Remove the player from the array
+        myPlayers.splice(playerIndex, 1);
+
+        // Decrement the filled slot count for this position
+        filledSlots[positionPrefix]--;
+
+        // Clear the player slot in the UI
+        const playerElement = document.getElementById(slotId);
+        if (playerElement) {
+            playerElement.querySelector('h5').textContent = 'Player';
+            playerElement.querySelector('img').src = 'assets/empty-jersey.png';
+            playerElement.querySelectorAll('.fixture').forEach(fixtureElement => {
+                fixtureElement.querySelector('.predicted-points').textContent = 0;
+                fixtureElement.querySelector('.fixture-detail').textContent = 'FIX (H)';
+            });
+        }
+
+        // Update the UI to reflect the changes
+        updateTeamUI();
+    } else {
+        console.log(`Player with ID ${player.id} not found.`);
+    }
+
+    // Check if any players are left; if not, enable the 'autoPickButton'
+    if (myPlayers.length <= 0) {
+        document.getElementById('autoPickButton').disabled = false;
+    }
+}
+
+// Function to update the team UI
+function updateTeamUI() {
+    // Clear UI and reset player slots
+    document.querySelectorAll(".player").forEach(playerElement => {
+        if (playerElement) {
+            // Reset player details
+            playerElement.querySelector('h5').textContent = 'Player';
             playerElement.querySelector('img').src = 'assets/empty-jersey.png';
 
-            // Update the fixtures and predicted points
-            const fixtureElements = playerElement.querySelectorAll('.fixture');
-            fixtureElements.forEach(fixtureElement => {
+            // Reset fixture details
+            playerElement.querySelectorAll('.fixture').forEach(fixtureElement => {
                 fixtureElement.querySelector('.predicted-points').textContent = 0;
                 fixtureElement.querySelector('.fixture-detail').textContent = 'FIX (H)';
             });
         }
     });
 
-    let overallRating = 0;
+    let bankBalance = 100;
     let predictedPoints = 0;
-    let gameweekRating = 0;
-    bankBalance = 100;
 
-    // Determine the upcoming gameweeks based on the selected gameweek
-    const upcomingGameweeks = gameweeks
-        .filter(gw => gw.id >= selectedGameweek) // Get gameweeks from the selected gameweek onwards
-        .slice(0, 3); // Get the current and next two gameweeks
+    // Determine upcoming gameweeks
+    const upcomingGameweeks = gameweeks.filter(gw => gw.id >= selectedGameweek).slice(0, 3);
 
-    // Iterate through each player
+    // Iterate through each player and update the UI
     myPlayers.forEach(player => {
-        // Update bank balance and format to 2 decimal places
-        bankBalance -= player.now_cost / 10;
-        const formattedBalance = bankBalance.toFixed(1);
-        updateTeamInfo("Bank Balance", formattedBalance + "m");
+        const slotId = player.slotId; // Use stored slotId directly
+        const playerElement = document.getElementById(slotId);
 
-        // Calc points
-        predictedPoints += ((parseFloat(player.ep_next) + parseFloat(player.form))/2);
-        updateTeamInfo("Predicted Points", parseInt(predictedPoints));
+        if (playerElement) {
+            // Update the player name and image
+            playerElement.querySelector('h5').textContent = `${player.web_name} (${(player.now_cost / 10).toFixed(1)}m)`;
+            playerElement.querySelector('img').src = `https://resources.premierleague.com/premierleague/photos/players/110x140/p${player.code}.png`;
 
-        const positionPrefix = positionMap[player.element_type];
-
-        if (positionPrefix) {
-            // Determine the correct slot ID
-            const slotId = `${positionPrefix}${++filledSlots[positionPrefix]}`;
-
-            // Get the player element by ID
-            const playerElement = document.getElementById(slotId);
-
-            if (playerElement) {
-                // Update the player name
-                playerElement.querySelector('h5').textContent = `${player.web_name} (${player.now_cost/10}m)` || 'Player (7.0m)';
-
-                // Update the player image (e.g., jersey image)
-                playerElement.querySelector('img').src = `https://resources.premierleague.com/premierleague/photos/players/110x140/p${player.code}.png` || 'assets/empty-jersey.png';
-
-                // Update the fixtures and predicted points
-                const fixtureElements = playerElement.querySelectorAll('.fixture');
-                
-                // Loop through each upcoming gameweek and find relevant fixtures for the player
-                upcomingGameweeks.forEach((upcomingGameweek, index) => {
+            // Update fixtures and predicted points
+            playerElement.querySelectorAll('.fixture').forEach((fixtureElement, index) => {
+                const upcomingGameweek = upcomingGameweeks[index];
+                if (upcomingGameweek) {
                     const playerFixture = fixtures.find(fixture => 
-                        fixture.event === upcomingGameweek.id && 
+                        fixture.event === upcomingGameweek.id &&
                         (fixture.team_a === player.team || fixture.team_h === player.team)
                     );
 
-                    if (playerFixture && fixtureElements[index]) {
-                        let playerTeam = teams.find(team => team.id === player.team);
+                    if (playerFixture) {
+                        const opponentTeam = teams.find(team => 
+                            team.id === (playerFixture.team_a === player.team ? playerFixture.team_h : playerFixture.team_a)
+                        );
 
-                        // Determine if the match is home or away
-                        let isHomeFixture = false;
-                        let opponentTeam;
+                        fixtureElement.querySelector('.fixture-detail').textContent = 
+                            `${opponentTeam.short_name} (${playerFixture.team_a === player.team ? 'A' : 'H'})`;
+                        
+                        const initialExpectedPoints = (parseFloat(player.form) + parseFloat(player.ep_next)) / 2;
+                        const strengthAdjustment = (opponentTeam.strength * 10) / 100;
+                        const expectedPoints = opponentTeam.strength <= 3 
+                            ? initialExpectedPoints + (initialExpectedPoints * strengthAdjustment)
+                            : initialExpectedPoints - (initialExpectedPoints * strengthAdjustment);
 
-                        if (playerFixture.team_a === player.team) {
-                            const homeTeam = teams.find(team => team.id === playerFixture.team_h);
-                            opponentTeam = homeTeam;
-                            fixtureElements[index].querySelector('.fixture-detail').textContent = `${homeTeam.short_name} (A)`;
-                        } else {
-                            isHomeFixture = true;
-                            const awayTeam = teams.find(team => team.id === playerFixture.team_a);
-                            opponentTeam = awayTeam;
-                            fixtureElements[index].querySelector('.fixture-detail').textContent = `${awayTeam.short_name} (H)`;
-                        }
-
-                        // Set predicted points
-                        if (index === 0) {
-                            fixtureElements[index].querySelector('.predicted-points').textContent = player.ep_next;
-                        }
-                        if (index === 1) {
-                            let expectedPoints = 0;
-                            if (opponentTeam.strength <= 3) {
-                                let initialExpectedPoints = (parseFloat(player.form) + parseFloat(player.ep_next)) / 2;
-                                let strengthAdjustment = (opponentTeam.strength * 10) / 100;
-                                expectedPoints = initialExpectedPoints + (initialExpectedPoints * strengthAdjustment);
-                            }
-                            else {
-                                let initialExpectedPoints = (parseFloat(player.form) + parseFloat(player.ep_next)) / 2;
-                                let strengthAdjustment = (opponentTeam.strength * 10) / 100;
-                                expectedPoints = initialExpectedPoints - (initialExpectedPoints * strengthAdjustment);
-                            }
-
-                            fixtureElements[index].querySelector('.predicted-points').textContent = expectedPoints.toFixed(1);
-                        }
-                        if (index === 2) {
-                            let expectedPoints = 0;
-                            if (opponentTeam.strength <= 3) {
-                                let initialExpectedPoints = (parseFloat(player.form) + parseFloat(player.ep_next)) / 2;
-                                let strengthAdjustment = (opponentTeam.strength * 10) / 100;
-                                expectedPoints = initialExpectedPoints + (initialExpectedPoints * strengthAdjustment);
-                            }
-                            else {
-                                let initialExpectedPoints = (parseFloat(player.form) + parseFloat(player.ep_next)) / 2;
-                                let strengthAdjustment = (opponentTeam.strength * 10) / 100;
-                                expectedPoints = initialExpectedPoints - (initialExpectedPoints * strengthAdjustment);
-                            }
-
-                            fixtureElements[index].querySelector('.predicted-points').textContent = expectedPoints.toFixed(1);
-                        }
+                        fixtureElement.querySelector('.predicted-points').textContent = expectedPoints.toFixed(1);
                     }
-                });
+                }
+            });
 
-                // Set up event listeners or other dynamic behaviors
-                setupPlayerActions(playerElement, player);
-            }
+            // Setup player actions (like swapping players)
+            setupPlayerActions(playerElement, player);
         }
+
+        // Update bank balance
+        bankBalance -= player.now_cost / 10;
+        updateTeamInfo("Bank Balance", `${bankBalance.toFixed(1)}m`);
+
+        // Update predicted points
+        predictedPoints += (parseFloat(player.ep_next) + parseFloat(player.form)) / 2;
+        updateTeamInfo("Predicted Points", predictedPoints.toFixed(0));
     });
 }
+
+playerSwap = [];
 
 function setupPlayerActions(playerElement, player) {
     // Example: Set up swap button
     const swapButton = playerElement.querySelector('.icon-button .fa-exchange-alt');
     if (swapButton) {
         swapButton.addEventListener('click', () => {
-            swapPlayer(player);
+            if (!playerSwap.some(existingPlayer => existingPlayer.id === player.id)) {
+                playerSwap.push(player);
+            }
+
+            if (playerSwap.length >= 2) {
+                swapPlayer(playerSwap[0].slotId, playerSwap[1].slotId);
+                playerSwap = [];
+            }
         });
     }
 
@@ -367,28 +410,60 @@ function setupPlayerActions(playerElement, player) {
     // Add other buttons' functionalities similarly
 }
 
-function swapPlayer(player) {
+// Function to swap two players between positions
+// Function to swap two players between positions
+function swapPlayer(pos1, pos2) {
+    playerSwap = [];
+    // Find players based on the positions provided
+    const player1 = myPlayers.find(player => player.slotId === pos1);
+    const player2 = myPlayers.find(player => player.slotId === pos2);
 
-}
-
-function removePlayer(player) {
-    // Find the index of the player to remove
-    const playerIndex = myPlayers.findIndex(p => p.id === player.id);
-    
-    // Check if the player exists in the array
-    if (playerIndex !== -1) {
-        // Remove the player from the array
-        myPlayers.splice(playerIndex, 1);
-        
-        // Optionally, update the UI to reflect the change
-        updateTeamUI();
-    } else {
-        console.log(`Player with ID ${player.Id} not found.`);
+    // Validate if both players exist
+    if (!player1 || !player2) {
+        console.log("One or both positions are empty. Cannot swap.");
+        return;
     }
 
-    if (myPlayers.length <= 0) {
-        document.getElementById('autoPickButton').disabled = false;
+    // Validate that goalkeepers can only be swapped with other goalkeepers
+    if ((player1.element_type === 1 && player2.element_type !== 1) ||
+        (player1.element_type !== 1 && player2.element_type === 1)) {
+        console.log("Invalid swap: Only goalkeepers can be swapped with each other.");
+        return;
     }
+
+    // Perform the swap by swapping the slot IDs
+    [player1.slotId, player2.slotId] = [player2.slotId, player1.slotId];
+
+    // Swap the isSub status as well
+    [player1.isSub, player2.isSub] = [player2.isSub, player1.isSub];
+
+    debugger;
+    // Recalculate the field and subs after swap
+    const fieldPlayers = myPlayers.filter(player => !player.isSub);
+    const playerCounts = { 1: 0, 2: 0, 3: 0, 4: 0 };
+
+    // Count players of each type currently on the field
+    fieldPlayers.forEach(player => {
+        playerCounts[player.element_type]++;
+    });
+
+    const minConstraints = { 1: 1, 2: 3, 3: 2, 4: 1 };
+    const maxConstraints = { 1: 1, 2: 5, 3: 5, 4: 3 };
+
+    // Check for min and max constraints
+    for (const type in playerCounts) {
+        if (playerCounts[type] < minConstraints[type] || playerCounts[type] > maxConstraints[type]) {
+            console.log("Invalid swap: This swap would violate formation constraints.");
+            // Swap back to original positions if constraints are violated
+            [player1.slotId, player2.slotId] = [player2.slotId, player1.slotId];
+            [player1.isSub, player2.isSub] = [player2.isSub, player1.isSub];
+            return;
+        }
+    }
+
+    // Update UI to reflect the swap
+    updateTeamUI();
+    console.log(`Players swapped successfully between positions ${pos1} and ${pos2}.`);
 }
 
 function captainPlayer(player) {
@@ -423,34 +498,63 @@ function updateTeamInfo(label, newValue) {
 // updateTeamInfo("GW Rating", "83%");
 // updateTeamInfo("Bank Balance", bankBalance + "m");
 
-function loadPlayers() {
-    // Get the cookies and split them into an array
-    const cookies = document.cookie.split(';');
+function loadPlayers(gameweek = selectedGameweek) {
+    // Function to parse cookies
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
 
-    // Find the myPlayers cookie
-    const myPlayersCookie = cookies.find(cookie => cookie.trim().startsWith('myPlayers='));
+    // Attempt to load the cookie for the specified gameweek
+    let myPlayersCookie = getCookie(`myPlayersGW${gameweek}`);
+
+    // If no data exists for the specified gameweek, load the last saved gameweek
+    if (!myPlayersCookie) {
+        // Loop backwards through gameweeks to find the most recent saved team
+        for (let gw = gameweek - 1; gw >= gameweeks[0].id; gw--) {
+            myPlayersCookie = getCookie(`myPlayersGW${gw}`);
+            if (myPlayersCookie) break;
+        }
+    }
+
+    // If still no data found, default to the upcoming gameweek
+    if (!myPlayersCookie) {
+        const upcomingGameweek = getUpcomingGameweek(gameweeks);
+        if (upcomingGameweek) {
+            myPlayersCookie = getCookie(`myPlayersGW${upcomingGameweek.id}`);
+        }
+    }
 
     if (myPlayersCookie) {
-        // Extract the JSON string from the cookie and parse it
-        const idsJSON = myPlayersCookie.split('=')[1];
-        const playerIds = JSON.parse(idsJSON);
+        // Parse the JSON string
+        const { players } = JSON.parse(myPlayersCookie);
 
         // Reconstruct myPlayers using player IDs from allPlayers
-        myPlayers = playerIds.map(id => allPlayers.find(player => player.id === id));
+        myPlayers = players.map(({ id, slotId, isSub }) => {
+            const player = allPlayers.find(player => player.id === id);
+            if (player) {
+                player.slotId = slotId;
+                player.isSub = isSub; // Set the isSub property
 
-        myPlayers.forEach(player => {
-            // Calculate filled slots
-            const positionPrefix = positionMap[player.element_type];
-            if (positionPrefix) {
-                ++filledSlots[positionPrefix]
+                // Calculate filled slots
+                const positionPrefix = positionMap[player.element_type];
+                if (positionPrefix) {
+                    filledSlots[positionPrefix]++;
+                }
             }
-        });
+            return player;
+        }).filter(player => player !== undefined); // Filter out any undefined players
 
-        if (myPlayers.length >= 0) {
-            document.getElementById('autoPickButton').disabled = true;
-        }
-        
+        debugger;
+        // Ensure the Auto Pick button is disabled if players are loaded
+        document.getElementById('autoPickButton').disabled = myPlayers.length > 0;
+
+        // Update the UI to reflect the loaded team
         updateTeamUI();
+    } else {
+        // No data found for any gameweek, handle this case if needed
+        console.log('No saved team data available.');
     }
 }
 
@@ -458,34 +562,70 @@ function savePlayers() {
     // Disable the Save button
     document.getElementById('saveButton').disabled = true;
 
-    // Extract player IDs from the myPlayers array
-    const playerIds = myPlayers.map(player => player.id);
+    // Extract player IDs, slotIds, and isSub from the myPlayers array
+    const playerData = myPlayers.map(player => ({
+        id: player.id,
+        slotId: player.slotId,
+        isSub: player.isSub // Include the isSub property
+    }));
 
-    // Convert the playerIds array to a JSON string
-    const idsJSON = JSON.stringify(playerIds);
+    // Convert the playerData array to a JSON string
+    const dataJSON = JSON.stringify({ selectedGameweek, players: playerData });
 
     // Save the JSON string in a cookie
-    document.cookie = `myPlayers=${idsJSON}; path=/; max-age=31536000`; // Cookie expires in 1 year
+    document.cookie = `myPlayersGW${selectedGameweek}=${dataJSON}; path=/; max-age=31536000`; // Cookie expires in 1 year
 }
+
 
 function resetPlayers() {
     // Reset your myPlayers array (example: clear all players)
     myPlayers = [];
 
-    // Enable the Save button again (if needed)
+    // Reset filledSlots count for each position
+    for (let position in filledSlots) {
+        filledSlots[position] = 0;
+    }
+
+    // Enable the Save and Auto Pick buttons again
     document.getElementById('saveButton').disabled = false;
     document.getElementById('autoPickButton').disabled = false;
 
     updateTeamUI();
 
-    // Update Grid
-    grid.refreshCells();
+    // Update Grid if needed
+    if (typeof grid !== 'undefined') {
+        grid.refreshCells();
+    }
 }
 
+// Function to auto-pick players
 function autoPickPlayers() {
     document.getElementById('autoPickButton').disabled = true;
+
     if (myPlayers.length <= 0) {
+        // Select the best team from allPlayers
         myPlayers = selectBestTeam(allPlayers);
+
+        // Assign slotIds to the auto-picked players
+        myPlayers.forEach((player, index) => {
+            const positionPrefix = positionMap[player.element_type];
+            if (positionPrefix && filledSlots[positionPrefix] < maxSlots[positionPrefix]) {
+                // Assign the next available slot for this position
+                const slotId = availableSlots[positionPrefix][filledSlots[positionPrefix]];
+
+                // Set the player's slotId
+                player.slotId = slotId;
+
+                // Determine if the player is a substitute based on their position
+                player.isSub = ['pos2', 'pos7', 'pos12', 'pos15'].includes(slotId);
+
+                // Increment filledSlots count if player is not a sub
+                if (!player.isSub) {
+                    filledSlots[positionPrefix]++;
+                }
+            }
+        });
+
         updateTeamUI();
     }
 }
@@ -527,7 +667,8 @@ function displayPlayers(filteredPlayers) {
                                   bankBalance + 5 <= params.data.now_cost/10;
                 button.innerText = '+';
                 button.addEventListener('click', () => {
-                  myPlayers.push(allPlayers.find(player => player.id == params.data.id));
+                  //myPlayers.push(allPlayers.find(player => player.id == params.data.id));
+                  addPlayer(allPlayers.find(player => player.id == params.data.id));
                   updateTeamUI();
                   grid.refreshCells();
                   document.getElementById('saveButton').disabled = false;

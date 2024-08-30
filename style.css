@@ -212,6 +212,25 @@ h5, h6, .actionButton {
         padding: 10px; /* Adjust padding on mobile */
     }
 
+    .icon-button {
+        background: none;
+        border: none;
+        font-size: 0.7em;
+        color: #333;
+        cursor: pointer;
+        margin: 0 3px; /* Adjust spacing between icons */
+        pointer-events: auto; /* Allow clicks on the button itself */
+    }
+
+    .fixture-detail {
+        font-size: 0.5em; /* Adjust font size if needed */
+    }
+
+    .predicted-points {
+        font-weight: bold;
+        font-size: 0.6em; /* Adjust font size if needed */
+    }
+
     .row {
         flex-direction: row;
         flex-wrap: wrap;
@@ -220,7 +239,8 @@ h5, h6, .actionButton {
 
     .player {
         flex: 1 0 20%; /* Adjust player size */
-        margin-bottom: 10px;
+        margin-bottom: 5px;
+        max-width: 70px;
     }
 
     .player img {

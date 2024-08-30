@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Open FPL Insights</title>
+    <link rel="icon" href="assets/favicon.png" type="image/x-icon">
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- AgGrid CSS -->
@@ -76,7 +78,7 @@
         <div class="pitch">
             <!-- Goalkeeper Row -->
             <div class="row gk">
-                <div id="gk1" class="player">
+                <div id="pos1" class="player">
                     <img src="assets/empty-jersey.png" alt="Defender">
                     <h5>Player</h5>
                     <!-- Fixtures and predicted points -->
@@ -107,7 +109,7 @@
 
             <!-- Defense Row -->
             <div class="row defense">
-                <div id="def1" class="player">
+                <div id="pos3" class="player">
                     <img src="assets/empty-jersey.png" alt="Defender">
                     <h5>Player</h5>
                     <!-- Fixtures and predicted points -->
@@ -134,7 +136,7 @@
                         <button class="icon-button"><i class="fas fa-info-circle"></i></button>
                     </div>
                 </div>
-                <div id="def2" class="player">
+                <div id="pos4" class="player">
                     <img src="assets/empty-jersey.png" alt="Defender">
                     <h5>Player</h5>
                     <!-- Fixtures and predicted points -->
@@ -161,7 +163,7 @@
                         <button class="icon-button"><i class="fas fa-info-circle"></i></button>
                     </div>
                 </div>
-                <div id="def3" class="player">
+                <div id="pos5" class="player">
                     <img src="assets/empty-jersey.png" alt="Defender">
                     <h5>Player</h5>
                     <!-- Fixtures and predicted points -->
@@ -188,7 +190,7 @@
                         <button class="icon-button"><i class="fas fa-info-circle"></i></button>
                     </div>
                 </div>
-                <div id="def4" class="player">
+                <div id="pos6" class="player">
                     <img src="assets/empty-jersey.png" alt="Defender">
                     <h5>Player</h5>
                     <!-- Fixtures and predicted points -->
@@ -219,7 +221,7 @@
 
             <!-- Midfield Row -->
             <div class="row midfield">
-                <div id="mid1" class="player">
+                <div id="pos8" class="player">
                     <img src="assets/empty-jersey.png" alt="Midfielder">
                     <h5>Player</h5>
                     <!-- Fixtures and predicted points -->
@@ -246,7 +248,7 @@
                         <button class="icon-button"><i class="fas fa-info-circle"></i></button>
                     </div>
                 </div>
-                <div id="mid2" class="player">
+                <div id="pos9" class="player">
                     <img src="assets/empty-jersey.png" alt="Midfielder">
                     <h5>Player</h5>
                     <!-- Fixtures and predicted points -->
@@ -273,7 +275,7 @@
                         <button class="icon-button"><i class="fas fa-info-circle"></i></button>
                     </div>
                 </div>
-                <div id="mid3" class="player">
+                <div id="pos10" class="player">
                     <img src="assets/empty-jersey.png" alt="Midfielder">
                     <h5>Player</h5>
                     <!-- Fixtures and predicted points -->
@@ -300,7 +302,7 @@
                         <button class="icon-button"><i class="fas fa-info-circle"></i></button>
                     </div>
                 </div>
-                <div id="mid4" class="player">
+                <div id="pos11" class="player">
                     <img src="assets/empty-jersey.png" alt="Midfielder">
                     <h5>Player</h5>
                     <!-- Fixtures and predicted points -->
@@ -331,7 +333,7 @@
 
             <!-- Attack Row -->
             <div class="row attack">
-                <div id="fwd1" class="player">
+                <div id="pos13" class="player">
                     <img src="assets/empty-jersey.png" alt="Attacker">
                     <h5>Player</h5>
                     <!-- Fixtures and predicted points -->
@@ -358,7 +360,7 @@
                         <button class="icon-button"><i class="fas fa-info-circle"></i></button>
                     </div>
                 </div>
-                <div id="fwd2" class="player">
+                <div id="pos14" class="player">
                     <img src="assets/empty-jersey.png" alt="Attacker">
                     <h5>Player</h5>
                     <!-- Fixtures and predicted points -->
@@ -392,7 +394,7 @@
     <!-- Subs Row -->
     <div class="subs-container">
         <div class="row subs">
-            <div id="gk2" class="player">
+            <div id="pos2" class="player">
                 <img src="assets/empty-jersey.png" alt="Sub">
                 <h5>Player</h5>
                 <!-- Fixtures and predicted points -->
@@ -419,7 +421,7 @@
                     <button class="icon-button"><i class="fas fa-info-circle"></i></button>
                 </div>
             </div>
-            <div id="def5" class="player">
+            <div id="pos7" class="player">
                 <img src="assets/empty-jersey.png" alt="Sub">
                 <h5>Player</h5>
                 <!-- Fixtures and predicted points -->
@@ -446,7 +448,7 @@
                     <button class="icon-button"><i class="fas fa-info-circle"></i></button>
                 </div>
             </div>
-            <div id="mid5" class="player">
+            <div id="pos12" class="player">
                 <img src="assets/empty-jersey.png" alt="Sub">
                 <h5>Player</h5>
                 <!-- Fixtures and predicted points -->
@@ -473,7 +475,7 @@
                     <button class="icon-button"><i class="fas fa-info-circle"></i></button>
                 </div>
             </div>
-            <div id="fwd3" class="player">
+            <div id="pos15" class="player">
                 <img src="assets/empty-jersey.png" alt="Sub">
                 <h5>Player</h5>
                 <!-- Fixtures and predicted points -->
@@ -545,13 +547,10 @@
     <!-- Grid container -->
     <div id="myGrid" class="ag-theme-alpine" style="height: 500px; width: auto;"></div>
 
-    <div id="dataGrid"></div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.js"></script>
     <script src="API/requests.js"></script>
     <script src="Algorithms/autoPick.js"></script>
     <script src="script.js"></script>
 </body>
-
 </html>
