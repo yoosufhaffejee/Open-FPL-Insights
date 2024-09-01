@@ -319,29 +319,64 @@ function updateTeamUI() {
             playerElement.querySelectorAll('.fixture').forEach((fixtureElement, index) => {
                 const upcomingGameweek = upcomingGameweeks[index];
                 if (upcomingGameweek) {
-                    const playerFixture = fixtures.find(fixture => 
-                        fixture.event === upcomingGameweek.id &&
-                        (fixture.team_a === player.team || fixture.team_h === player.team)
-                    );
+                    let isHome = false; // Declare isHome outside if you intend to use it later
+
+                    const playerFixture = fixtures.find(fixture => {
+                        // Check if the fixture corresponds to the upcoming gameweek
+                        if (fixture.event === upcomingGameweek.id) {
+                            // Check if the player's team is the away team
+                            if (fixture.team_a === player.team) {
+                                return true; // Found a matching fixture
+                            }
+
+                            // Check if the player's team is the home team
+                            if (fixture.team_h === player.team) {
+                                isHome = true; // Set isHome to true if the player's team is the home team
+                                return true; // Found a matching fixture
+                            }
+                        }
+                        return false; // Continue searching if no match is found
+                    });
+
 
                     if (playerFixture) {
                         const opponentTeam = teams.find(team => 
                             team.id === (playerFixture.team_a === player.team ? playerFixture.team_h : playerFixture.team_a)
                         );
 
-                        fixtureElement.querySelector('.fixture-detail').textContent = 
-                            `${opponentTeam.short_name} (${playerFixture.team_a === player.team ? 'A' : 'H'})`;
+                        fixtureElement.querySelector('.fixture-detail').textContent = `${opponentTeam.short_name} (${playerFixture.team_a === player.team ? 'A' : 'H'})`;
                         
-                        const initialExpectedPoints = (parseFloat(player.form) + parseFloat(player.ep_next)) / 2;
-                        const strengthAdjustment = (opponentTeam.strength * 10) / 100;
-                        const expectedPoints = opponentTeam.strength <= 3 
-                            ? initialExpectedPoints + (initialExpectedPoints * strengthAdjustment)
-                            : initialExpectedPoints - (initialExpectedPoints * strengthAdjustment);
+                        let initialExpectedPoints = getExpectedPoints(player, playerFixture);
+                        if (getUpcomingGameweek() == upcomingGameweek) {
+                            let formBasedPoints = (parseFloat(player.form) + parseFloat(player.ep_next)) / 2;
+                            initialExpectedPoints = (initialExpectedPoints + formBasedPoints) / 2;
+                        }
 
-                        fixtureElement.querySelector('.predicted-points').textContent = expectedPoints.toFixed(1);
+                        const strengthAdjustmentHA = (opponentTeam.strength * 10) / 100;
+                        const strengthAdjustment10 = (opponentTeam.strength * 10) / 100;
+                        const strengthAdjustment15 = (opponentTeam.strength * 15) / 100;
+                        const strengthAdjustment20 = (opponentTeam.strength * 20) / 100;
+
+                        if (opponentTeam.strength == 2) {
+                            initialExpectedPoints += (initialExpectedPoints * strengthAdjustment20);
+                        }
+
+                        if (opponentTeam.strength == 4) {
+                            initialExpectedPoints -= (initialExpectedPoints * strengthAdjustment10)
+                        }
+
+                        if (opponentTeam.strength == 5) {
+                            initialExpectedPoints -= (initialExpectedPoints * strengthAdjustment15)
+                        }
+
+                        if (isHome) {
+                            initialExpectedPoints += (initialExpectedPoints * strengthAdjustmentHA)
+                        }
+
+                        fixtureElement.querySelector('.predicted-points').textContent = initialExpectedPoints.toFixed(1);
 
                         if (index == 0 && !player.isSub) {
-                            predictedPoints += expectedPoints;
+                            predictedPoints += initialExpectedPoints;
                         }
                     }
                 }
@@ -447,7 +482,6 @@ function swapPlayerHTML(playerId1, playerId2) {
     parent2.replaceChild(player1, placeholder2);
 }
 
-
 // Function to swap two players between positions
 function swapPlayer(pos1, pos2) {
     document.getElementById('saveButton').disabled = false;
@@ -476,6 +510,7 @@ function swapPlayer(pos1, pos2) {
     // Swap the isSub status as well
     [player1.isSub, player2.isSub] = [player2.isSub, player1.isSub];
 
+    debugger;
     swapPlayerHTML(player1.slotId, player2.slotId);
     
     // Recalculate the field and subs after swap
@@ -581,7 +616,7 @@ function loadPlayers(gameweek = selectedGameweek) {
 
     // If still no data found, default to the upcoming gameweek
     if (!myPlayersCookie) {
-        const upcomingGameweek = getUpcomingGameweek(gameweeks);
+        const upcomingGameweek = getUpcomingGameweek();
         if (upcomingGameweek) {
             myPlayersCookie = getCookie(`myPlayersGW${upcomingGameweek.id}`);
         }
@@ -1014,7 +1049,7 @@ getOverview().then(data => {
 
     getGameweeks().then(data => {
         gameweeks = data;
-        selectedGameweek = getUpcomingGameweek(gameweeks).id;
+        selectedGameweek = getUpcomingGameweek().id;
         updateGameweekInfo();
 
         getFixtures().then(data => {
@@ -1032,7 +1067,7 @@ getOverview().then(data => {
 });
 
 // Function to get the upcoming gameweek where 'finished' is false
-function getUpcomingGameweek(gameweeks) {
+function getUpcomingGameweek() {
     // Find the first gameweek where 'finished' is false
     return gameweeks.find(gameweek => gameweek.finished === false);
 }
