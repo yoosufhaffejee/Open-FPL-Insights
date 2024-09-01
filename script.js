@@ -339,6 +339,10 @@ function updateTeamUI() {
                             : initialExpectedPoints - (initialExpectedPoints * strengthAdjustment);
 
                         fixtureElement.querySelector('.predicted-points').textContent = expectedPoints.toFixed(1);
+
+                        if (index == 0 && !player.isSub) {
+                            predictedPoints += expectedPoints;
+                        }
                     }
                 }
             });
@@ -352,7 +356,6 @@ function updateTeamUI() {
         updateTeamInfo("Bank Balance", `${bankBalance.toFixed(1)}m`);
 
         // Update predicted points
-        predictedPoints += (parseFloat(player.ep_next) + parseFloat(player.form)) / 2;
         updateTeamInfo("Predicted Points", predictedPoints.toFixed(0));
     });
 }
@@ -410,10 +413,46 @@ function setupPlayerActions(playerElement, player) {
     // Add other buttons' functionalities similarly
 }
 
-// Function to swap two players between positions
+function swapPlayerHTML(playerId1, playerId2) {
+    // Find the player elements by their IDs
+    const player1 = document.getElementById(playerId1);
+    const player2 = document.getElementById(playerId2);
+
+    // If either player is not found, exit the function
+    if (!player1 || !player2) {
+        console.error('One or both players not found');
+        return;
+    }
+
+    // Get the parent elements of the players
+    const parent1 = player1.parentElement;
+    const parent2 = player2.parentElement;
+
+    // If either parent is not found, exit the function
+    if (!parent1 || !parent2) {
+        console.error('One or both parent elements not found');
+        return;
+    }
+
+    // Create placeholder elements to maintain the layout during swapping
+    const placeholder1 = document.createElement('div');
+    const placeholder2 = document.createElement('div');
+
+    // Insert the placeholders before the players
+    parent1.insertBefore(placeholder1, player1);
+    parent2.insertBefore(placeholder2, player2);
+
+    // Swap the players
+    parent1.replaceChild(player2, placeholder1);
+    parent2.replaceChild(player1, placeholder2);
+}
+
+
 // Function to swap two players between positions
 function swapPlayer(pos1, pos2) {
+    document.getElementById('saveButton').disabled = false;
     playerSwap = [];
+
     // Find players based on the positions provided
     const player1 = myPlayers.find(player => player.slotId === pos1);
     const player2 = myPlayers.find(player => player.slotId === pos2);
@@ -437,7 +476,8 @@ function swapPlayer(pos1, pos2) {
     // Swap the isSub status as well
     [player1.isSub, player2.isSub] = [player2.isSub, player1.isSub];
 
-    debugger;
+    swapPlayerHTML(player1.slotId, player2.slotId);
+    
     // Recalculate the field and subs after swap
     const fieldPlayers = myPlayers.filter(player => !player.isSub);
     const playerCounts = { 1: 0, 2: 0, 3: 0, 4: 0 };
@@ -457,6 +497,7 @@ function swapPlayer(pos1, pos2) {
             // Swap back to original positions if constraints are violated
             [player1.slotId, player2.slotId] = [player2.slotId, player1.slotId];
             [player1.isSub, player2.isSub] = [player2.isSub, player1.isSub];
+            swapPlayerHTML(player1.slotId, player2.slotId);
             return;
         }
     }
@@ -514,7 +555,27 @@ function loadPlayers(gameweek = selectedGameweek) {
         // Loop backwards through gameweeks to find the most recent saved team
         for (let gw = gameweek - 1; gw >= gameweeks[0].id; gw--) {
             myPlayersCookie = getCookie(`myPlayersGW${gw}`);
-            if (myPlayersCookie) break;
+            if (myPlayersCookie) {
+                let gwTeam = JSON.parse(myPlayersCookie);
+                if (gwTeam.players.length >= 15) {
+                    break;
+                }
+            }
+        }
+    }
+    else {
+        let gwTeam = JSON.parse(myPlayersCookie);
+        if (gwTeam.players.length < 15) {
+            // Loop backwards through gameweeks to find the most recent saved team
+            for (let gw = gameweek - 1; gw >= gameweeks[0].id; gw--) {
+                myPlayersCookie = getCookie(`myPlayersGW${gw}`);
+                if (myPlayersCookie) {
+                    let gwTeam = JSON.parse(myPlayersCookie);
+                    if (gwTeam.players.length >= 15) {
+                        break;
+                    }
+                }
+            }
         }
     }
 
@@ -545,8 +606,7 @@ function loadPlayers(gameweek = selectedGameweek) {
             }
             return player;
         }).filter(player => player !== undefined); // Filter out any undefined players
-
-        debugger;
+        
         // Ensure the Auto Pick button is disabled if players are loaded
         document.getElementById('autoPickButton').disabled = myPlayers.length > 0;
 
