@@ -284,20 +284,8 @@ function removePlayer(player) {
 
 // Function to update the team UI
 function updateTeamUI() {
-    // Clear UI and reset player slots
-    document.querySelectorAll(".player").forEach(playerElement => {
-        if (playerElement) {
-            // Reset player details
-            playerElement.querySelector('h5').textContent = 'Player';
-            playerElement.querySelector('img').src = 'assets/empty-jersey.png';
-
-            // Reset fixture details
-            playerElement.querySelectorAll('.fixture').forEach(fixtureElement => {
-                fixtureElement.querySelector('.predicted-points').textContent = 0;
-                fixtureElement.querySelector('.fixture-detail').textContent = 'FIX (H)';
-            });
-        }
-    });
+    // Clear existing players from rows
+    document.querySelectorAll('.row').forEach(row => row.innerHTML = '');
 
     let bankBalance = 100;
     let predictedPoints = 0;
@@ -307,84 +295,109 @@ function updateTeamUI() {
 
     // Iterate through each player and update the UI
     myPlayers.forEach(player => {
-        const slotId = player.slotId; // Use stored slotId directly
-        const playerElement = document.getElementById(slotId);
+        // Create or select the player element
+        const playerElement = document.createElement('div');
+        playerElement.className = 'player';
+        playerElement.id = `player-${player.slotId}`;
 
-        if (playerElement) {
-            // Update the player name and image
-            playerElement.querySelector('h5').textContent = `${player.web_name} (${(player.now_cost / 10).toFixed(1)}m)`;
-            playerElement.querySelector('img').src = `https://resources.premierleague.com/premierleague/photos/players/110x140/p${player.code}.png`;
+        // Setup the HTML for the player element
+        playerElement.innerHTML = `
+            <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p${player.code}.png" alt="${player.web_name}">
+            <h5>${player.web_name} (${(player.now_cost / 10).toFixed(1)}m)</h5>
+            <div class="fixtures">
+                ${Array.from({ length: 3 }, (_, i) => `
+                    <div class="fixture">
+                        <span class="predicted-points">0</span>
+                        <span class="fixture-detail">FIX (H)</span>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="icon-buttons">
+                <button class="icon-button"><i class="fas fa-exchange-alt"></i></button>
+                <button class="icon-button"><i class="fas fa-trash"></i></button>
+                <button class="icon-button"><i class="fas fa-crown"></i></button>
+                <button class="icon-button"><i class="fas fa-star"></i></button>
+                <button class="icon-button"><i class="fas fa-info-circle"></i></button>
+            </div>
+        `;
 
-            // Update fixtures and predicted points
-            playerElement.querySelectorAll('.fixture').forEach((fixtureElement, index) => {
-                const upcomingGameweek = upcomingGameweeks[index];
-                if (upcomingGameweek) {
-                    let isHome = false; // Declare isHome outside if you intend to use it later
+        // Determine the row based on the player's type and status
+        const rowId = player.isSub ? 'subs' : getRowIdForElementType(player.element_type);
+        
+        // Append player element to the appropriate row
+        const row = document.getElementById(rowId);
+        if (row) {
+            if (player.isSub) {
+                row.children[0].appendChild(playerElement);
+            } else {
+                row.appendChild(playerElement);
+            }
+        }
 
-                    const playerFixture = fixtures.find(fixture => {
-                        // Check if the fixture corresponds to the upcoming gameweek
-                        if (fixture.event === upcomingGameweek.id) {
-                            // Check if the player's team is the away team
-                            if (fixture.team_a === player.team) {
-                                return true; // Found a matching fixture
-                            }
+        // Update fixtures and predicted points
+        playerElement.querySelectorAll('.fixture').forEach((fixtureElement, fixtureIndex) => {
+            const upcomingGameweek = upcomingGameweeks[fixtureIndex];
+            if (upcomingGameweek) {
+                let isHome = false;
 
-                            // Check if the player's team is the home team
-                            if (fixture.team_h === player.team) {
-                                isHome = true; // Set isHome to true if the player's team is the home team
-                                return true; // Found a matching fixture
-                            }
+                const playerFixture = fixtures.find(fixture => {
+                    if (fixture.event === upcomingGameweek.id) {
+                        if (fixture.team_a === player.team) {
+                            return true;
                         }
-                        return false; // Continue searching if no match is found
-                    });
-
-
-                    if (playerFixture) {
-                        const opponentTeam = teams.find(team => 
-                            team.id === (playerFixture.team_a === player.team ? playerFixture.team_h : playerFixture.team_a)
-                        );
-
-                        fixtureElement.querySelector('.fixture-detail').textContent = `${opponentTeam.short_name} (${playerFixture.team_a === player.team ? 'A' : 'H'})`;
-                        
-                        let initialExpectedPoints = getExpectedPoints(player, playerFixture);
-                        if (getUpcomingGameweek() == upcomingGameweek) {
-                            let formBasedPoints = (parseFloat(player.form) + parseFloat(player.ep_next)) / 2;
-                            initialExpectedPoints = (initialExpectedPoints + formBasedPoints) / 2;
-                        }
-
-                        const strengthAdjustmentHA = (opponentTeam.strength * 10) / 100;
-                        const strengthAdjustment10 = (opponentTeam.strength * 10) / 100;
-                        const strengthAdjustment15 = (opponentTeam.strength * 15) / 100;
-                        const strengthAdjustment20 = (opponentTeam.strength * 20) / 100;
-
-                        if (opponentTeam.strength == 2) {
-                            initialExpectedPoints += (initialExpectedPoints * strengthAdjustment20);
-                        }
-
-                        if (opponentTeam.strength == 4) {
-                            initialExpectedPoints -= (initialExpectedPoints * strengthAdjustment10)
-                        }
-
-                        if (opponentTeam.strength == 5) {
-                            initialExpectedPoints -= (initialExpectedPoints * strengthAdjustment15)
-                        }
-
-                        if (isHome) {
-                            initialExpectedPoints += (initialExpectedPoints * strengthAdjustmentHA)
-                        }
-
-                        fixtureElement.querySelector('.predicted-points').textContent = initialExpectedPoints.toFixed(1);
-
-                        if (index == 0 && !player.isSub) {
-                            predictedPoints += initialExpectedPoints;
+                        if (fixture.team_h === player.team) {
+                            isHome = true;
+                            return true;
                         }
                     }
-                }
-            });
+                    return false;
+                });
 
-            // Setup player actions (like swapping players)
-            setupPlayerActions(playerElement, player);
-        }
+                if (playerFixture) {
+                    const opponentTeam = teams.find(team => 
+                        team.id === (playerFixture.team_a === player.team ? playerFixture.team_h : playerFixture.team_a)
+                    );
+
+                    fixtureElement.querySelector('.fixture-detail').textContent = `${opponentTeam.short_name} (${playerFixture.team_a === player.team ? 'A' : 'H'})`;
+
+                    let initialExpectedPoints = getExpectedPoints(player, playerFixture);
+                    if (getUpcomingGameweek() == upcomingGameweek) {
+                        let formBasedPoints = (parseFloat(player.form) + parseFloat(player.ep_next)) / 2;
+                        initialExpectedPoints = (initialExpectedPoints + formBasedPoints) / 2;
+                    }
+
+                    const strengthAdjustmentHA = (opponentTeam.strength * 10) / 100;
+                    const strengthAdjustment10 = (opponentTeam.strength * 10) / 100;
+                    const strengthAdjustment15 = (opponentTeam.strength * 15) / 100;
+                    const strengthAdjustment20 = (opponentTeam.strength * 20) / 100;
+
+                    if (opponentTeam.strength == 2) {
+                        initialExpectedPoints += (initialExpectedPoints * strengthAdjustment20);
+                    }
+
+                    if (opponentTeam.strength == 4) {
+                        initialExpectedPoints -= (initialExpectedPoints * strengthAdjustment10);
+                    }
+
+                    if (opponentTeam.strength == 5) {
+                        initialExpectedPoints -= (initialExpectedPoints * strengthAdjustment15);
+                    }
+
+                    if (isHome) {
+                        initialExpectedPoints += (initialExpectedPoints * strengthAdjustmentHA);
+                    }
+
+                    fixtureElement.querySelector('.predicted-points').textContent = initialExpectedPoints.toFixed(1);
+
+                    if (fixtureIndex == 0 && !player.isSub) {
+                        predictedPoints += initialExpectedPoints;
+                    }
+                }
+            }
+        });
+
+        // Setup player actions (like swapping players)
+        setupPlayerActions(playerElement, player);
 
         // Update bank balance
         bankBalance -= player.now_cost / 10;
@@ -395,6 +408,19 @@ function updateTeamUI() {
     });
 }
 
+// Helper function to determine the row ID based on player type
+function getRowIdForElementType(elementType) {
+    switch (elementType) {
+        case 1: return 'goalkeepers';
+        case 2: return 'defenders';
+        case 3: return 'midfielders';
+        case 4: return 'forwards';
+        default: return 'subs'; // Default to subs if elementType is unknown
+    }
+}
+
+
+
 playerSwap = [];
 
 function setupPlayerActions(playerElement, player) {
@@ -403,21 +429,23 @@ function setupPlayerActions(playerElement, player) {
     playerElement.replaceWith(newPlayerElement);
     
     // Set up swap button
-    const swapButton = newPlayerElement.querySelector('.icon-button .fa-exchange-alt');
+    const swapButton = newPlayerElement.querySelector('.icon-button i.fa-exchange-alt').parentElement;
     if (swapButton) {
         swapButton.addEventListener('click', () => {
-            if (!playerSwap.some(existingPlayer => existingPlayer.id === player.id)) {
-                playerSwap.push(player);
-            }
+            const index = myPlayers.findIndex(p => p.slotId === player.slotId);
+            if (index === -1) return;
 
-            if (playerSwap.length >= 2) {
-                swapPlayer(playerSwap[0].slotId, playerSwap[1].slotId);
+            if (playerSwap.length === 0) {
+                playerSwap.push(index);
+            } else if (playerSwap.length === 1) {
+                swapPlayer(playerSwap[0], index);
+                playerSwap = [];
             }
         });
     }
 
     // Set up trash button
-    const trashButton = newPlayerElement.querySelector('.icon-button .fa-trash');
+    const trashButton = newPlayerElement.querySelector('.icon-button i.fa-trash').parentElement;
     if (trashButton) {
         trashButton.addEventListener('click', () => {
             removePlayer(player);
@@ -425,7 +453,7 @@ function setupPlayerActions(playerElement, player) {
     }
 
     // Set up captain button
-    const captainButton = newPlayerElement.querySelector('.icon-button .fa-crown');
+    const captainButton = newPlayerElement.querySelector('.icon-button i.fa-crown').parentElement;
     if (captainButton) {
         captainButton.addEventListener('click', () => {
             captainPlayer(player);
@@ -433,7 +461,7 @@ function setupPlayerActions(playerElement, player) {
     }
 
     // Set up vice button
-    const viceButton = newPlayerElement.querySelector('.icon-button .fa-star');
+    const viceButton = newPlayerElement.querySelector('.icon-button i.fa-star').parentElement;
     if (viceButton) {
         viceButton.addEventListener('click', () => {
             vicePlayer(player);
@@ -441,7 +469,7 @@ function setupPlayerActions(playerElement, player) {
     }
 
     // Set up info button
-    const infoButton = newPlayerElement.querySelector('.icon-button .fa-info-circle');
+    const infoButton = newPlayerElement.querySelector('.icon-button i.fa-info-circle').parentElement;
     if (infoButton) {
         infoButton.addEventListener('click', () => {
             showPlayerInfo(player);
@@ -452,61 +480,63 @@ function setupPlayerActions(playerElement, player) {
 }
 
 // Function to swap two players between positions
-function swapPlayer(pos1, pos2) {
-    document.getElementById('saveButton').disabled = false;
-    playerSwap = [];
+function swapPlayer(index1, index2) {
+    if (index1 === index2) return; // No need to swap the same player
 
-    // Find players based on the positions provided
-    const player1 = myPlayers.find(player => player.slotId === pos1);
-    const player2 = myPlayers.find(player => player.slotId === pos2);
+    const player1 = myPlayers[index1];
+    const player2 = myPlayers[index2];
 
-    // Validate if both players exist
-    if (!player1 || !player2) {
-        console.log("One or both positions are empty. Cannot swap.");
-        return;
-    }
+    // Find the rows of the players
+    const row1 = player1.isSub ? 'subs' : getRowForPlayer(player1);
+    const row2 = player2.isSub ? 'subs' : getRowForPlayer(player2);
 
-    // Validate that goalkeepers can only be swapped with other goalkeepers
-    if ((player1.element_type === 1 && player2.element_type !== 1) ||
-        (player1.element_type !== 1 && player2.element_type === 1)) {
-        console.log("Invalid swap: Only goalkeepers can be swapped with each other.");
-        return;
-    }
+    // Allow swap if players are in the same row or if one is a substitute and the other is not
+    if (row1 === row2 || (player1.isSub && !player2.isSub) || (!player1.isSub && player2.isSub)) {
+        // Perform the swap in the array
+        [myPlayers[index1], myPlayers[index2]] = [myPlayers[index2], myPlayers[index1]];
 
-    // Perform the swap by swapping the slot IDs
-    [player1.slotId, player2.slotId] = [player2.slotId, player1.slotId];
+        // Swap the isSub status as well
+        [myPlayers[index1].isSub, myPlayers[index2].isSub] = [myPlayers[index2].isSub, myPlayers[index1].isSub];
 
-    // Swap the isSub status as well
-    [player1.isSub, player2.isSub] = [player2.isSub, player1.isSub];
-    
-    // Recalculate the field and subs after swap
-    const fieldPlayers = myPlayers.filter(player => !player.isSub);
-    const playerCounts = { 1: 0, 2: 0, 3: 0, 4: 0 };
+        // Recalculate the field and subs after swap
+        const fieldPlayers = myPlayers.filter(player => !player.isSub);
+        const playerCounts = { 1: 0, 2: 0, 3: 0, 4: 0 };
 
-    // Count players of each type currently on the field
-    fieldPlayers.forEach(player => {
-        playerCounts[player.element_type]++;
-    });
+        // Count players of each type currently on the field
+        fieldPlayers.forEach(player => {
+            playerCounts[player.element_type]++;
+        });
 
-    const minConstraints = { 1: 1, 2: 3, 3: 2, 4: 1 };
-    const maxConstraints = { 1: 1, 2: 5, 3: 5, 4: 3 };
+        const minConstraints = { 1: 1, 2: 3, 3: 2, 4: 1 };
+        const maxConstraints = { 1: 1, 2: 5, 3: 5, 4: 3 };
 
-    // Check for min and max constraints
-    for (const type in playerCounts) {
-        if (playerCounts[type] < minConstraints[type] || playerCounts[type] > maxConstraints[type]) {
-            console.log("Invalid swap: This swap would violate formation constraints.");
-            // Swap back to original positions if constraints are violated
-            [player1.slotId, player2.slotId] = [player2.slotId, player1.slotId];
-            [player1.isSub, player2.isSub] = [player2.isSub, player1.isSub];
-            return;
+        // Check for min and max constraints
+        for (const type in playerCounts) {
+            if (playerCounts[type] < minConstraints[type] || playerCounts[type] > maxConstraints[type]) {
+                console.log("Invalid swap: This swap would violate formation constraints.");
+                // Swap back to original positions if constraints are violated
+                [myPlayers[index1], myPlayers[index2]] = [myPlayers[index2], myPlayers[index1]];
+                [myPlayers[index1].isSub, myPlayers[index2].isSub] = [myPlayers[index2].isSub, myPlayers[index1].isSub];
+                return;
+            }
         }
-    }
 
-    // After swapping, rearrange players in the UI
-    updateTeamUI();
-    console.log(`Players swapped successfully between positions ${pos1} and ${pos2}.`);
+        // After swapping, update the UI to reflect the new positions and statuses
+        updateTeamUI();
+        console.log(`Players swapped successfully between positions ${index1} and ${index2}.`);
+    } else {
+        console.log("Invalid swap: Players are not in the same row and cannot be swapped.");
+    }
 }
 
+// Function to determine the row for a player
+function getRowForPlayer(player) {
+    if (player.element_type === 1) return 'goalkeepers';
+    if (player.element_type === 2) return 'defenders';
+    if (player.element_type === 3) return 'midfielders';
+    if (player.element_type === 4) return 'forwards';
+    return 'subs'; // Default case, should not be used for on-field players
+}
 
 function captainPlayer(player) {
 
