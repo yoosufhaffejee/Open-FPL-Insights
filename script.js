@@ -398,8 +398,12 @@ function updateTeamUI() {
 playerSwap = [];
 
 function setupPlayerActions(playerElement, player) {
-    // Example: Set up swap button
-    const swapButton = playerElement.querySelector('.icon-button .fa-exchange-alt');
+    // Remove existing event listeners by cloning the node
+    const newPlayerElement = playerElement.cloneNode(true);
+    playerElement.replaceWith(newPlayerElement);
+    
+    // Set up swap button
+    const swapButton = newPlayerElement.querySelector('.icon-button .fa-exchange-alt');
     if (swapButton) {
         swapButton.addEventListener('click', () => {
             if (!playerSwap.some(existingPlayer => existingPlayer.id === player.id)) {
@@ -408,37 +412,36 @@ function setupPlayerActions(playerElement, player) {
 
             if (playerSwap.length >= 2) {
                 swapPlayer(playerSwap[0].slotId, playerSwap[1].slotId);
-                playerSwap = [];
             }
         });
     }
 
-    // Example: Set up trash button
-    const trashButton = playerElement.querySelector('.icon-button .fa-trash');
+    // Set up trash button
+    const trashButton = newPlayerElement.querySelector('.icon-button .fa-trash');
     if (trashButton) {
         trashButton.addEventListener('click', () => {
             removePlayer(player);
         });
     }
 
-    // Example: Set up captain button
-    const captainButton = playerElement.querySelector('.icon-button .fa-crown');
+    // Set up captain button
+    const captainButton = newPlayerElement.querySelector('.icon-button .fa-crown');
     if (captainButton) {
         captainButton.addEventListener('click', () => {
             captainPlayer(player);
         });
     }
 
-    // Example: Set up vice button
-    const viceButton = playerElement.querySelector('.icon-button .fa-star');
+    // Set up vice button
+    const viceButton = newPlayerElement.querySelector('.icon-button .fa-star');
     if (viceButton) {
         viceButton.addEventListener('click', () => {
             vicePlayer(player);
         });
     }
 
-    // Example: Set up info button
-    const infoButton = playerElement.querySelector('.icon-button .fa-info-circle');
+    // Set up info button
+    const infoButton = newPlayerElement.querySelector('.icon-button .fa-info-circle');
     if (infoButton) {
         infoButton.addEventListener('click', () => {
             showPlayerInfo(player);
@@ -446,40 +449,6 @@ function setupPlayerActions(playerElement, player) {
     }
 
     // Add other buttons' functionalities similarly
-}
-
-function swapPlayerHTML(playerId1, playerId2) {
-    // Find the player elements by their IDs
-    const player1 = document.getElementById(playerId1);
-    const player2 = document.getElementById(playerId2);
-
-    // If either player is not found, exit the function
-    if (!player1 || !player2) {
-        console.error('One or both players not found');
-        return;
-    }
-
-    // Get the parent elements of the players
-    const parent1 = player1.parentElement;
-    const parent2 = player2.parentElement;
-
-    // If either parent is not found, exit the function
-    if (!parent1 || !parent2) {
-        console.error('One or both parent elements not found');
-        return;
-    }
-
-    // Create placeholder elements to maintain the layout during swapping
-    const placeholder1 = document.createElement('div');
-    const placeholder2 = document.createElement('div');
-
-    // Insert the placeholders before the players
-    parent1.insertBefore(placeholder1, player1);
-    parent2.insertBefore(placeholder2, player2);
-
-    // Swap the players
-    parent1.replaceChild(player2, placeholder1);
-    parent2.replaceChild(player1, placeholder2);
 }
 
 // Function to swap two players between positions
@@ -509,9 +478,6 @@ function swapPlayer(pos1, pos2) {
 
     // Swap the isSub status as well
     [player1.isSub, player2.isSub] = [player2.isSub, player1.isSub];
-
-    debugger;
-    swapPlayerHTML(player1.slotId, player2.slotId);
     
     // Recalculate the field and subs after swap
     const fieldPlayers = myPlayers.filter(player => !player.isSub);
@@ -532,15 +498,15 @@ function swapPlayer(pos1, pos2) {
             // Swap back to original positions if constraints are violated
             [player1.slotId, player2.slotId] = [player2.slotId, player1.slotId];
             [player1.isSub, player2.isSub] = [player2.isSub, player1.isSub];
-            swapPlayerHTML(player1.slotId, player2.slotId);
             return;
         }
     }
 
-    // Update UI to reflect the swap
+    // After swapping, rearrange players in the UI
     updateTeamUI();
     console.log(`Players swapped successfully between positions ${pos1} and ${pos2}.`);
 }
+
 
 function captainPlayer(player) {
 
