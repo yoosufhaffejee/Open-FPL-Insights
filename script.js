@@ -419,8 +419,6 @@ function getRowIdForElementType(elementType) {
     }
 }
 
-
-
 playerSwap = [];
 
 function setupPlayerActions(playerElement, player) {
