@@ -104,7 +104,6 @@ function getExpectedPoints (player, fixture) {
     }
 
     if (player.isCaptain) {
-        debugger;
         expectedPoints = expectedPoints * 2;
     }
 

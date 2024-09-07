@@ -99,7 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Fetch league data and update league grid
     const fetchLeague = async (id) => {
         try {
-            debugger;
             const data = await getLeague(id);
             if (data && data.league) {
                 return data.league;
@@ -177,7 +176,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
             } else {
-                debugger;
                 if (league) {
                     setCookie('playerLeagues', JSON.stringify([{ id: leagueId, name: league.name }]), 30); // Serialize to JSON format
                     leagueGrid.updateGridOptions({
