@@ -229,7 +229,7 @@ function addPlayer(player) {
             isSub: myPlayers[emptyPlayerIndex].isSub, // Maintain the same sub status
             slotId: myPlayers[emptyPlayerIndex].slotId, // Keep the same slotId
             isCaptain: myPlayers[emptyPlayerIndex].isCaptain, // Keep the same cap
-            isVice: isVice[emptyPlayerIndex].isVice // Keep the same vice
+            isVice: myPlayers[emptyPlayerIndex].isVice // Keep the same vice
         };
 
         // Increment the filled slots for this position
