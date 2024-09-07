@@ -858,7 +858,7 @@ function resetPlayers() {
 function autoPickPlayers() {
     document.getElementById('autoPickButton').disabled = true;
 
-    if (myPlayers.length <= 0) {
+    if (allPlayers) {
         // Select the best team from allPlayers
         myPlayers = selectBestTeam(allPlayers);
 
