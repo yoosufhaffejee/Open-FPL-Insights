@@ -198,11 +198,18 @@ const availableSlots = {
 // Function to check if a player can be added to a specific position
 function canAddPlayer(positionType) {
     const positionPrefix = positionMap[positionType];
+    // Ensure the number of filled slots for the position is less than the max slots allowed
     return positionPrefix && filledSlots[positionPrefix] < availableSlots[positionPrefix].length;
 }
 
-// Function to add a player
+// Function to add a player by replacing the first available empty slot
 function addPlayer(player) {
+    // Ensure the team has 15 players
+    if (myPlayers.length > 15) {
+        console.log('Team already has 15 players. Cannot add more.');
+        return;
+    }
+
     const positionPrefix = positionMap[player.element_type];
 
     // Check if the player already exists in the team
@@ -212,35 +219,30 @@ function addPlayer(player) {
         return; // Exit the function if the player is already in the team
     }
 
-    // Check if there are available slots for this player type
-    if (positionPrefix && canAddPlayer(player.element_type)) {
-        const currentFilledSlots = filledSlots[positionPrefix];
+    // Find the first ghost player of the same position (gk, def, mid, fwd)
+    const emptyPlayerIndex = myPlayers.findIndex(p => p.element_type === player.element_type && p.now_cost === 0 && p.web_name === 'Player');
 
-        // Assign the next available slot for this position
-        const slotId = availableSlots[positionPrefix][currentFilledSlots];
+    if (emptyPlayerIndex !== -1) {
+        // Replace the ghost player with the new player
+        myPlayers[emptyPlayerIndex] = {
+            ...player,
+            isSub: myPlayers[emptyPlayerIndex].isSub, // Maintain the same sub status
+            slotId: myPlayers[emptyPlayerIndex].slotId, // Keep the same slotId
+            isCaptain: myPlayers[emptyPlayerIndex].isCaptain, // Keep the same cap
+            isVice: isVice[emptyPlayerIndex].isVice // Keep the same vice
+        };
 
-        if (slotId) {  // Ensure slotId is valid and available
-            // Assign the slot ID to the player
-            player.slotId = slotId;
+        // Increment the filled slots for this position
+        filledSlots[positionPrefix]++;
 
-            // Determine if the player is a substitute based on their position
-            player.isSub = ['pos2', 'pos7', 'pos12', 'pos15'].includes(slotId);
-
-            // Add the player to the myPlayers array
-            myPlayers.push(player);
-
-            // Update the filled slots count
-            filledSlots[positionPrefix]++;
-
-            // Update the UI to reflect the new player
-            updateTeamUI();
-        } else {
-            console.log(`No available slots for ${positionPrefix} to add player ${player.web_name}.`);
-        }
+        // Update the UI to reflect the new player
+        updateTeamUI();
     } else {
-        console.log(`Cannot add player ${player.web_name}. No available slots or invalid position.`);
+        console.log(`No available ghost players in ${positionPrefix} to add player ${player.web_name}.`);
     }
 }
+
+
 
 // Function to remove a player
 function removePlayer(player) {
@@ -249,9 +251,8 @@ function removePlayer(player) {
 
     // Check if the player exists in the array
     if (playerIndex !== -1) {
-        // Get the player's assigned slot ID
+        // Get the player's assigned position prefix (gk, def, mid, fwd)
         const positionPrefix = positionMap[player.element_type];
-        const slotId = myPlayers[playerIndex].slotId;
 
         // Remove the player from the array
         myPlayers.splice(playerIndex, 1);
@@ -259,25 +260,14 @@ function removePlayer(player) {
         // Decrement the filled slot count for this position
         filledSlots[positionPrefix]--;
 
-        // Clear the player slot in the UI
-        const playerElement = document.getElementById(slotId);
-        if (playerElement) {
-            playerElement.querySelector('h5').textContent = 'Player';
-            playerElement.querySelector('img').src = 'assets/empty-jersey.png';
-            playerElement.querySelectorAll('.fixture').forEach(fixtureElement => {
-                fixtureElement.querySelector('.predicted-points').textContent = 0;
-                fixtureElement.querySelector('.fixture-detail').textContent = 'FIX (H)';
-            });
-        }
-
         // Update the UI to reflect the changes
         updateTeamUI();
     } else {
         console.log(`Player with ID ${player.id} not found.`);
     }
 
-    // Check if any players are left; if not, enable the 'autoPickButton'
-    if (myPlayers.length <= 0) {
+    // Check if all players have been removed; if so, enable the 'autoPickButton'
+    if (myPlayers.length === 0) {
         document.getElementById('autoPickButton').disabled = false;
     }
 }
@@ -293,16 +283,32 @@ function updateTeamUI() {
     // Determine upcoming gameweeks
     const upcomingGameweeks = gameweeks.filter(gw => gw.id >= selectedGameweek).slice(0, 3);
 
+    let subs = 0;
+    const filledPositions = {
+        gk: 0,
+        def: 0,
+        mid: 0,
+        fwd: 0
+    };
+
     // Iterate through each player and update the UI
     myPlayers.forEach(player => {
+        filledPositions[positionMap[player.element_type]]++;
+        if (player.isSub) {
+            subs++;
+        }
+
         // Create or select the player element
         const playerElement = document.createElement('div');
         playerElement.className = 'player';
         playerElement.id = `player-${player.slotId}`;
 
+        let image = player.code ?
+        `<img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p${player.code}.png" alt="${player.web_name}">`
+            : `<img src="assets/empty-jersey.png" alt="${player.web_name}">`
         // Setup the HTML for the player element
         playerElement.innerHTML = `
-            <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p${player.code}.png" alt="${player.web_name}">
+            ${image}
             <h5>${player.web_name} (${(player.now_cost / 10).toFixed(1)}m)</h5>
             <div class="fixtures">
                 ${Array.from({ length: 3 }, (_, i) => `
@@ -315,8 +321,8 @@ function updateTeamUI() {
             <div class="icon-buttons">
                 <button class="icon-button"><i class="fas fa-exchange-alt"></i></button>
                 <button class="icon-button"><i class="fas fa-trash"></i></button>
-                <button class="icon-button"><i class="fas fa-crown"></i></button>
-                <button class="icon-button"><i class="fas fa-star"></i></button>
+                <button class="icon-button"><i class="fas fa-crown ${player.isCaptain ? 'captain' : ''}"></i></button>
+                <button class="icon-button"><i class="fas fa-star ${player.isVice ? 'vice' : ''}"></i></button>
                 <button class="icon-button"><i class="fas fa-info-circle"></i></button>
             </div>
         `;
@@ -406,6 +412,104 @@ function updateTeamUI() {
         // Update predicted points
         updateTeamInfo("Predicted Points", predictedPoints.toFixed(0));
     });
+
+    fillMissingPlayers(filledPositions, subs);
+}
+
+// Helper function to map position to elementType
+function getKeyByValue(pos) {
+    const map = {
+        gk: 1,  // Example mapping
+        def: 2,
+        mid: 3,
+        fwd: 4
+    };
+    return map[pos];
+}
+
+function fillMissingPlayers(filledPositions, subs) {
+    // Define total players and substitutes
+    const totalPlayers = 15;
+    const numOfSubs = 4;
+    const numOfOnFieldPlayers = totalPlayers - numOfSubs;
+
+    // Calculate the number of players needed for each position
+    const positions = ['gk', 'def', 'mid', 'fwd'];
+    const missingPlayers = {};
+
+    positions.forEach(pos => {
+        missingPlayers[pos] = maxSlots[pos] - filledPositions[pos];
+    });
+
+    // Fill subs to ensure 4 substitutes, including 1 goalkeeper
+    let remainingSubs = numOfSubs - subs;
+    let remainingOnFieldPlayers = numOfOnFieldPlayers + subs - (filledPositions.gk + filledPositions.def + filledPositions.mid + filledPositions.fwd);
+
+    // Generate list of players to add
+    const playersToAdd = [];
+
+    // Add missing players to the field if there are still positions available
+    positions.forEach(pos => {
+        const missing = missingPlayers[pos];
+        if (missing > 0 && remainingOnFieldPlayers > 0) {
+            const addToField = Math.min(missing, remainingOnFieldPlayers);
+            playersToAdd.push(...Array(addToField).fill({ web_name: 'Player', now_cost: 0, element_type: getKeyByValue(pos), isSub: false }));
+            remainingOnFieldPlayers -= addToField;
+        }
+    });
+
+    // Ensure exactly 1 goalkeeper is added to subs if not already present
+    if (filledPositions.gk < 2 && remainingSubs > 0) {
+        playersToAdd.push({ web_name: 'Player', now_cost: 0, element_type: 1, isSub: true });
+        remainingSubs -= 1;
+    }
+
+    // Add remaining missing players as substitutes
+    positions.forEach(pos => {
+        const missing = missingPlayers[pos];
+        if (remainingSubs > 0) {
+            const addToSubs = Math.min(missing, remainingSubs);
+            playersToAdd.push(...Array(addToSubs).fill({ web_name: 'Player', now_cost: 0, element_type: getKeyByValue(pos), isSub: true }));
+            remainingSubs -= addToSubs;
+        }
+    });
+
+    // Add empty placeholders if needed
+    const maxPlayersPerPosition = {
+        gk: maxSlots.gk - filledPositions.gk,
+        def: maxSlots.def - filledPositions.def,
+        mid: maxSlots.mid - filledPositions.mid,
+        fwd: maxSlots.fwd - filledPositions.fwd
+    };
+
+    const fillPlaceholders = {
+        gk: Math.max(0, maxPlayersPerPosition.gk),
+        def: Math.max(0, maxPlayersPerPosition.def),
+        mid: Math.max(0, maxPlayersPerPosition.mid),
+        fwd: Math.max(0, maxPlayersPerPosition.fwd)
+    };
+
+    // Adjust for the total number of placeholders to fill
+    const totalPlaceholders = {
+        gk: fillPlaceholders.gk,
+        def: fillPlaceholders.def,
+        mid: fillPlaceholders.mid,
+        fwd: fillPlaceholders.fwd,
+        subs: numOfSubs - subs
+    };
+
+    if (playersToAdd.length > 0) {
+        playersToAdd.forEach(player => {
+            myPlayers.push(player);
+        });
+        updateTeamUI();
+    }
+    
+    // Return the players to add and placeholders
+    return {
+        playersToAdd,
+        totalPlaceholders
+    };
 }
 
 // Helper function to determine the row ID based on player type
@@ -428,17 +532,17 @@ function setupPlayerActions(playerElement, player) {
     
     // Set up swap button
     const swapButton = newPlayerElement.querySelector('.icon-button i.fa-exchange-alt').parentElement;
+
     if (swapButton) {
         swapButton.addEventListener('click', () => {
             const index = myPlayers.findIndex(p => p.slotId === player.slotId);
             if (index === -1) return;
 
-            if (playerSwap.length === 0) {
-                playerSwap.push(index);
-            } else if (playerSwap.length === 1) {
-                swapPlayer(playerSwap[0], index);
-                playerSwap = [];
-            }
+            // Visually indicate that this player is selected for swapping
+            newPlayerElement.classList.add('swap-queued');
+
+            // Call swapPlayer logic to handle both selecting and swapping
+            swapPlayer(index);
         });
     }
 
@@ -477,9 +581,25 @@ function setupPlayerActions(playerElement, player) {
     // Add other buttons' functionalities similarly
 }
 
-// Function to swap two players between positions
-function swapPlayer(index1, index2) {
-    if (index1 === index2) return; // No need to swap the same player
+// Function to handle swap logic and queueing players for swap
+function swapPlayer(index) {
+    // If no player is queued for swap, queue this player
+    if (playerSwap.length === 0) {
+        playerSwap.push(index);
+        console.log(`Player at index ${index} queued for swap.`);
+        return;
+    }
+    
+    // If a player is already queued, swap with the currently queued player
+    const index1 = playerSwap[0];
+    const index2 = index;
+
+    if (index1 === index2) {
+        console.log('Cannot swap the same player.');
+        removeSwapIndicator(index1); // Remove visual indicator if the same player is clicked twice
+        playerSwap = [];
+        return;
+    }
 
     const player1 = myPlayers[index1];
     const player2 = myPlayers[index2];
@@ -488,7 +608,7 @@ function swapPlayer(index1, index2) {
     const row1 = player1.isSub ? 'subs' : getRowForPlayer(player1);
     const row2 = player2.isSub ? 'subs' : getRowForPlayer(player2);
 
-    // Allow swap if players are in the same row or if one is a substitute and the other is not
+    // Allow swap if players are in the same row or one is a sub and the other is not
     if (row1 === row2 || (player1.isSub && !player2.isSub) || (!player1.isSub && player2.isSub)) {
         // Perform the swap in the array
         [myPlayers[index1], myPlayers[index2]] = [myPlayers[index2], myPlayers[index1]];
@@ -511,10 +631,14 @@ function swapPlayer(index1, index2) {
         // Check for min and max constraints
         for (const type in playerCounts) {
             if (playerCounts[type] < minConstraints[type] || playerCounts[type] > maxConstraints[type]) {
-                console.log("Invalid swap: This swap would violate formation constraints.");
+                console.log('Invalid swap: This swap would violate formation constraints.');
+                alert('Swap failed: Formation constraints violated.');
                 // Swap back to original positions if constraints are violated
                 [myPlayers[index1], myPlayers[index2]] = [myPlayers[index2], myPlayers[index1]];
                 [myPlayers[index1].isSub, myPlayers[index2].isSub] = [myPlayers[index2].isSub, myPlayers[index1].isSub];
+                removeSwapIndicator(index1); // Remove swap indicator
+                removeSwapIndicator(index2);
+                playerSwap = [];
                 return;
             }
         }
@@ -522,8 +646,25 @@ function swapPlayer(index1, index2) {
         // After swapping, update the UI to reflect the new positions and statuses
         updateTeamUI();
         console.log(`Players swapped successfully between positions ${index1} and ${index2}.`);
+
+        // Remove swap indicators after the swap is successful
+        removeSwapIndicator(index1);
+        removeSwapIndicator(index2);
+        playerSwap = [];
     } else {
-        console.log("Invalid swap: Players are not in the same row and cannot be swapped.");
+        console.log('Invalid swap: Players are not in the same row or cannot be swapped.');
+        alert('Swap failed: Players are not in the same row or cannot be swapped.');
+        removeSwapIndicator(index1); // Remove swap indicator
+        removeSwapIndicator(index2);
+        playerSwap = [];
+    }
+}
+
+// Function to remove swap visual indicator
+function removeSwapIndicator(index) {
+    const playerElement = document.getElementById(`player-${myPlayers[index].slotId}`);
+    if (playerElement) {
+        playerElement.classList.remove('swap-queued');
     }
 }
 
@@ -536,12 +677,35 @@ function getRowForPlayer(player) {
     return 'subs'; // Default case, should not be used for on-field players
 }
 
+// Function to set the captain
 function captainPlayer(player) {
+    if (player.isVice) {
+        return;
+    }
 
+    // Set isCaptain = false for all players
+    myPlayers.forEach(p => p.isCaptain = false);
+
+    // Set isCaptain = true for the selected player
+    player.isCaptain = true;
+
+    // Update the UI to reflect the change
+    updateTeamUI();
 }
 
 function vicePlayer(player) {
+    if (player.isCaptain) {
+        return;
+    }
 
+    // Set isVice = false for all players
+    myPlayers.forEach(p => p.isVice = false);
+
+    // Set isCaptain = true for the selected player
+    player.isVice = true;
+
+    // Update the UI to reflect the change
+    updateTeamUI();
 }
 
 function showPlayerInfo(player) {
@@ -621,11 +785,13 @@ function loadPlayers(gameweek = selectedGameweek) {
         const { players } = JSON.parse(myPlayersCookie);
 
         // Reconstruct myPlayers using player IDs from allPlayers
-        myPlayers = players.map(({ id, slotId, isSub }) => {
+        myPlayers = players.map(({ id, slotId, isSub, isCaptain, isVice }) => {
             const player = allPlayers.find(player => player.id === id);
             if (player) {
                 player.slotId = slotId;
                 player.isSub = isSub; // Set the isSub property
+                player.isCaptain = isCaptain;
+                player.isVice = isVice;
 
                 // Calculate filled slots
                 const positionPrefix = positionMap[player.element_type];
@@ -655,7 +821,9 @@ function savePlayers() {
     const playerData = myPlayers.map(player => ({
         id: player.id,
         slotId: player.slotId,
-        isSub: player.isSub // Include the isSub property
+        isSub: player.isSub, // Include the isSub property
+        isCaptain : player.isCaptain,
+        isVice: player.isVice
     }));
 
     // Convert the playerData array to a JSON string
@@ -664,7 +832,6 @@ function savePlayers() {
     // Save the JSON string in a cookie
     document.cookie = `myPlayersGW${selectedGameweek}=${dataJSON}; path=/; max-age=31536000`; // Cookie expires in 1 year
 }
-
 
 function resetPlayers() {
     // Reset your myPlayers array (example: clear all players)
@@ -730,303 +897,8 @@ function displayPlayers(filteredPlayers) {
         });
         return;
     }
-
-    // Grid Options: Contains all of the Data Grid configurations
-    const gridOptions = {
-        rowData: filteredPlayers,
-        defaultColDef: { 
-            sortable: true,
-            filter: true,
-            resizable: true,
-        },
-        pagination: true,
-        paginationPageSize: 10,
-        paginationPageSizeSelector: [10, 20, 50, 100, 1000],
-        columnDefs: [
-            {
-              headerName: 'Actions',
-              width: 85,
-              pinned: 'left',
-              filter: false,
-              cellRenderer: (params) => {
-                const button = document.createElement('button');
-                button.className = 'btn btn-primary';
-                button.disabled = myPlayers.some(player => player?.web_name == params.data.web_name) || 
-                                  !canAddPlayer(params.data.element_type) || 
-                                  bankBalance + 5 <= params.data.now_cost/10;
-                button.innerText = '+';
-                button.addEventListener('click', () => {
-                  //myPlayers.push(allPlayers.find(player => player.id == params.data.id));
-                  addPlayer(allPlayers.find(player => player.id == params.data.id));
-                  updateTeamUI();
-                  grid.refreshCells();
-                  document.getElementById('saveButton').disabled = false;
-                  document.getElementById('autoPickButton').disabled = true;
-                });
-                return button;
-              }
-            },
-            { headerName: 'ID', field: 'id', hide: true },
-            { headerName: 'Code', field: 'code', hide: true },
-            { headerName: 'Photo', field: 'photo', hide: true },
-            { headerName: 'Element Type', field: 'element_type', hide: true },
-            { headerName: 'Web Name', width: 150, field: 'web_name', floatingFilter: true, pinned: 'left' },
-            { headerName: 'First Name', field: 'first_name', hide: true },
-            { headerName: 'Second Name', field: 'second_name', hide: true },
-            {
-              headerName: 'Price',
-              field: 'now_cost',
-              width: 100,
-              valueGetter: (params) => params.data.now_cost / 10
-            },
-            { headerName: 'Total Points', width: 150, field: 'total_points' },
-            {
-              headerName: 'Form',
-              field: 'form',
-              width: 100,
-              valueGetter: (params) => parseFloat(params.data.form)
-            },
-            {
-              headerName: 'Predicted Points',
-              field: 'ep_this',
-              width: 150,
-              valueGetter: (params) => parseFloat(params.data.ep_this)
-            },
-            {
-              headerName: 'Next Predicted Points',
-              field: 'ep_next',
-              width: 150,
-              valueGetter: (params) => parseFloat(params.data.ep_next)
-            },
-            {
-              headerName: 'Chance of Playing This Round (%)',
-              field: 'chance_of_playing_this_round',
-              valueFormatter: (params) => params.value == null ? "N/A" : params.value
-            },
-            {
-              headerName: 'Chance of Playing Next Round (%)',
-              field: 'chance_of_playing_next_round',
-              valueFormatter: (params) => params.value == null ? "N/A" : params.value
-            },
-            { headerName: 'Dreamteam Count', field: 'dreamteam_count', width: 250 },
-            { headerName: 'Event Points', field: 'event_points' },
-            {
-              headerName: 'In Dreamteam',
-              field: 'in_dreamteam',
-              valueFormatter: (params) => params.value === null ? "N/A" : params.value ? "True" : "False"
-            },
-            {
-              headerName: 'Points per Game',
-              field: 'points_per_game',
-              valueGetter: (params) => parseFloat(params.data.points_per_game)
-            },
-            {
-              headerName: 'Selected by Percent (%)',
-              field: 'selected_by_percent',
-              valueGetter: (params) => parseFloat(params.data.selected_by_percent)
-            },
-            {
-              headerName: 'Special',
-              field: 'special',
-              valueFormatter: (params) => params.value === null ? "N/A" : params.value ? "True" : "False"
-            },
-            {
-              headerName: 'Squad Number',
-              field: 'squad_number',
-              valueFormatter: (params) => params.value == null ? "N/A" : params.value
-            },
-            { headerName: 'Status', field: 'status' },
-            { headerName: 'Team', field: 'team' },
-            { headerName: 'Team Code', field: 'team_code' },
-            { headerName: 'Transfers In', field: 'transfers_in' },
-            { headerName: 'Transfers In Event', field: 'transfers_in_event' },
-            { headerName: 'Transfers Out', field: 'transfers_out' },
-            { headerName: 'Transfers Out Event', field: 'transfers_out_event', width: 300 },
-            {
-              headerName: 'Value Form',
-              field: 'value_form',
-              valueGetter: (params) => parseFloat(params.data.value_form)
-            },
-            {
-              headerName: 'Value Season',
-              field: 'value_season',
-              valueGetter: (params) => parseFloat(params.data.value_season)
-            },
-            { headerName: 'Minutes', field: 'minutes' },
-            { headerName: 'Goals Scored', field: 'goals_scored' },
-            { headerName: 'Assists', field: 'assists' },
-            { headerName: 'Clean Sheets', field: 'clean_sheets' },
-            { headerName: 'Goals Conceded', field: 'goals_conceded' },
-            { headerName: 'Own Goals', field: 'own_goals' },
-            { headerName: 'Penalties Saved', field: 'penalties_saved' },
-            { headerName: 'Penalties Missed', field: 'penalties_missed' },
-            { headerName: 'Yellow Cards', field: 'yellow_cards' },
-            { headerName: 'Red Cards', field: 'red_cards' },
-            { headerName: 'Saves', field: 'saves' },
-            { headerName: 'Bonus', field: 'bonus' },
-            { headerName: 'BPS', field: 'bps' },
-            {
-              headerName: 'Influence',
-              field: 'influence',
-              valueGetter: (params) => parseFloat(params.data.influence)
-            },
-            {
-              headerName: 'Creativity',
-              field: 'creativity',
-              valueGetter: (params) => parseFloat(params.data.creativity)
-            },
-            {
-              headerName: 'Threat',
-              field: 'threat',
-              valueGetter: (params) => parseFloat(params.data.threat)
-            },
-            {
-              headerName: 'ICT Index',
-              field: 'ict_index',
-              valueGetter: (params) => parseFloat(params.data.ict_index)
-            },
-            { headerName: 'Starts', field: 'starts' },
-            {
-              headerName: 'Expected Goals',
-              field: 'expected_goals',
-              valueGetter: (params) => parseFloat(params.data.expected_goals)
-            },
-            {
-              headerName: 'Expected Assists',
-              field: 'expected_assists',
-              valueGetter: (params) => parseFloat(params.data.expected_assists)
-            },
-            {
-              headerName: 'Expected Goal Involvements',
-              field: 'expected_goal_involvements',
-              valueGetter: (params) => parseFloat(params.data.expected_goal_involvements)
-            },
-            {
-              headerName: 'Expected Goals Conceded',
-              field: 'expected_goals_conceded',
-              valueGetter: (params) => parseFloat(params.data.expected_goals_conceded)
-            },
-            { headerName: 'Influence Rank', field: 'influence_rank' },
-            { headerName: 'Influence Rank Type', field: 'influence_rank_type' },
-            { headerName: 'Creativity Rank', field: 'creativity_rank' },
-            { headerName: 'Creativity Rank Type', field: 'creativity_rank_type' },
-            { headerName: 'Threat Rank', field: 'threat_rank' },
-            { headerName: 'Threat Rank Type', field: 'threat_rank_type' },
-            { headerName: 'ICT Index Rank', field: 'ict_index_rank' },
-            { headerName: 'ICT Index Rank Type', field: 'ict_index_rank_type' },
-            {
-              headerName: 'Corners and Indirect Freekicks Order',
-              field: 'corners_and_indirect_freekicks_order',
-              valueFormatter: (params) => params.value == null ? "N/A" : params.value
-            },
-            {
-                field: 'corners_and_indirect_freekicks_text',
-                headerName: "Corners and Indirect Freekicks Text",
-            },
-            {
-              headerName: 'Direct Freekicks Order',
-              field: 'direct_freekicks_order',
-              valueFormatter: (params) => params.value == null ? "N/A" : params.value
-            },
-            {
-                field: 'direct_freekicks_text',
-                headerName: "Direct Freekicks Text",
-            },
-            {
-              headerName: 'Penalties Order',
-              field: 'penalties_order',
-              valueFormatter: (params) => params.value == null ? "N/A" : params.value
-            },
-            {
-                field: 'penalties_text',
-                headerName: "Penalties Text",
-            },
-            {
-              headerName: 'Expected Goals per 90',
-              field: 'expected_goals_per_90',
-              valueGetter: (params) => parseFloat(params.data.expected_goals_per_90)
-            },
-            {
-              headerName: 'Saves per 90',
-              field: 'saves_per_90',
-              valueGetter: (params) => parseFloat(params.data.saves_per_90)
-            },
-            {
-              headerName: 'Expected Assists per 90',
-              field: 'expected_assists_per_90',
-              valueGetter: (params) => parseFloat(params.data.expected_assists_per_90)
-            },
-            {
-              headerName: 'Expected Goal Involvements per 90',
-              field: 'expected_goal_involvements_per_90',
-              valueGetter: (params) => parseFloat(params.data.expected_goal_involvements_per_90)
-            },
-            {
-              headerName: 'Expected Goals Conceded per 90',
-              field: 'expected_goals_conceded_per_90',
-              valueGetter: (params) => parseFloat(params.data.expected_goals_conceded_per_90)
-            },
-            { headerName: 'Goals Conceded per 90', field: 'goals_conceded_per_90' },
-            { field: 'now_cost_rank', headerName: "Now Cost Rank" },
-            { field: 'now_cost_rank_type', headerName: "Now Cost Rank Type" },
-            {
-                field: 'form_rank',
-                headerName: "Form Rank",
-            },
-            {
-                field: 'form_rank_type',
-                headerName: "Form Rank Type",
-            },
-            {
-                field: 'points_per_game_rank',
-                headerName: "Points per Game Rank",
-            },
-            {
-                field: 'points_per_game_rank_type',
-                headerName: "Points per Game Rank Type",
-            },
-            {
-                field: 'selected_rank',
-                headerName: "Selected Rank",
-            },
-            {
-                field: 'selected_rank_type',
-                headerName: "Selected Rank Type",
-            },
-            {
-                field: 'starts_per_90',
-                headerName: "Starts per 90",
-            },
-            {
-                field: 'clean_sheets_per_90',
-                headerName: "Clean Sheets per 90",
-            },
-            {
-                field: 'news',
-                headerName: "News",
-            },
-            {
-                field: 'news_added',
-                headerName: "News Added",
-            },
-            {
-                field: 'cost_change_event',
-                headerName: "Cost Change Event",
-            },
-            {
-                field: 'cost_change_event_fall',
-                headerName: "Cost Change Event Fall",
-            },
-            {
-                field: 'cost_change_start',
-                headerName: "Cost Change Start",
-            },
-            {
-                field: 'cost_change_start_fall',
-                headerName: "Cost Change Start Fall",
-            },
-          ]
-    };
+    
+    setupGridOptions(filteredPlayers);
 
     // Your Javascript code to create the Data Grid
     const myGridElement = document.querySelector('#myGrid');

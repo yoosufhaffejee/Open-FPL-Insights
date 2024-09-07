@@ -101,7 +101,12 @@ function getExpectedPoints (player, fixture) {
         let penaltiesMissedPer90 = player.penalties_missed !== undefined && player.minutes !== undefined && player.minutes !== 0 ? player.penalties_missed / (player.minutes / 90) : 0;
         let penaltyMissPointsPer90 = penaltiesMissedPer90 * penaltyMissPointsDeduction;
         expectedPoints -= penaltyMissPointsPer90;
-    }    
+    }
+
+    if (player.isCaptain) {
+        debugger;
+        expectedPoints = expectedPoints * 2;
+    }
 
     return expectedPoints;
 }

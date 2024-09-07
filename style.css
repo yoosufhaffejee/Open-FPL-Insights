@@ -429,3 +429,16 @@ h5, h6, .actionButton {
 .value {
     color: #333;
 }
+
+.swap-queued {
+    opacity: 0.5;
+    border: 2px dashed #999;
+}
+
+.captain {
+    color: gold; /* Make the crown icon gold for the captain */
+}
+
+.vice {
+    color: gold; /* Make the crown icon gold for the vice */
+}
