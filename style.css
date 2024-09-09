@@ -442,3 +442,22 @@ h5, h6, .actionButton {
 .vice {
     color: gold; /* Make the crown icon gold for the vice */
 }
+
+#upcoming-fixtures-list div {
+    min-width: 120px;
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    #recent-matches-table {
+        font-size: 0.8rem; /* Adjust font size for smaller screens */
+    }
+    #recent-matches-table th,
+    #recent-matches-table td {
+        white-space: nowrap; /* Prevent text from wrapping */
+    }
+    #recent-matches-table img {
+        width: 20px; /* Adjust image size for smaller screens */
+        height: 20px;
+    }
+}

@@ -23,7 +23,8 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
         <div class="container-fluid">
             <a class="navbar-brand" href="#">Open FPL Insights</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
@@ -506,11 +507,12 @@
     </div>
 
     <!-- Player Info Modal -->
-    <div class="modal fade" id="playerInfoModal" tabindex="-1" aria-labelledby="playerInfoModalLabel" aria-hidden="true">
+    <div class="modal fade" id="playerInfoModal" tabindex="-1" aria-labelledby="playerInfoModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h4 class="modal-title font-weight-bold" id="playerInfoModalLabel">Player Information</h4>
+                    <h3 class="modal-title font-weight-bold" id="playerInfoModalLabel">Player Information</h3>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -518,26 +520,50 @@
                     <div id="player-info-content">
                         <!-- Upcoming Fixtures Section -->
                         <div class="mb-4">
-                            <h5>Upcoming Fixtures</h5>
+                            <h4>Upcoming Fixtures</h4>
                             <div class="d-flex overflow-auto" id="upcoming-fixtures-list">
                                 <!-- Fixtures will be dynamically added here -->
                             </div>
                         </div>
 
-                        <!-- Recent Matches Section -->
                         <div class="mb-4">
-                            <h5>Recent Matches</h5>
+                            <h4>Recent Matches</h4>
                             <div class="table-responsive">
                                 <table class="table table-striped" id="recent-matches-table">
                                     <thead class="thead-dark">
                                         <tr>
-                                            <th>Date</th>
+                                            <th>GW</th>
+                                            <th style="min-width: 120px;">Date</th>
+                                            <th>Opponent</th>
+                                            <th>Score</th>
+                                            <th>Result</th>
                                             <th>Points</th>
+                                            <th>Bonus</th>
+                                            <th>Value</th>
                                             <th>Minutes</th>
                                             <th>Goals</th>
                                             <th>Assists</th>
+                                            <th>Saves</th>
                                             <th>Clean Sheets</th>
-                                            <th>Bonus</th>
+                                            <th>Goals Conceded</th>
+                                            <th>Expected Goals</th>
+                                            <th>Expected Goal Involvements</th>
+                                            <th>Expected Assists</th>
+                                            <th>Expected Goals Conceded</th>
+                                            <th>Yellow Cards</th>
+                                            <th>Red Cards</th>
+                                            <th>Own Goals</th>
+                                            <th>Penalties Saved</th>
+                                            <th>Penalties Missed</th>
+                                            <th>BPS</th>
+                                            <th>Influence</th>
+                                            <th>Creativity</th>
+                                            <th>Threat</th>
+                                            <th>ICT Index</th>
+                                            <th>Starts</th>
+                                            <th>Selected</th>
+                                            <th>Transfers In</th>
+                                            <th>Transfers Out</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -549,17 +575,36 @@
 
                         <!-- Past Seasons Section -->
                         <div class="mb-4">
-                            <h5>Past Seasons</h5>
+                            <h4>Past Seasons</h4>
                             <div class="table-responsive">
                                 <table class="table table-striped" id="past-seasons-table">
                                     <thead class="thead-dark">
                                         <tr>
                                             <th>Season</th>
+                                            <th>Start Cost</th>
+                                            <th>End Cost</th>
                                             <th>Points</th>
                                             <th>Minutes</th>
                                             <th>Goals</th>
                                             <th>Assists</th>
                                             <th>Clean Sheets</th>
+                                            <th>Goals Conceded</th>
+                                            <th>Own Goals</th>
+                                            <th>Penalties Saved</th>
+                                            <th>Penalties Missed</th>
+                                            <th>Yellow Cards</th>
+                                            <th>Red Cards</th>
+                                            <th>Saves</th>
+                                            <th>Bonus</th>
+                                            <th>BPS</th>
+                                            <th>Influence</th>
+                                            <th>Creativity</th>
+                                            <th>Threat</th>
+                                            <th>ICT Index</th>
+                                            <th>Expected Goals</th>
+                                            <th>Expected Assists</th>
+                                            <th>Expected Goal Involvements</th>
+                                            <th>Expected Goals Conceded</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -568,6 +613,7 @@
                                 </table>
                             </div>
                         </div>
+
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -597,7 +643,7 @@
                 <button class="position-button" data-position="4">FWD</button>
             </div>
         </div>
-    
+
         <!-- Price Filter -->
         <div id="price-filter" class="filter">
             <label for="price-range">Price:</label>
@@ -621,10 +667,12 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.js"></script>
-    <script src="API/requests.js"></script>
-    <script src="Algorithms/autoPick.js"></script>
+    <script src="api/requests.js"></script>
+    <script src="algorithms/autoPick.js"></script>
     <script src="constants/gridConfig.js"></script>
-    <script src="Algorithms/predictPoints.js"></script>
+    <script src="algorithms/predictPoints.js"></script>
+    <script src="helpers/helpers.js"></script>
     <script src="script.js"></script>
 </body>
+
 </html>

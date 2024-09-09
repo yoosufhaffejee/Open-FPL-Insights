@@ -770,7 +770,7 @@ function showPlayerInfo(player) {
     getPlayer(player.id)
         .then(response => {
             // Populate the modal with the player info
-            populatePlayerModal(response, player.web_name);
+            populatePlayerModal(response, player);
             // Show the modal
             const playerInfoModal = new bootstrap.Modal(document.getElementById('playerInfoModal'));
             playerInfoModal.show();
@@ -779,9 +779,11 @@ function showPlayerInfo(player) {
 }
 
 // Function to populate the modal with player data
-function populatePlayerModal(data, playerName) {
+function populatePlayerModal(data, player) {
     // Set the player name in the modal title
-    document.getElementById('playerInfoModalLabel').textContent = `Player Information - ${playerName}`;
+    document.getElementById('playerInfoModalLabel').innerHTML = `
+    <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p${player.code}.png" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;">
+    ${player.first_name} ${player.second_name}`;
 
     // Clear previous data
     const fixturesList = document.getElementById('upcoming-fixtures-list');
@@ -795,7 +797,7 @@ function populatePlayerModal(data, playerName) {
     // Populate Upcoming Fixtures
     const maxFixtures = 38;
     data.fixtures.slice(0, maxFixtures).forEach(fixture => {
-        const opponentTeam = getTeamById(fixture.team_a);
+        const opponentTeam = getTeamById(fixture.is_home ? fixture.team_a : fixture.team_h);
         const difficultyClass = getDifficultyClass(fixture.difficulty);
         const homeAway = fixture.is_home ? 'H' : 'A';
 
@@ -803,44 +805,123 @@ function populatePlayerModal(data, playerName) {
         fixtureItem.classList.add('p-2', 'flex-shrink-0', 'border', 'rounded', 'me-2');
         fixtureItem.style.width = '150px'; // Adjust width as needed for better visibility
 
+        // Create the fixture item content
         fixtureItem.innerHTML = `
-            <div><strong>Opponent:</strong> ${opponentTeam.short_name}</div>
-            <div><strong>H/A:</strong> ${homeAway}</div>
+            <div><strong>GW${fixture.event}:</strong> ${opponentTeam.short_name} (${homeAway})</div>
+            <div>
+                <img src="https://resources.premierleague.com/premierleague/badges/100/t${opponentTeam.code}.png" 
+                     alt="${opponentTeam.short_name}" 
+                     style="width: 40px; height: 40px;">
+            </div>
             <div><span class="badge ${difficultyClass}">${fixture.difficulty}</span></div>
-            <div><strong>Date:</strong> ${new Date(fixture.kickoff_time).toLocaleDateString()}</div>
+            <div>${formatFixtureDate(fixture.kickoff_time)}</div>
         `;
+
         fixturesList.appendChild(fixtureItem);
     });
 
     // Populate Recent Matches
-    data.history.forEach(match => {
+    // Sort matches by date, with the most recent match first
+    const sortedHistory = data.history.sort((a, b) => new Date(b.kickoff_time) - new Date(a.kickoff_time));
+
+    sortedHistory.forEach(match => {
+        const opponentTeam = getTeamById(match.opponent_team); // Get the opponent team by ID
+
+        // Determine the match result: Win, Loss, or Draw
+        let resultBadge;
+        if (match.team_h_score === match.team_a_score) {
+            resultBadge = `<span class="badge bg-secondary">D</span>`;  // Draw badge (grey)
+        } else if ((match.was_home && match.team_h_score > match.team_a_score) ||
+                (!match.was_home && match.team_a_score > match.team_h_score)) {
+            resultBadge = `<span class="badge bg-success">W</span>`;  // Win badge (green)
+        } else {
+            resultBadge = `<span class="badge bg-danger">L</span>`;  // Loss badge (red)
+        }
+
+        // Format score as "HomeTeamScore-AwayTeamScore"
+        const score = match.was_home 
+            ? `${match.team_h_score}-${match.team_a_score}`
+            : `${match.team_a_score}-${match.team_h_score}`;
+
+        // Create table row with opponent image, score, and result
         const matchRow = `
-            <tr>
-                <td>${new Date(match.kickoff_time).toLocaleDateString()}</td>
-                <td>${match.total_points}</td>
-                <td>${match.minutes}</td>
-                <td>${match.goals_scored}</td>
-                <td>${match.assists}</td>
-                <td>${match.clean_sheets}</td>
-                <td>${match.bonus}</td>
-            </tr>
-        `;
+        <tr>
+            <td>${match.round}</td>
+            <td>${formatFixtureDate(match.kickoff_time)}</td>
+            <td>
+                <div class="d-flex flex-column align-items-center">
+                    <img src="https://resources.premierleague.com/premierleague/badges/100/t${opponentTeam.code}.png" 
+                         alt="${opponentTeam.short_name}" style="width: 30px; height: 30px;">
+                    <span>${opponentTeam.short_name}</span>
+                </div>
+            </td>
+            <td>${score}</td>
+            <td>${resultBadge}</td>
+            <td>${match.total_points}</td>
+            <td>${match.bonus}</td>
+            <td>${(match.value/10).toFixed(1)}m</td>
+            <td>${match.minutes}</td>
+            <td>${match.goals_scored}</td>
+            <td>${match.assists}</td>
+            <td>${match.saves}</td>
+            <td>${match.clean_sheets}</td>
+            <td>${match.goals_conceded}</td>
+            <td>${match.expected_goals}</td>
+            <td>${match.expected_goal_involvements}</td>
+            <td>${match.expected_assists}</td>
+            <td>${match.expected_goals_conceded}</td>
+            <td>${match.yellow_cards}</td>
+            <td>${match.red_cards}</td>
+            <td>${match.own_goals}</td>
+            <td>${match.penalties_saved}</td>
+            <td>${match.penalties_missed}</td>
+            <td>${match.bps}</td>
+            <td>${match.influence}</td>
+            <td>${match.creativity}</td>
+            <td>${match.threat}</td>
+            <td>${match.ict_index}</td>
+            <td>${match.starts}</td>
+            <td>${match.selected}</td>
+            <td>${match.transfers_in}</td>
+            <td>${match.transfers_out}</td>
+        </tr>`;
+        
         recentMatchesTable.insertAdjacentHTML('beforeend', matchRow);
     });
 
     // Populate Past Seasons
     data.history_past.forEach(season => {
-        const seasonRow = `
+        const pastSeasonRow = `
             <tr>
                 <td>${season.season_name}</td>
+                <td>${(season.start_cost/10).toFixed(1)}m</td>
+                <td>${(season.end_cost/10).toFixed(1)}m</td>
                 <td>${season.total_points}</td>
                 <td>${season.minutes}</td>
                 <td>${season.goals_scored}</td>
                 <td>${season.assists}</td>
                 <td>${season.clean_sheets}</td>
+                <td>${season.goals_conceded}</td>
+                <td>${season.own_goals}</td>
+                <td>${season.penalties_saved}</td>
+                <td>${season.penalties_missed}</td>
+                <td>${season.yellow_cards}</td>
+                <td>${season.red_cards}</td>
+                <td>${season.saves}</td>
+                <td>${season.bonus}</td>
+                <td>${season.bps}</td>
+                <td>${season.influence}</td>
+                <td>${season.creativity}</td>
+                <td>${season.threat}</td>
+                <td>${season.ict_index}</td>
+                <td>${season.expected_goals}</td>
+                <td>${season.expected_assists}</td>
+                <td>${season.expected_goal_involvements}</td>
+                <td>${season.expected_goals_conceded}</td>
             </tr>
         `;
-        pastSeasonsTable.insertAdjacentHTML('beforeend', seasonRow);
+        const pastSeasonsTable = document.getElementById('past-seasons-table').querySelector('tbody');
+        pastSeasonsTable.insertAdjacentHTML('beforeend', pastSeasonRow);
     });
 }
 
