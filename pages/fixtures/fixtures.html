@@ -44,13 +44,134 @@
     <!-- Fixtures Page Content -->
     <div class="container">
         <div class="d-flex justify-content-between mb-3">
-            <button id="prevGW" class="btn btn-primary">Previous</button>
+            <button id="prevGW" class="btn btn-primary">
+                <i class="fas fa-arrow-left"></i> Previous
+            </button>
             <h2 id="gameweek" class="text-center">Gameweek 1</h2>
-            <button id="nextGW" class="btn btn-primary">Next</button>
+            <button id="nextGW" class="btn btn-primary">
+                Next <i class="fas fa-arrow-right"></i>
+            </button>            
         </div>
 
         <div id="fixtures-content">
             <!-- Fixtures will be dynamically added here -->
+        </div>
+    </div>
+
+    <!-- Player Info Modal -->
+    <div class="modal fade" id="playerInfoModal" tabindex="-1" aria-labelledby="playerInfoModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title font-weight-bold" id="playerInfoModalLabel">Player Information</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Player Info Content -->
+                    <div id="player-info-content">
+                        <!-- Upcoming Fixtures Section -->
+                        <div class="mb-4">
+                            <h4>Upcoming Fixtures</h4>
+                            <div class="d-flex overflow-auto" id="upcoming-fixtures-list">
+                                <!-- Fixtures will be dynamically added here -->
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <h4>Recent Matches</h4>
+                            <div class="table-responsive">
+                                <table class="table table-striped" id="recent-matches-table">
+                                    <thead class="thead-dark">
+                                        <tr>
+                                            <th>GW</th>
+                                            <th style="min-width: 120px;">Date</th>
+                                            <th>Opponent</th>
+                                            <th>Score</th>
+                                            <th>Result</th>
+                                            <th>Points</th>
+                                            <th>Bonus</th>
+                                            <th>Value</th>
+                                            <th>Minutes</th>
+                                            <th>Goals</th>
+                                            <th>Assists</th>
+                                            <th>Saves</th>
+                                            <th>Clean Sheets</th>
+                                            <th>Goals Conceded</th>
+                                            <th>Expected Goals</th>
+                                            <th>Expected Goal Involvements</th>
+                                            <th>Expected Assists</th>
+                                            <th>Expected Goals Conceded</th>
+                                            <th>Yellow Cards</th>
+                                            <th>Red Cards</th>
+                                            <th>Own Goals</th>
+                                            <th>Penalties Saved</th>
+                                            <th>Penalties Missed</th>
+                                            <th>BPS</th>
+                                            <th>Influence</th>
+                                            <th>Creativity</th>
+                                            <th>Threat</th>
+                                            <th>ICT Index</th>
+                                            <th>Starts</th>
+                                            <th>Selected</th>
+                                            <th>Transfers In</th>
+                                            <th>Transfers Out</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Match data will be dynamically added here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Past Seasons Section -->
+                        <div class="mb-4">
+                            <h4>Past Seasons</h4>
+                            <div class="table-responsive">
+                                <table class="table table-striped" id="past-seasons-table">
+                                    <thead class="thead-dark">
+                                        <tr>
+                                            <th>Season</th>
+                                            <th>Start Cost</th>
+                                            <th>End Cost</th>
+                                            <th>Points</th>
+                                            <th>Minutes</th>
+                                            <th>Goals</th>
+                                            <th>Assists</th>
+                                            <th>Clean Sheets</th>
+                                            <th>Goals Conceded</th>
+                                            <th>Own Goals</th>
+                                            <th>Penalties Saved</th>
+                                            <th>Penalties Missed</th>
+                                            <th>Yellow Cards</th>
+                                            <th>Red Cards</th>
+                                            <th>Saves</th>
+                                            <th>Bonus</th>
+                                            <th>BPS</th>
+                                            <th>Influence</th>
+                                            <th>Creativity</th>
+                                            <th>Threat</th>
+                                            <th>ICT Index</th>
+                                            <th>Expected Goals</th>
+                                            <th>Expected Assists</th>
+                                            <th>Expected Goal Involvements</th>
+                                            <th>Expected Goals Conceded</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Past season data will be dynamically added here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -60,7 +181,8 @@
 
     <!-- Custom JS -->
     <script src="../../api/requests.js"></script>
-    <script src="../../script.js"></script>
+    <script src="../../helpers/helpers.js"></script>
+    <script src="../../data.js"></script>
     <script src="fixtures.js"></script>
 </body>
 </html>

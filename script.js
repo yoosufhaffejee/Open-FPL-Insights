@@ -66,7 +66,7 @@ function updateGameweekInfo() {
     if (!gameweekInfo) {
         return;
     }
-    
+
     const gameweekDeadline = document.getElementById('gameweekDeadline');
 
     // Find the gameweek object for the current selected gameweek
@@ -116,10 +116,6 @@ if (priceRange) {
 }
 
 let bankBalance = 100;
-let teams = [];
-let gameweeks = [];
-let fixtures = [];
-let allPlayers = [];
 let myPlayers = [];
 let filteredPlayers = [];
 
@@ -492,17 +488,6 @@ function updatePlayerFixturesAndPoints(playerElement, player, predictedPoints) {
     return predictedPoints;
 }
 
-// Helper function to map position to elementType
-function getKeyByValue(pos) {
-    const map = {
-        gk: 1,  // Example mapping
-        def: 2,
-        mid: 3,
-        fwd: 4
-    };
-    return map[pos];
-}
-
 function fillMissingPlayers(filledPositions, subs) {
     // Define total players and substitutes
     const totalPlayers = 15;
@@ -851,7 +836,7 @@ function populatePlayerModal(data, player) {
                      style="width: 40px; height: 40px;">
             </div>
             <div><span class="badge ${difficultyClass}">${fixture.difficulty}</span></div>
-            <div>${formatFixtureDate(fixture.kickoff_time)}</div>
+            <div>${formatFixtureDateTime(fixture.kickoff_time)}</div>
         `;
 
         fixturesList.appendChild(fixtureItem);
@@ -884,7 +869,7 @@ function populatePlayerModal(data, player) {
         const matchRow = `
         <tr>
             <td>${match.round}</td>
-            <td>${formatFixtureDate(match.kickoff_time)}</td>
+            <td>${formatFixtureDateTime(match.kickoff_time)}</td>
             <td>
                 <div class="d-flex flex-column align-items-center">
                     <img src="https://resources.premierleague.com/premierleague/badges/100/t${opponentTeam.code}.png" 
@@ -960,27 +945,6 @@ function populatePlayerModal(data, player) {
         const pastSeasonsTable = document.getElementById('past-seasons-table').querySelector('tbody');
         pastSeasonsTable.insertAdjacentHTML('beforeend', pastSeasonRow);
     });
-}
-
-// Helper function to get team details by ID
-function getTeamById(teamId) {
-    return teams.find(team => team.id === teamId);
-}
-
-// Helper function to get the difficulty class based on difficulty rating
-function getDifficultyClass(difficulty) {
-    switch (difficulty) {
-        case 2:
-            return 'bg-success'; // Green
-        case 3:
-            return 'bg-secondary'; // Grey
-        case 4:
-            return 'bg-warning'; // Yellow
-        case 5:
-            return 'bg-danger'; // Red
-        default:
-            return 'bg-light'; // Default
-    }
 }
 
 // Function to update team info
@@ -1180,35 +1144,16 @@ function displayPlayers(filteredPlayers) {
     grid = agGrid.createGrid(myGridElement, gridOptions);
 }
 
-//Fetch data and render the grid once the data is resolved
-getOverview().then(data => {
-    teams = data.teams;
+async function Initialize() {
     populateTeamFilter();
-
-    allPlayers = data.elements;
     filteredPlayers = allPlayers;
 
-    getGameweeks().then(data => {
-        gameweeks = data;
-        selectedGameweek = getUpcomingGameweek().id;
-        updateGameweekInfo();
+    selectedGameweek = getUpcomingGameweek().id;
+    updateGameweekInfo();
 
-        getFixtures().then(data => {
-            fixtures = data;
-    
-            // Load the players from the cookie when the page loads
-            loadPlayers();
-            
-            // Initial display of all filteredPlayers
-            displayPlayers(filteredPlayers);
-        });
-    });
-}).catch(error => {
-    console.error('Error:', error);
-});
-
-// Function to get the upcoming gameweek where 'finished' is false
-function getUpcomingGameweek() {
-    // Find the first gameweek where 'finished' is false
-    return gameweeks.find(gameweek => gameweek.finished === false);
+    // Load the players from the cookie when the page loads
+    loadPlayers();
+                
+    // Initial display of all filteredPlayers
+    displayPlayers(filteredPlayers); 
 }
