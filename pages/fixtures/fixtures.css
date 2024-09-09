@@ -1,0 +1,48 @@
+.team-logo {
+    width: 30px;
+    height: 30px;
+}
+
+.accordion-button {
+    box-shadow: none;
+    border: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.accordion-button:not(.collapsed) {
+    color: #0d6efd;
+    background-color: #e9ecef;
+}
+
+.accordion-button::after {
+    content: "\f107"; /* FontAwesome down arrow */
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    color: #6c757d;
+}
+
+.accordion-button.collapsed::after {
+    content: "\f105"; /* FontAwesome up arrow */
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    color: #6c757d;
+}
+
+.fixture-date-row {
+    background-color: #f8f9fa;
+}
+
+.fixture-date {
+    font-weight: bold;
+    padding: 10px 0;
+}
+
+.table th, .table td {
+    text-align: center;
+}
+
+.table td {
+    vertical-align: middle;
+}

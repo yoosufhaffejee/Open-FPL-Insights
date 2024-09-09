@@ -11,15 +11,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
 let selectedGameweek = 1;
 
-document.getElementById('prevGameweek').addEventListener('click', () => {
-    // Logic to go to the previous game week
-    navigateGameweek('prev');
-});
+const prevGameweekElement = document.getElementById('prevGameweek');
 
-document.getElementById('nextGameweek').addEventListener('click', () => {
-    // Logic to go to the next game week
-    navigateGameweek('next');
-});
+if (prevGameweekElement) {
+    prevGameweekElement.addEventListener('click', () => {
+        // Logic to go to the previous game week
+        navigateGameweek('prev');
+    });
+} else {
+    console.error('Element with ID "prevGameweek" does not exist.');
+}
+
+const nextGameweekElement = document.getElementById('nextGameweek');
+
+if (nextGameweekElement) {
+    nextGameweekElement.addEventListener('click', () => {
+        // Logic to go to the next game week
+        navigateGameweek('next');
+    });
+} else {
+    console.error('Element with ID "nextGameweek" does not exist.');
+}
 
 // Function to handle next and previous gameweek navigation
 function navigateGameweek(direction) {
@@ -50,6 +62,11 @@ function navigateGameweek(direction) {
 // Function to update the gameweek info and deadline display
 function updateGameweekInfo() {
     const gameweekInfo = document.getElementById('gameweekInfo');
+
+    if (!gameweekInfo) {
+        return;
+    }
+    
     const gameweekDeadline = document.getElementById('gameweekDeadline');
 
     // Find the gameweek object for the current selected gameweek
@@ -63,9 +80,16 @@ function updateGameweekInfo() {
 }
 
 // Add event listeners for the filter controls
-document.getElementById('team-select').addEventListener('change', function() {
-    filterByTeam(this.value);
-});
+const teamSelectElement = document.getElementById('team-select');
+
+if (teamSelectElement) {
+    teamSelectElement.addEventListener('change', function() {
+        filterByTeam(this.value);
+    });
+} else {
+    console.error('Element with ID "team-select" does not exist.');
+}
+
 
 document.querySelectorAll('.position-button').forEach(button => {
     button.addEventListener('click', function() {
@@ -76,10 +100,20 @@ document.querySelectorAll('.position-button').forEach(button => {
 });
 
 const priceRange = document.getElementById('price-range');
-priceRange.addEventListener('input', function() {
-    filterByPrice(this.value);
-    document.getElementById('price-value').textContent = this.value;
-});
+
+if (priceRange) {
+    priceRange.addEventListener('input', function() {
+        filterByPrice(this.value);
+        const priceValue = document.getElementById('price-value');
+        if (priceValue) {
+            priceValue.textContent = this.value;
+        } else {
+            console.error('Element with ID "price-value" does not exist.');
+        }
+    });
+} else {
+    console.error('Element with ID "price-range" does not exist.');
+}
 
 let bankBalance = 100;
 let teams = [];
@@ -92,6 +126,10 @@ let filteredPlayers = [];
 // Function to populate the team dropdown
 function populateTeamFilter() {
     const teamSelect = document.getElementById('team-select');
+
+    if (!teamSelect) {
+        return;
+    }
 
     // Clear any existing options (if needed)
     teamSelect.innerHTML = ''; 
@@ -110,7 +148,6 @@ function populateTeamFilter() {
         teamSelect.appendChild(option);
     });
 }
-
 
 // Function to filter by team
 function filterByTeam(teamId) {
