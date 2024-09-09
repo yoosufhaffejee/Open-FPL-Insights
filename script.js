@@ -258,6 +258,11 @@ function removePlayer(player) {
         // Decrement the filled slot count for this position
         filledSlots[positionPrefix]--;
 
+        // Refresh Grid
+        grid.updateGridOptions({
+            rowData: filteredPlayers
+        });
+
         // Update the UI to reflect the changes
         updateTeamUI();
     } else {
@@ -270,17 +275,13 @@ function removePlayer(player) {
     }
 }
 
-// Function to update the team UI
+ // Function to update the team UI
 function updateTeamUI() {
     // Clear existing players from rows
     document.querySelectorAll('.row').forEach(row => row.innerHTML = '');
 
     let bankBalance = 100;
     let predictedPoints = 0;
-
-    // Determine upcoming gameweeks
-    const upcomingGameweeks = gameweeks.filter(gw => gw.id >= selectedGameweek).slice(0, 3);
-
     let subs = 0;
     const filledPositions = {
         gk: 0,
@@ -289,134 +290,169 @@ function updateTeamUI() {
         fwd: 0
     };
 
+    // Track available slot indices per position
+    const availableSlotsCopy = {
+        gk: [...availableSlots.gk],
+        def: [...availableSlots.def],
+        mid: [...availableSlots.mid],
+        fwd: [...availableSlots.fwd]
+    };
+
     // Iterate through each player and update the UI
     myPlayers.forEach(player => {
-        filledPositions[positionMap[player.element_type]]++;
-        if (player.isSub) {
-            subs++;
-        }
+        const positionPrefix = positionMap[player.element_type];
+        filledPositions[positionPrefix]++;
+        if (player.isSub) subs++;
 
-        // Create or select the player element
-        const playerElement = document.createElement('div');
-        playerElement.className = 'player';
-        playerElement.id = `player-${player.slotId}`;
+        // Assign a slot ID to the player
+        assignSlotId(player, availableSlotsCopy);
 
-        let image = player.code ?
-        `<img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p${player.code}.png" alt="${player.web_name}">`
-            : `<img src="assets/empty-jersey.png" alt="${player.web_name}">`
-        // Setup the HTML for the player element
-        playerElement.innerHTML = `
-            ${image}
-            <h5>${player.web_name} ${player.isCaptain ? '(C)' : player.isVice ? '(V)' : ''}</h5>
-            <h6>(${(player.now_cost / 10).toFixed(1)}m)</h6>
-            <div class="fixtures">
-                ${Array.from({ length: 3 }, (_, i) => `
-                    <div class="fixture">
-                        <span class="predicted-points">0</span>
-                        <span class="fixture-detail">FIX (H)</span>
-                    </div>
-                `).join('')}
-            </div>
-            <div class="icon-buttons">
-                <button class="icon-button"><i class="fas fa-exchange-alt"></i></button>
-                <button class="icon-button"><i class="fas fa-trash"></i></button>
-                <button class="icon-button"><i class="fas fa-crown ${player.isCaptain ? 'captain' : ''}"></i></button>
-                <button class="icon-button"><i class="fas fa-star ${player.isVice ? 'vice' : ''}"></i></button>
-                <button class="icon-button"><i class="fas fa-info-circle"></i></button>
-            </div>
-        `;
+        // Render the player element
+        const playerElement = renderPlayerElement(player);
 
         // Determine the row based on the player's type and status
         const rowId = player.isSub ? 'subs' : getRowIdForElementType(player.element_type);
-        
-        // Append player element to the appropriate row
+
+        // Append the player element to the appropriate row
         const row = document.getElementById(rowId);
-        if (row) {
-            if (player.isSub) {
-                row.children[0].appendChild(playerElement);
-            } else {
-                row.appendChild(playerElement);
-            }
-        }
+        appendPlayerToRow(row, playerElement, player);
 
         // Update fixtures and predicted points
-        playerElement.querySelectorAll('.fixture').forEach((fixtureElement, fixtureIndex) => {
-            const upcomingGameweek = upcomingGameweeks[fixtureIndex];
-            if (upcomingGameweek) {
-                let isHome = false;
+        predictedPoints = updatePlayerFixturesAndPoints(player, predictedPoints);
 
-                const playerFixture = fixtures.find(fixture => {
-                    if (fixture.event === upcomingGameweek.id) {
-                        if (fixture.team_a === player.team) {
-                            return true;
-                        }
-                        if (fixture.team_h === player.team) {
-                            isHome = true;
-                            return true;
-                        }
-                    }
-                    return false;
-                });
-
-                if (playerFixture) {
-                    const opponentTeam = teams.find(team => 
-                        team.id === (playerFixture.team_a === player.team ? playerFixture.team_h : playerFixture.team_a)
-                    );
-
-                    fixtureElement.querySelector('.fixture-detail').textContent = `${opponentTeam.short_name} (${playerFixture.team_a === player.team ? 'A' : 'H'})`;
-
-                    let playerPredictedPoints = getExpectedPoints(player, playerFixture);
-                    if (getUpcomingGameweek() == upcomingGameweek) {
-                        let formBasedPoints = (parseFloat(player.form) + parseFloat(player.ep_next)) / 2;
-                        playerPredictedPoints = (playerPredictedPoints + formBasedPoints) / 2;
-                    }
-
-                    const strengthAdjustmentHA = (opponentTeam.strength * 10) / 100;
-                    const strengthAdjustment10 = (opponentTeam.strength * 10) / 100;
-                    const strengthAdjustment15 = (opponentTeam.strength * 15) / 100;
-                    const strengthAdjustment20 = (opponentTeam.strength * 20) / 100;
-
-                    if (opponentTeam.strength == 2) {
-                        //playerPredictedPoints += (playerPredictedPoints * strengthAdjustment20);
-                    }
-
-                    if (opponentTeam.strength == 4) {
-                        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustment10);
-                    }
-
-                    if (opponentTeam.strength == 5) {
-                        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustment15);
-                    }
-
-                    if (!isHome) {
-                        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustmentHA);
-                    }
-
-                    if (player.isCaptain) {
-                        playerPredictedPoints = playerPredictedPoints * 2;
-                    }
-                    
-                    fixtureElement.querySelector('.predicted-points').textContent = playerPredictedPoints.toFixed(1);
-
-                    if (fixtureIndex == 0 && !player.isSub) {
-                        predictedPoints += playerPredictedPoints;
-                    }
-                }
-            }
-        });
-
-        // Setup player actions (like swapping players)
+        // Setup player actions (like swapping, removing, etc.)
         setupPlayerActions(playerElement, player);
 
         // Update bank balance
         bankBalance -= player.now_cost / 10;
         updateTeamInfo("Bank Balance", `${bankBalance.toFixed(1)}m`);
-
-        // Update predicted points
         updateTeamInfo("Predicted Points", predictedPoints.toFixed(0));
     });
 
+    // Handle missing players/ghost players
     fillMissingPlayers(filledPositions, subs);
+}
+
+// Function to assign the next available slot to the player
+function assignSlotId(player, availableSlotsCopy) {
+    const positionPrefix = positionMap[player.element_type];
+    if (!player.slotId) {
+        player.slotId = availableSlotsCopy[positionPrefix].shift(); // Assign next available slot and remove from list
+    }
+}
+
+// Function to render the HTML for the player element
+function renderPlayerElement(player) {
+    const playerElement = document.createElement('div');
+    playerElement.className = 'player';
+    playerElement.id = `player-${player.slotId}`;
+
+    const image = player.code ?
+        `<img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p${player.code}.png" alt="${player.web_name}">`
+        : `<img src="assets/empty-jersey.png" alt="${player.web_name}">`;
+
+    playerElement.innerHTML = `
+        ${image}
+        <h5>${player.web_name} ${player.isCaptain ? '(C)' : player.isVice ? '(V)' : ''}</h5>
+        <h6>(${(player.now_cost / 10).toFixed(1)}m)</h6>
+        <div class="fixtures">
+            ${Array.from({ length: 3 }, (_, i) => `
+                <div class="fixture">
+                    <span class="predicted-points">0</span>
+                    <span class="fixture-detail">FIX (H)</span>
+                </div>
+            `).join('')}
+        </div>
+        <div class="icon-buttons">
+            <button class="icon-button"><i class="fas fa-exchange-alt"></i></button>
+            <button class="icon-button"><i class="fas fa-trash"></i></button>
+            <button class="icon-button"><i class="fas fa-crown ${player.isCaptain ? 'captain' : ''}"></i></button>
+            <button class="icon-button"><i class="fas fa-star ${player.isVice ? 'vice' : ''}"></i></button>
+            <button class="icon-button"><i class="fas fa-info-circle"></i></button>
+        </div>
+    `;
+
+    return playerElement;
+}
+
+// Function to append the player to the correct row
+function appendPlayerToRow(row, playerElement, player) {
+    if (row) {
+        if (player.isSub) {
+            row.children[0].appendChild(playerElement);
+        } else {
+            row.appendChild(playerElement);
+        }
+    }
+}
+
+// Function to update player fixtures and predicted points
+function updatePlayerFixturesAndPoints(player, predictedPoints) {
+    const upcomingGameweeks = gameweeks.filter(gw => gw.id >= selectedGameweek).slice(0, 3);
+
+    playerElement.querySelectorAll('.fixture').forEach((fixtureElement, fixtureIndex) => {
+        const upcomingGameweek = upcomingGameweeks[fixtureIndex];
+        if (upcomingGameweek) {
+            let isHome = false;
+            const playerFixture = fixtures.find(fixture => {
+                if (fixture.event === upcomingGameweek.id) {
+                    if (fixture.team_a === player.team) return true;
+                    if (fixture.team_h === player.team) {
+                        isHome = true;
+                        return true;
+                    }
+                }
+                return false;
+            });
+
+            if (playerFixture) {
+                const opponentTeam = teams.find(team =>
+                    team.id === (playerFixture.team_a === player.team ? playerFixture.team_h : playerFixture.team_a)
+                );
+
+                fixtureElement.querySelector('.fixture-detail').textContent = `${opponentTeam.short_name} (${playerFixture.team_a === player.team ? 'A' : 'H'})`;
+
+                let playerPredictedPoints = getExpectedPoints(player, playerFixture);
+                if (getUpcomingGameweek() == upcomingGameweek) {
+                    const formBasedPoints = (parseFloat(player.form) + parseFloat(player.ep_next)) / 2;
+                    playerPredictedPoints = (playerPredictedPoints + formBasedPoints) / 2;
+                }
+
+                const strengthAdjustmentHA = (opponentTeam.strength * 10) / 100;
+                const strengthAdjustment10 = (opponentTeam.strength * 10) / 100;
+                const strengthAdjustment15 = (opponentTeam.strength * 15) / 100;
+                const strengthAdjustment20 = (opponentTeam.strength * 20) / 100;
+
+                if (opponentTeam.strength == 2) {
+                    // playerPredictedPoints += (playerPredictedPoints * strengthAdjustment20);
+                }
+
+                if (opponentTeam.strength == 4) {
+                    playerPredictedPoints -= (playerPredictedPoints * strengthAdjustment10);
+                }
+
+                if (opponentTeam.strength == 5) {
+                    playerPredictedPoints -= (playerPredictedPoints * strengthAdjustment15);
+                }
+
+                if (!isHome) {
+                    playerPredictedPoints -= (playerPredictedPoints * strengthAdjustmentHA);
+                }
+
+                if (player.isCaptain) {
+                    playerPredictedPoints *= 2;
+                }
+
+                fixtureElement.querySelector('.predicted-points').textContent = playerPredictedPoints.toFixed(1);
+
+                if (fixtureIndex == 0 && !player.isSub) {
+                    predictedPoints += playerPredictedPoints;
+                }
+            }
+        }
+    });
+
+    return predictedPoints;
 }
 
 // Helper function to map position to elementType
@@ -451,6 +487,7 @@ function fillMissingPlayers(filledPositions, subs) {
     // Generate list of players to add
     const playersToAdd = [];
     
+    let count = 0;
     // Add remaining missing players as substitutes
     while (remainingSubs) {
         positions.forEach(pos => {
@@ -462,6 +499,11 @@ function fillMissingPlayers(filledPositions, subs) {
                 missingPlayers[pos] -= addToSubs;
             }
         });
+
+        count++;
+        if (count > 15) {
+            break;
+        }
     }
 
     // Add missing players to the field if there are still positions available
@@ -584,7 +626,6 @@ function swapPlayer(player) {
     const index = myPlayers.findIndex(p => p.id === player.id);
     if (index === -1) return;
 
-    debugger;
     // If no player is queued for swap, queue this player
     if (playerSwap.length === 0) {
         playerSwap.push(index);
@@ -898,6 +939,10 @@ function autoPickPlayers() {
             }
         });
 
+        grid.updateGridOptions({
+            rowData: filteredPlayers
+        });
+        
         updateTeamUI();
     }
 }
