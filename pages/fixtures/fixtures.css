@@ -1,6 +1,11 @@
 .team-logo {
-    width: 30px;
-    height: 30px;
+    width: 40px; /* Increased size for team logos */
+    height: 40px; /* Increased size for team logos */
+    margin-right: 10px; /* Added spacing between logo and text */
+}
+
+.accordion-item {
+    margin-bottom: 10px; /* Add spacing between accordion items */
 }
 
 .accordion-button {
@@ -9,11 +14,13 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    font-size: 1.1rem; /* Slightly larger font size */
+    padding: 1rem; /* Increase padding for better spacing */
 }
 
 .accordion-button:not(.collapsed) {
     color: #0d6efd;
-    background-color: #e9ecef;
+    background-color: #f8f9fa; /* Lighter background for expanded state */
 }
 
 .accordion-button::after {
@@ -21,6 +28,7 @@
     font-family: "Font Awesome 5 Free";
     font-weight: 900;
     color: #6c757d;
+    margin-left: 10px; /* Add space before the icon */
 }
 
 .accordion-button.collapsed::after {
@@ -28,15 +36,14 @@
     font-family: "Font Awesome 5 Free";
     font-weight: 900;
     color: #6c757d;
-}
-
-.fixture-date-row {
-    background-color: #f8f9fa;
+    margin-left: 10px; /* Add space before the icon */
 }
 
 .fixture-date {
     font-weight: bold;
     padding: 10px 0;
+    text-align: center; /* Center the fixture date */
+    font-size: 1.2rem; /* Larger font size for the date */
 }
 
 .table th, .table td {
@@ -45,4 +52,9 @@
 
 .table td {
     vertical-align: middle;
+    padding: 12px; /* Increase padding for thicker rows */
+}
+
+.accordion-body {
+    padding: 1rem; /* Ensure padding inside accordion body for better spacing */
 }
