@@ -103,10 +103,6 @@ function getExpectedPoints (player, fixture) {
         expectedPoints -= penaltyMissPointsPer90;
     }
 
-    if (player.isCaptain) {
-        expectedPoints = expectedPoints * 2;
-    }
-
     return expectedPoints;
 }
 

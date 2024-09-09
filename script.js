@@ -242,8 +242,6 @@ function addPlayer(player) {
     }
 }
 
-
-
 // Function to remove a player
 function removePlayer(player) {
     // Find the index of the player to remove
@@ -309,7 +307,8 @@ function updateTeamUI() {
         // Setup the HTML for the player element
         playerElement.innerHTML = `
             ${image}
-            <h5>${player.web_name} (${(player.now_cost / 10).toFixed(1)}m)</h5>
+            <h5>${player.web_name} ${player.isCaptain ? '(C)' : player.isVice ? '(V)' : ''}</h5>
+            <h6>(${(player.now_cost / 10).toFixed(1)}m)</h6>
             <div class="fixtures">
                 ${Array.from({ length: 3 }, (_, i) => `
                     <div class="fixture">
@@ -366,10 +365,10 @@ function updateTeamUI() {
 
                     fixtureElement.querySelector('.fixture-detail').textContent = `${opponentTeam.short_name} (${playerFixture.team_a === player.team ? 'A' : 'H'})`;
 
-                    let initialExpectedPoints = getExpectedPoints(player, playerFixture);
+                    let playerPredictedPoints = getExpectedPoints(player, playerFixture);
                     if (getUpcomingGameweek() == upcomingGameweek) {
                         let formBasedPoints = (parseFloat(player.form) + parseFloat(player.ep_next)) / 2;
-                        initialExpectedPoints = (initialExpectedPoints + formBasedPoints) / 2;
+                        playerPredictedPoints = (playerPredictedPoints + formBasedPoints) / 2;
                     }
 
                     const strengthAdjustmentHA = (opponentTeam.strength * 10) / 100;
@@ -378,25 +377,29 @@ function updateTeamUI() {
                     const strengthAdjustment20 = (opponentTeam.strength * 20) / 100;
 
                     if (opponentTeam.strength == 2) {
-                        initialExpectedPoints += (initialExpectedPoints * strengthAdjustment20);
+                        //playerPredictedPoints += (playerPredictedPoints * strengthAdjustment20);
                     }
 
                     if (opponentTeam.strength == 4) {
-                        initialExpectedPoints -= (initialExpectedPoints * strengthAdjustment10);
+                        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustment10);
                     }
 
                     if (opponentTeam.strength == 5) {
-                        initialExpectedPoints -= (initialExpectedPoints * strengthAdjustment15);
+                        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustment15);
                     }
 
-                    if (isHome) {
-                        initialExpectedPoints += (initialExpectedPoints * strengthAdjustmentHA);
+                    if (!isHome) {
+                        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustmentHA);
                     }
 
-                    fixtureElement.querySelector('.predicted-points').textContent = initialExpectedPoints.toFixed(1);
+                    if (player.isCaptain) {
+                        playerPredictedPoints = playerPredictedPoints * 2;
+                    }
+                    
+                    fixtureElement.querySelector('.predicted-points').textContent = playerPredictedPoints.toFixed(1);
 
                     if (fixtureIndex == 0 && !player.isSub) {
-                        predictedPoints += initialExpectedPoints;
+                        predictedPoints += playerPredictedPoints;
                     }
                 }
             }
@@ -447,6 +450,19 @@ function fillMissingPlayers(filledPositions, subs) {
 
     // Generate list of players to add
     const playersToAdd = [];
+    
+    // Add remaining missing players as substitutes
+    while (remainingSubs) {
+        positions.forEach(pos => {
+            const isMissing = missingPlayers[pos] > 0;
+            if (isMissing && remainingSubs > 0) {
+                const addToSubs = Math.min(1, remainingSubs);
+                playersToAdd.push(...Array(addToSubs).fill({ web_name: 'Player', now_cost: 0, element_type: getKeyByValue(pos), isSub: true }));
+                remainingSubs -= addToSubs;
+                missingPlayers[pos] -= addToSubs;
+            }
+        });
+    }
 
     // Add missing players to the field if there are still positions available
     positions.forEach(pos => {
@@ -455,22 +471,7 @@ function fillMissingPlayers(filledPositions, subs) {
             const addToField = Math.min(missing, remainingOnFieldPlayers);
             playersToAdd.push(...Array(addToField).fill({ web_name: 'Player', now_cost: 0, element_type: getKeyByValue(pos), isSub: false }));
             remainingOnFieldPlayers -= addToField;
-        }
-    });
-
-    // Ensure exactly 1 goalkeeper is added to subs if not already present
-    if (filledPositions.gk < 2 && remainingSubs > 0) {
-        playersToAdd.push({ web_name: 'Player', now_cost: 0, element_type: 1, isSub: true });
-        remainingSubs -= 1;
-    }
-
-    // Add remaining missing players as substitutes
-    positions.forEach(pos => {
-        const missing = missingPlayers[pos];
-        if (remainingSubs > 0) {
-            const addToSubs = Math.min(missing, remainingSubs);
-            playersToAdd.push(...Array(addToSubs).fill({ web_name: 'Player', now_cost: 0, element_type: getKeyByValue(pos), isSub: true }));
-            remainingSubs -= addToSubs;
+            missingPlayers[pos] -= addToField;
         }
     });
 
@@ -535,14 +536,11 @@ function setupPlayerActions(playerElement, player) {
 
     if (swapButton) {
         swapButton.addEventListener('click', () => {
-            const index = myPlayers.findIndex(p => p.slotId === player.slotId);
-            if (index === -1) return;
-
             // Visually indicate that this player is selected for swapping
             newPlayerElement.classList.add('swap-queued');
 
             // Call swapPlayer logic to handle both selecting and swapping
-            swapPlayer(index);
+            swapPlayer(player);
         });
     }
 
@@ -582,7 +580,11 @@ function setupPlayerActions(playerElement, player) {
 }
 
 // Function to handle swap logic and queueing players for swap
-function swapPlayer(index) {
+function swapPlayer(player) {
+    const index = myPlayers.findIndex(p => p.id === player.id);
+    if (index === -1) return;
+
+    debugger;
     // If no player is queued for swap, queue this player
     if (playerSwap.length === 0) {
         playerSwap.push(index);
@@ -643,6 +645,8 @@ function swapPlayer(index) {
             }
         }
 
+        document.getElementById('saveButton').disabled = false;
+
         // After swapping, update the UI to reflect the new positions and statuses
         updateTeamUI();
         console.log(`Players swapped successfully between positions ${index1} and ${index2}.`);
@@ -680,7 +684,10 @@ function getRowForPlayer(player) {
 // Function to set the captain
 function captainPlayer(player) {
     if (player.isVice) {
-        return;
+        player.isVice = false;
+
+        let oldCaptain = myPlayers.find(p => p.isCaptain);
+        oldCaptain.isVice = true;
     }
 
     // Set isCaptain = false for all players
@@ -689,13 +696,19 @@ function captainPlayer(player) {
     // Set isCaptain = true for the selected player
     player.isCaptain = true;
 
+    // Enable save button
+    document.getElementById('saveButton').disabled = false;
+
     // Update the UI to reflect the change
     updateTeamUI();
 }
 
 function vicePlayer(player) {
     if (player.isCaptain) {
-        return;
+        player.isCaptain = false;
+        
+        let oldVice = myPlayers.find(p => p.isVice);
+        oldVice.isCaptain = true;
     }
 
     // Set isVice = false for all players
@@ -704,6 +717,9 @@ function vicePlayer(player) {
     // Set isCaptain = true for the selected player
     player.isVice = true;
 
+    // Enable save button
+    document.getElementById('saveButton').disabled = false;
+    
     // Update the UI to reflect the change
     updateTeamUI();
 }
