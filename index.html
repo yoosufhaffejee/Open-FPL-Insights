@@ -505,6 +505,78 @@
         </div>
     </div>
 
+    <!-- Player Info Modal -->
+    <div class="modal fade" id="playerInfoModal" tabindex="-1" aria-labelledby="playerInfoModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title font-weight-bold" id="playerInfoModalLabel">Player Information</h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Player Info Content -->
+                    <div id="player-info-content">
+                        <!-- Upcoming Fixtures Section -->
+                        <div class="mb-4">
+                            <h5>Upcoming Fixtures</h5>
+                            <div class="d-flex overflow-auto" id="upcoming-fixtures-list">
+                                <!-- Fixtures will be dynamically added here -->
+                            </div>
+                        </div>
+
+                        <!-- Recent Matches Section -->
+                        <div class="mb-4">
+                            <h5>Recent Matches</h5>
+                            <div class="table-responsive">
+                                <table class="table table-striped" id="recent-matches-table">
+                                    <thead class="thead-dark">
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Points</th>
+                                            <th>Minutes</th>
+                                            <th>Goals</th>
+                                            <th>Assists</th>
+                                            <th>Clean Sheets</th>
+                                            <th>Bonus</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Match data will be dynamically added here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Past Seasons Section -->
+                        <div class="mb-4">
+                            <h5>Past Seasons</h5>
+                            <div class="table-responsive">
+                                <table class="table table-striped" id="past-seasons-table">
+                                    <thead class="thead-dark">
+                                        <tr>
+                                            <th>Season</th>
+                                            <th>Points</th>
+                                            <th>Minutes</th>
+                                            <th>Goals</th>
+                                            <th>Assists</th>
+                                            <th>Clean Sheets</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Past season data will be dynamically added here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Action Buttons -->
     <div class="button-container text-center">
         <button id="resetButton" class="btn btn-danger" onclick="resetPlayers()">Reset</button>

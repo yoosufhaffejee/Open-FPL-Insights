@@ -318,7 +318,7 @@ function updateTeamUI() {
         appendPlayerToRow(row, playerElement, player);
 
         // Update fixtures and predicted points
-        predictedPoints = updatePlayerFixturesAndPoints(player, predictedPoints);
+        predictedPoints = updatePlayerFixturesAndPoints(playerElement, player, predictedPoints);
 
         // Setup player actions (like swapping, removing, etc.)
         setupPlayerActions(playerElement, player);
@@ -387,7 +387,7 @@ function appendPlayerToRow(row, playerElement, player) {
 }
 
 // Function to update player fixtures and predicted points
-function updatePlayerFixturesAndPoints(player, predictedPoints) {
+function updatePlayerFixturesAndPoints(playerElement, player, predictedPoints) {
     const upcomingGameweeks = gameweeks.filter(gw => gw.id >= selectedGameweek).slice(0, 3);
 
     playerElement.querySelectorAll('.fixture').forEach((fixtureElement, fixtureIndex) => {
@@ -765,8 +765,104 @@ function vicePlayer(player) {
     updateTeamUI();
 }
 
+// Function to fetch and show player info
 function showPlayerInfo(player) {
+    getPlayer(player.id)
+        .then(response => {
+            // Populate the modal with the player info
+            populatePlayerModal(response, player.web_name);
+            // Show the modal
+            const playerInfoModal = new bootstrap.Modal(document.getElementById('playerInfoModal'));
+            playerInfoModal.show();
+        })
+        .catch(error => console.log('Error fetching player info:', error));
+}
 
+// Function to populate the modal with player data
+function populatePlayerModal(data, playerName) {
+    // Set the player name in the modal title
+    document.getElementById('playerInfoModalLabel').textContent = `Player Information - ${playerName}`;
+
+    // Clear previous data
+    const fixturesList = document.getElementById('upcoming-fixtures-list');
+    const recentMatchesTable = document.querySelector('#recent-matches-table tbody');
+    const pastSeasonsTable = document.querySelector('#past-seasons-table tbody');
+
+    fixturesList.innerHTML = '';
+    recentMatchesTable.innerHTML = '';
+    pastSeasonsTable.innerHTML = '';
+
+    // Populate Upcoming Fixtures
+    const maxFixtures = 38;
+    data.fixtures.slice(0, maxFixtures).forEach(fixture => {
+        const opponentTeam = getTeamById(fixture.team_a);
+        const difficultyClass = getDifficultyClass(fixture.difficulty);
+        const homeAway = fixture.is_home ? 'H' : 'A';
+
+        const fixtureItem = document.createElement('div');
+        fixtureItem.classList.add('p-2', 'flex-shrink-0', 'border', 'rounded', 'me-2');
+        fixtureItem.style.width = '150px'; // Adjust width as needed for better visibility
+
+        fixtureItem.innerHTML = `
+            <div><strong>Opponent:</strong> ${opponentTeam.short_name}</div>
+            <div><strong>H/A:</strong> ${homeAway}</div>
+            <div><span class="badge ${difficultyClass}">${fixture.difficulty}</span></div>
+            <div><strong>Date:</strong> ${new Date(fixture.kickoff_time).toLocaleDateString()}</div>
+        `;
+        fixturesList.appendChild(fixtureItem);
+    });
+
+    // Populate Recent Matches
+    data.history.forEach(match => {
+        const matchRow = `
+            <tr>
+                <td>${new Date(match.kickoff_time).toLocaleDateString()}</td>
+                <td>${match.total_points}</td>
+                <td>${match.minutes}</td>
+                <td>${match.goals_scored}</td>
+                <td>${match.assists}</td>
+                <td>${match.clean_sheets}</td>
+                <td>${match.bonus}</td>
+            </tr>
+        `;
+        recentMatchesTable.insertAdjacentHTML('beforeend', matchRow);
+    });
+
+    // Populate Past Seasons
+    data.history_past.forEach(season => {
+        const seasonRow = `
+            <tr>
+                <td>${season.season_name}</td>
+                <td>${season.total_points}</td>
+                <td>${season.minutes}</td>
+                <td>${season.goals_scored}</td>
+                <td>${season.assists}</td>
+                <td>${season.clean_sheets}</td>
+            </tr>
+        `;
+        pastSeasonsTable.insertAdjacentHTML('beforeend', seasonRow);
+    });
+}
+
+// Helper function to get team details by ID
+function getTeamById(teamId) {
+    return teams.find(team => team.id === teamId);
+}
+
+// Helper function to get the difficulty class based on difficulty rating
+function getDifficultyClass(difficulty) {
+    switch (difficulty) {
+        case 2:
+            return 'bg-success'; // Green
+        case 3:
+            return 'bg-secondary'; // Grey
+        case 4:
+            return 'bg-warning'; // Yellow
+        case 5:
+            return 'bg-danger'; // Red
+        default:
+            return 'bg-light'; // Default
+    }
 }
 
 // Function to update team info
@@ -942,7 +1038,7 @@ function autoPickPlayers() {
         grid.updateGridOptions({
             rowData: filteredPlayers
         });
-        
+
         updateTeamUI();
     }
 }
