@@ -31,6 +31,11 @@ function getUpcomingGameweek() {
     return gameweeks.find(gameweek => gameweek.finished === false);
 }
 
+function getLastGameweekId() {
+    // Find the first gameweek where 'finished' is true
+    return getUpcomingGameweek().id - 1;
+}
+
 // Helper function to get team details by ID
 function getTeamById(teamId) {
     return teams.find(team => team.id === teamId);

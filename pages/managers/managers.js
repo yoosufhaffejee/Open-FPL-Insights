@@ -35,20 +35,18 @@ function addPlayers(picks) {
     myPlayers = [];
     picks.forEach((pick, index) => {
         let player = allPlayers.find(p => p.id == pick.element);
+
+        player.isCaptain = pick.is_captain;
+        player.isVice = pick.is_vice_captain;
+
         if (index <= 10) {
             player.isSub = false;
-            if (picks.is_captain) {
-                player.isCaptain = true;
-            }
-            if (picks.is_vice_captain) {
-                player.isVice = true;
-            }
-            myPlayers.push(player);
         }
         else {
             player.isSub = true;
-            myPlayers.push(player);
         }
+
+        myPlayers.push(player);
     });
 
     updateTeamUI();
@@ -119,8 +117,14 @@ async function updateGameweekInfo() {
         gameweekDeadline.textContent = `Deadline: ${new Date(currentGameweek.deadline_time).toLocaleString()}`;
     }
 
-    managerPicks = await getManagerPicks(managerId, currentGameweek.id);
-    addPlayers(managerPicks.picks);
+    await getLatestPicks(currentGameweek.id)
+}
+
+async function getLatestPicks(gameweek) {
+    managerPicks = await getManagerPicks(managerId, gameweek);
+    if (managerPicks.picks) {
+        addPlayers(managerPicks.picks);
+    }
 }
 
 // Define a mapping of element types to position prefixes
@@ -295,7 +299,7 @@ function updatePlayerFixturesAndPoints(playerElement, player, predictedPoints) {
                 let playerPredictedPoints = getExpectedPoints(player, playerFixture);
                 if (getUpcomingGameweek() == upcomingGameweek) {
                     const formBasedPoints = (parseFloat(player.form) + parseFloat(player.ep_next)) / 2;
-                    playerPredictedPoints = (playerPredictedPoints + formBasedPoints) / 2;
+                    //playerPredictedPoints = (playerPredictedPoints + formBasedPoints) / 2;
                 }
 
                 const strengthAdjustmentHA = (opponentTeam.strength * 10) / 100;
@@ -579,7 +583,7 @@ function updateTeamInfo(label, newValue) {
 async function Initialize() {
     filteredPlayers = allPlayers;
 
-    selectedGameweek = getUpcomingGameweek().id;
+    selectedGameweek = getLastGameweekId();
     updateGameweekInfo();
 }
 

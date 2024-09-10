@@ -448,7 +448,7 @@ function updatePlayerFixturesAndPoints(playerElement, player, predictedPoints) {
                 let playerPredictedPoints = getExpectedPoints(player, playerFixture);
                 if (getUpcomingGameweek() == upcomingGameweek) {
                     const formBasedPoints = (parseFloat(player.form) + parseFloat(player.ep_next)) / 2;
-                    playerPredictedPoints = (playerPredictedPoints + formBasedPoints) / 2;
+                    //playerPredictedPoints = (playerPredictedPoints + formBasedPoints) / 2;
                 }
 
                 const strengthAdjustmentHA = (opponentTeam.strength * 10) / 100;
