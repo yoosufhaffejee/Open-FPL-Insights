@@ -121,7 +121,21 @@ async function updateGameweekInfo() {
 }
 
 async function getLatestPicks(gameweek) {
+    document.getElementById("points").hidden = true;
     managerPicks = await getManagerPicks(managerId, gameweek);
+
+    if (managerPicks.entry_history) {
+        document.getElementById("points").hidden = false;
+        updateTeamInfo("Points", managerPicks.entry_history.points);
+        updateTeamInfo("Bank Balance", (managerPicks.entry_history.bank / 10) + 'm');
+        updateTeamInfo("GW Rating", 100 - managerPicks.entry_history.percentile_rank + '%');
+    }
+    else
+    {
+        let rating = (predictedPoints / 70) * 100;
+        updateTeamInfo("GW Rating", parseInt(rating) + '%');
+    }
+
     if (managerPicks.picks) {
         addPlayers(managerPicks.picks);
     }
@@ -159,13 +173,15 @@ const availableSlots = {
     fwd: ['pos13', 'pos14', 'pos15']
 };
 
+let predictedPoints = 0;
+
  // Function to update the team UI
 function updateTeamUI() {
     // Clear existing players from rows
     document.querySelectorAll('.row').forEach(row => row.innerHTML = '');
 
+    predictedPoints = 0;
     let bankBalance = 100;
-    let predictedPoints = 0;
     let subs = 0;
     const filledPositions = {
         gk: 0,
@@ -209,7 +225,9 @@ function updateTeamUI() {
 
         // Update bank balance
         bankBalance -= player.now_cost / 10;
-        updateTeamInfo("Bank Balance", `${bankBalance.toFixed(1)}m`);
+        if (selectedGameweek >= getUpcomingGameweek().id) {
+            updateTeamInfo("Bank Balance", `${bankBalance.toFixed(1)}m`);
+        }
         updateTeamInfo("Predicted Points", predictedPoints.toFixed(0));
     });
 
