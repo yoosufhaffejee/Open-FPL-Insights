@@ -103,7 +103,32 @@ function getExpectedPoints (player, fixture) {
         expectedPoints -= penaltyMissPointsPer90;
     }
 
+    let averagePoints = getLastFive(player, fixture);
+    if(averagePoints > 0) {
+        expectedPoints = (expectedPoints + averagePoints) / 2;
+    }
+
     return expectedPoints;
+}
+
+function getLastFive(player, fixture) {
+    let playerName = player.first_name + " " + player.second_name;
+    let playerFixtureHistory = historicalData.filter(h => playerName == h.name && h.opp_team_name == getOpponentTeam(player.team, fixture));
+
+    let count = 0;
+    let historicPoints = 0;
+    playerFixtureHistory.forEach(fixtureHistory => {
+        if (fixtureHistory.minutes >= 10) {
+            count++;
+            historicPoints += parseFloat(fixtureHistory.total_points);
+        }
+    });
+
+    if (count > 0 ) {
+        return historicPoints/count;
+    }
+    
+    return 0;
 }
 
 function correctPenaltiesOrder(player, allPlayers) {

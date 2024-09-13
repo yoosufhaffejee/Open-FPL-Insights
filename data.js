@@ -3,6 +3,7 @@ let gameweeks = [];
 let fixtures = [];
 let allPlayers = [];
 let selectedGW = 1;
+let historicalData = [];
 
 // Fetch general data
 const fetchOverview = async () => {
@@ -37,11 +38,23 @@ const fetchGameweeks = async () => {
     }
 };
 
+const loadHistoricalData = () => {
+    fetch('fpl_data.csv')
+        .then(response => response.text())
+        .then(csvText => {
+            const data = parseCSV(csvText);
+            historicalData = data;
+            console.log(data);
+        })
+        .catch(error => console.error('Error fetching the CSV file:', error));
+}
+
 // Initialize the page after fetching data
 const setupPage = async () => {
     await fetchOverview();
     await fetchFixtures();
     await fetchGameweeks();
+    loadHistoricalData();
 
     // Initialize other functionalities or UI components here
     try {

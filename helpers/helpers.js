@@ -67,3 +67,26 @@ function getKeyByValue(pos) {
     };
     return map[pos];
 }
+
+function parseCSV(csvText) {
+    const rows = csvText.split('\n').map(row => row.split(','));
+    const headers = rows[0];
+    const data = rows.slice(1).map(row => {
+        let obj = {};
+        row.forEach((value, index) => {
+            obj[headers[index]] = value;
+        });
+        return obj;
+    });
+    return data;
+}
+
+function getOpponentTeam(playerTeamId, fixture) {
+    if (playerTeamId == fixture.team_a) {
+        return teams.find(t => t.id == fixture.team_h).name;
+    }
+
+    if (playerTeamId == fixture.team_h) {
+        return teams.find(t => t.id == fixture.team_a).name;
+    }
+}
