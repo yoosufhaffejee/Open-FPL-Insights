@@ -85,7 +85,7 @@ async function getLatestPicks(gameweek) {
     managerPicks = [];
     document.getElementById("points").hidden = true;
 
-    if (gameweek <= getLastGameweekId()) {
+    if (gameweek <= getLastGameweekId() && managerId > 0) {
         managerPicks = await getManagerPicks(managerId, gameweek);
     }
 
@@ -419,7 +419,7 @@ function updateTeamUI() {
         updateTeamInfo("Predicted Points", predictedPoints.toFixed(0));
     });
 
-    debugger;
+    //debugger;
     overallRating += rating;
     seasonPoints += predictedPoints;
     if (rating <= 0) {
@@ -1238,6 +1238,7 @@ async function Initialize() {
     populateTeamFilter();
     filteredPlayers = allPlayers;
 
+    loadManagerId();
     await calculateSeasonPoints();
     
     selectedGameweek = getUpcomingGameweek().id;
@@ -1249,6 +1250,3 @@ async function Initialize() {
     // Initial display of all filteredPlayers
     displayPlayers(filteredPlayers); 
 }
-
-// Load the manager ID when the page loads
-window.addEventListener('load', loadManagerId);

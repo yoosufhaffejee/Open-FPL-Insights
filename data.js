@@ -39,7 +39,7 @@ const fetchGameweeks = async () => {
 };
 
 const loadHistoricalData = (isRoot = true) => {
-    fetch(isRoot ? 'fpl_data.csv' : '/Open-FPL-Insights/fpl_data.csv')
+    fetch(isRoot ? 'fpl_data.csv' : '../../fpl_data.csv')
         .then(response => response.text())
         .then(csvText => {
             const data = parseCSV(csvText);
