@@ -157,6 +157,7 @@ async function calculateSeasonPoints() {
     gameweeks.forEach(gw => {
         //getLatestPicks(gw.id);
         let gwPoints = 0;
+        rating = 0;
         myPlayers.forEach(player => {
             // Update fixtures and predicted points
             let fixture = getPlayerFixture(player, gw.id);
@@ -168,13 +169,13 @@ async function calculateSeasonPoints() {
         if (rating <= 0) {
             rating = (gwPoints / 70) * 100;
         }
-        
+
         seasonPoints += gwPoints;
         overallRating += rating;
     });
 
     updateTeamInfo("Overall Rating", parseInt(overallRating/gameweeks.length) + '%');
-    updateTeamInfo("Season Points", parseInt(seasonPoints/2));
+    updateTeamInfo("Season Points", parseInt(seasonPoints));
 }
 
 // Define a mapping of element types to position prefixes
