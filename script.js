@@ -171,6 +171,8 @@ let filteredPlayers = [];
 let managerPicks = [];
 let managerId = 0;
 let rating = 0;
+let seasonPoints = 0;
+let overallRating = 0;
 
 // Function to populate the team dropdown
 function populateTeamFilter() {
@@ -417,6 +419,9 @@ function updateTeamUI() {
         updateTeamInfo("Predicted Points", predictedPoints.toFixed(0));
     });
 
+    debugger;
+    overallRating += rating;
+    seasonPoints += predictedPoints;
     if (rating <= 0) {
         rating = (predictedPoints / 70) * 100;
         updateTeamInfo("GW Rating", parseInt(rating) + '%');
@@ -424,6 +429,18 @@ function updateTeamUI() {
 
     // Handle missing players/ghost players
     fillMissingPlayers(filledPositions, subs);
+}
+
+async function calculateSeasonPoints() {
+    selectedGameweek = 0;
+    overallRating = 0;
+    seasonPoints = 0;
+    gameweeks.forEach(gw => {
+        navigateGameweek('next');
+    });
+
+    updateTeamInfo("Overall Rating", parseInt(overallRating/gameweeks.length) + '%');
+    updateTeamInfo("Season Points", parseInt(seasonPoints/2));
 }
 
 // Function to assign the next available slot to the player
@@ -1141,9 +1158,6 @@ function loadManagerId() {
     console.log('No manager ID found in cookie.');
 }
 
-// Load the manager ID when the page loads
-window.addEventListener('load', loadManagerId);
-
 function resetPlayers() {
     // Reset your myPlayers array (example: clear all players)
     myPlayers = [];
@@ -1224,6 +1238,8 @@ async function Initialize() {
     populateTeamFilter();
     filteredPlayers = allPlayers;
 
+    await calculateSeasonPoints();
+    
     selectedGameweek = getUpcomingGameweek().id;
     updateGameweekInfo();
 
@@ -1233,3 +1249,6 @@ async function Initialize() {
     // Initial display of all filteredPlayers
     displayPlayers(filteredPlayers); 
 }
+
+// Load the manager ID when the page loads
+window.addEventListener('load', loadManagerId);
