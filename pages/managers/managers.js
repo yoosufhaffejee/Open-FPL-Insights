@@ -122,7 +122,10 @@ async function updateGameweekInfo() {
 
 async function getLatestPicks(gameweek) {
     document.getElementById("points").hidden = true;
-    managerPicks = await getManagerPicks(managerId, gameweek);
+
+    if (gameweek == getLastGameweekId()) {
+        managerPicks = await getManagerPicks(managerId, gameweek);
+    }
 
     if (managerPicks.entry_history) {
         document.getElementById("points").hidden = false;
@@ -565,6 +568,14 @@ function swapPlayer(player) {
         removeSwapIndicator(index2);
         playerSwap = [];
     }
+}
+
+function setManager() {
+    // Disable the button
+    document.getElementById('setManagerButton').disabled = true;
+
+    // Save the cookie
+    document.cookie = `managerId=${managerId}; path=/; max-age=31536000`; // Cookie expires in 1 year
 }
 
 // Function to remove swap visual indicator

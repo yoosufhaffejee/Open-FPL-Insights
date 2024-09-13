@@ -60,7 +60,7 @@ function navigateGameweek(direction) {
 }
 
 // Function to update the gameweek info and deadline display
-function updateGameweekInfo() {
+async function updateGameweekInfo() {
     const gameweekInfo = document.getElementById('gameweekInfo');
 
     if (!gameweekInfo) {
@@ -77,6 +77,56 @@ function updateGameweekInfo() {
         gameweekInfo.textContent = `Gameweek ${currentGameweek.id}`;
         gameweekDeadline.textContent = `Deadline: ${new Date(currentGameweek.deadline_time).toLocaleString()}`;
     }
+
+    await getLatestPicks(currentGameweek.id);
+}
+
+async function getLatestPicks(gameweek) {
+    managerPicks = [];
+    document.getElementById("points").hidden = true;
+
+    if (gameweek <= getLastGameweekId()) {
+        managerPicks = await getManagerPicks(managerId, gameweek);
+    }
+
+    rating = 0;
+    if (managerPicks.entry_history) {
+        document.getElementById("points").hidden = false;
+        updateTeamInfo("Points", managerPicks.entry_history.points);
+        updateTeamInfo("Bank Balance", (managerPicks.entry_history.bank / 10) + 'm');
+        rating = 100 - managerPicks.entry_history.percentile_rank;
+        updateTeamInfo("GW Rating", rating + '%');
+    }
+    else
+    {
+        rating = (predictedPoints / 70) * 100;
+        updateTeamInfo("GW Rating", parseInt(rating) + '%');
+    }
+
+    if (managerPicks.picks) {
+        addPlayers(managerPicks.picks);
+    }
+}
+
+function addPlayers(picks) {
+    myPlayers = [];
+    picks.forEach((pick, index) => {
+        let player = allPlayers.find(p => p.id == pick.element);
+
+        player.isCaptain = pick.is_captain;
+        player.isVice = pick.is_vice_captain;
+
+        if (index <= 10) {
+            player.isSub = false;
+        }
+        else {
+            player.isSub = true;
+        }
+
+        myPlayers.push(player);
+    });
+
+    updateTeamUI();
 }
 
 // Add event listeners for the filter controls
@@ -118,6 +168,9 @@ if (priceRange) {
 let bankBalance = 100;
 let myPlayers = [];
 let filteredPlayers = [];
+let managerPicks = [];
+let managerId = 0;
+let rating = 0;
 
 // Function to populate the team dropdown
 function populateTeamFilter() {
@@ -308,6 +361,8 @@ function removePlayer(player) {
     }
 }
 
+let predictedPoints = 0;
+
  // Function to update the team UI
 function updateTeamUI() {
     // Clear existing players from rows
@@ -361,6 +416,11 @@ function updateTeamUI() {
         updateTeamInfo("Bank Balance", `${bankBalance.toFixed(1)}m`);
         updateTeamInfo("Predicted Points", predictedPoints.toFixed(0));
     });
+
+    if (rating <= 0) {
+        rating = (predictedPoints / 70) * 100;
+        updateTeamInfo("GW Rating", parseInt(rating) + '%');
+    }
 
     // Handle missing players/ghost players
     fillMissingPlayers(filledPositions, subs);
@@ -1067,6 +1127,22 @@ function savePlayers() {
     // Save the JSON string in a cookie
     document.cookie = `myPlayersGW${selectedGameweek}=${dataJSON}; path=/; max-age=31536000`; // Cookie expires in 1 year
 }
+
+function loadManagerId() {
+    const cookies = document.cookie.split('; ');
+    
+    for (let cookie of cookies) {
+        if (cookie.startsWith('managerId=')) {
+            managerId = cookie.split('=')[1];
+            return;
+        }
+    }
+
+    console.log('No manager ID found in cookie.');
+}
+
+// Load the manager ID when the page loads
+window.addEventListener('load', loadManagerId);
 
 function resetPlayers() {
     // Reset your myPlayers array (example: clear all players)
