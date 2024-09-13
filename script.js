@@ -459,7 +459,7 @@ function renderPlayerElement(player) {
 
     const image = player.code ?
         `<img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p${player.code}.png" alt="${player.web_name}">`
-        : `<img src="/assets/empty-jersey.png" alt="${player.web_name}">`;
+        : `<img src="assets/empty-jersey.png" alt="${player.web_name}">`;
 
     playerElement.innerHTML = `
         ${image}

@@ -38,8 +38,8 @@ const fetchGameweeks = async () => {
     }
 };
 
-const loadHistoricalData = () => {
-    fetch('/fpl_data.csv')
+const loadHistoricalData = (isRoot = true) => {
+    fetch(isRoot ? 'fpl_data.csv' : '/Open-FPL-Insights/fpl_data.csv')
         .then(response => response.text())
         .then(csvText => {
             const data = parseCSV(csvText);
@@ -54,16 +54,17 @@ const setupPage = async () => {
     await fetchOverview();
     await fetchFixtures();
     await fetchGameweeks();
-    loadHistoricalData();
 
     // Initialize other functionalities or UI components here
     try {
+        loadHistoricalData();
         Initialize(); // Ensure this function is defined elsewhere
     } catch (error) {
         //console.log("Init skipped");
     }
 
     try {
+        loadHistoricalData(false);
         updateGameweek(); // Ensure this function is defined elsewhere
     } catch (error) {
         //console.log("Init Managers skipped");
