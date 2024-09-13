@@ -11,7 +11,7 @@ const fetchOverview = async () => {
         const data = await getOverview();
         teams = data.teams;
         allPlayers = data.elements;
-        console.log('Teams and players data loaded.');
+        //console.log('Teams and players data loaded.');
     } catch (error) {
         console.error('Error fetching overview data:', error);
     }
@@ -21,7 +21,7 @@ const fetchOverview = async () => {
 const fetchFixtures = async () => {
     try {
         fixtures = await getFixtures();
-        console.log('Fixtures data loaded.');
+        //console.log('Fixtures data loaded.');
     } catch (error) {
         console.error('Error fetching fixtures data:', error);
     }
@@ -32,19 +32,19 @@ const fetchGameweeks = async () => {
     try {
         gameweeks = await getGameweeks();
         selectedGW = gameweeks.find(gameweek => gameweek.finished === false);
-        console.log('Gameweeks data loaded.');
+        //console.log('Gameweeks data loaded.');
     } catch (error) {
         console.error('Error fetching gameweeks data:', error);
     }
 };
 
 const loadHistoricalData = () => {
-    fetch('fpl_data.csv')
+    fetch('/fpl_data.csv')
         .then(response => response.text())
         .then(csvText => {
             const data = parseCSV(csvText);
             historicalData = data;
-            console.log(data);
+            //console.log(data);
         })
         .catch(error => console.error('Error fetching the CSV file:', error));
 }
@@ -60,13 +60,13 @@ const setupPage = async () => {
     try {
         Initialize(); // Ensure this function is defined elsewhere
     } catch (error) {
-        console.log("Init skipped")
+        //console.log("Init skipped");
     }
 
     try {
         updateGameweek(); // Ensure this function is defined elsewhere
     } catch (error) {
-        console.log("Init skipped")
+        //console.log("Init Managers skipped");
     }
 };
 
