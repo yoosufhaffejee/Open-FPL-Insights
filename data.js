@@ -5,6 +5,9 @@ let allPlayers = [];
 let selectedGW = 1;
 let historicalData = [];
 
+// Store historical data in a lookup table based on player names for faster lookup
+const historicalDataCache = new Map();
+
 // Fetch general data
 const fetchOverview = async () => {
     try {
@@ -44,6 +47,15 @@ const loadHistoricalData = (isRoot = true) => {
         .then(csvText => {
             const data = parseCSV(csvText);
             historicalData = data;
+
+            // Build cache
+            historicalData.forEach(entry => {
+                let playerName = entry.name;
+                if (!historicalDataCache.has(playerName)) {
+                    historicalDataCache.set(playerName, []);
+                }
+                historicalDataCache.get(playerName).push(entry);
+            });
             //console.log(data);
         })
         .catch(error => console.error('Error fetching the CSV file:', error));

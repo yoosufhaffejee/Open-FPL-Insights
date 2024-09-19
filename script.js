@@ -90,9 +90,11 @@ async function getLatestPicks(gameweek) {
     }
 
     rating = 0;
+    points = 0;
     if (managerPicks.entry_history) {
         document.getElementById("points").hidden = false;
-        updateTeamInfo("Points", managerPicks.entry_history.points);
+        points = managerPicks.entry_history.points;
+        updateTeamInfo("Points", points);
         updateTeamInfo("Bank Balance", (managerPicks.entry_history.bank / 10) + 'm');
         rating = 100 - managerPicks.entry_history.percentile_rank;
         updateTeamInfo("GW Rating", rating + '%');
@@ -171,6 +173,7 @@ let filteredPlayers = [];
 let managerPicks = [];
 let managerId = 0;
 let rating = 0;
+let points = 0;
 let seasonPoints = 0;
 let overallRating = 0;
 
@@ -418,10 +421,7 @@ function updateTeamUI() {
         updateTeamInfo("Bank Balance", `${bankBalance.toFixed(1)}m`);
         updateTeamInfo("Predicted Points", predictedPoints.toFixed(0));
     });
-
-    //debugger;
-    overallRating += rating;
-    seasonPoints += predictedPoints;
+    
     if (rating <= 0) {
         rating = (predictedPoints / 70) * 100;
         updateTeamInfo("GW Rating", parseInt(rating) + '%');
@@ -432,15 +432,47 @@ function updateTeamUI() {
 }
 
 async function calculateSeasonPoints() {
-    selectedGameweek = 0;
-    overallRating = 0;
-    seasonPoints = 0;
-    gameweeks.forEach(gw => {
-        navigateGameweek('next');
-    });
+    let seasonPoints = 0;
+    let overallRating = 0;
+
+    // Normal for loop to handle async operations correctly
+    for (let i = 0; i < gameweeks.length; i++) {
+        const gw = gameweeks[i];
+
+        let gwPoints = 0;
+        let gwRating = 0;
+
+        myPlayers = [];
+        await getLatestPicks(gw.id); // Will wait for this promise to resolve before continuing
+
+        if (myPlayers.length > 0) {
+            gwPoints += points;
+        }
+        else {
+            loadPlayers(gw.id);  // Assuming this function doesn't need to be awaited
+
+            myPlayers.forEach(player => {
+                // Update fixtures and predicted points
+                let fixture = getPlayerFixture(player, gw.id);
+                player.predicted_points = calculatePlayerPredictedPoints(player, fixture, gw.id);
+            });
+
+            const bestPlayers = optimizeTeam(myPlayers);
+            bestPlayers.forEach(player => {
+                gwPoints += player.predicted_points;
+            });
+        }
+
+        if (gwRating <= 0) {
+            gwRating = (gwPoints / 70) * 100;
+        }
+
+        seasonPoints += gwPoints;
+        overallRating += gwRating;
+    };
 
     updateTeamInfo("Overall Rating", parseInt(overallRating/gameweeks.length) + '%');
-    updateTeamInfo("Season Points", parseInt(seasonPoints/2));
+    updateTeamInfo("Season Points", parseInt(seasonPoints));
 }
 
 // Function to assign the next available slot to the player
@@ -503,18 +535,8 @@ function updatePlayerFixturesAndPoints(playerElement, player, predictedPoints) {
     playerElement.querySelectorAll('.fixture').forEach((fixtureElement, fixtureIndex) => {
         const upcomingGameweek = upcomingGameweeks[fixtureIndex];
         if (upcomingGameweek) {
-            let isHome = false;
-            const playerFixture = fixtures.find(fixture => {
-                if (fixture.event === upcomingGameweek.id) {
-                    if (fixture.team_a === player.team) return true;
-                    if (fixture.team_h === player.team) {
-                        isHome = true;
-                        return true;
-                    }
-                }
-                return false;
-            });
-
+            
+            const playerFixture = getPlayerFixture(player, upcomingGameweek.id);
             if (playerFixture) {
                 const opponentTeam = teams.find(team =>
                     team.id === (playerFixture.team_a === player.team ? playerFixture.team_h : playerFixture.team_a)
@@ -522,47 +544,72 @@ function updatePlayerFixturesAndPoints(playerElement, player, predictedPoints) {
 
                 fixtureElement.querySelector('.fixture-detail').textContent = `${opponentTeam.short_name} (${playerFixture.team_a === player.team ? 'A' : 'H'})`;
 
-                let playerPredictedPoints = getExpectedPoints(player, playerFixture);
-                if (getUpcomingGameweek() == upcomingGameweek) {
-                    const formBasedPoints = (parseFloat(player.form) + parseFloat(player.ep_next)) / 2;
-                    //playerPredictedPoints = (playerPredictedPoints + formBasedPoints) / 2;
-                }
-
-                const strengthAdjustmentHA = (opponentTeam.strength * 10) / 100;
-                const strengthAdjustment10 = (opponentTeam.strength * 10) / 100;
-                const strengthAdjustment15 = (opponentTeam.strength * 15) / 100;
-                const strengthAdjustment20 = (opponentTeam.strength * 20) / 100;
-
-                if (opponentTeam.strength == 2) {
-                    // playerPredictedPoints += (playerPredictedPoints * strengthAdjustment20);
-                }
-
-                if (opponentTeam.strength == 4) {
-                    playerPredictedPoints -= (playerPredictedPoints * strengthAdjustment10);
-                }
-
-                if (opponentTeam.strength == 5) {
-                    playerPredictedPoints -= (playerPredictedPoints * strengthAdjustment15);
-                }
-
-                if (!isHome) {
-                    playerPredictedPoints -= (playerPredictedPoints * strengthAdjustmentHA);
-                }
-
-                if (player.isCaptain) {
-                    playerPredictedPoints *= 2;
-                }
+                let playerPredictedPoints = calculatePlayerPredictedPoints(player, playerFixture, upcomingGameweek);
 
                 fixtureElement.querySelector('.predicted-points').textContent = playerPredictedPoints.toFixed(1);
 
-                if (fixtureIndex == 0 && !player.isSub) {
-                    predictedPoints += playerPredictedPoints;
+                // Add up all the players predicted points for the current GW
+                if (fixtureIndex === 0) {
+                    player.predicted_points = playerPredictedPoints;
+                    if (!player.isSub) {
+                        predictedPoints += playerPredictedPoints;
+                    }
                 }
             }
         }
     });
 
     return predictedPoints;
+}
+
+function getPlayerFixture(player, gameweekId) {
+    return fixtures.find(fixture => fixture.event === gameweekId &&
+                (fixture.team_a === player.team || fixture.team_h === player.team));
+}
+
+// Function to calculate predicted points for a player and a fixture
+function calculatePlayerPredictedPoints(player, fixture, upcomingGameweek) {
+    let isHome = fixture.team_h === player.team;
+    const opponentTeam = teams.find(team =>
+        team.id === (fixture.team_a === player.team ? fixture.team_h : fixture.team_a)
+    );
+
+    let playerPredictedPoints = getExpectedPoints(player, fixture);
+
+    if (getUpcomingGameweek() == upcomingGameweek) {
+        const formBasedPoints = (parseFloat(player.form) + parseFloat(player.ep_next)) / 2;
+        // playerPredictedPoints = (playerPredictedPoints + formBasedPoints) / 2;
+    }
+
+    const strengthAdjustmentHA = (opponentTeam.strength * 10) / 100;
+    const strengthAdjustment10 = (opponentTeam.strength * 10) / 100;
+    const strengthAdjustment15 = (opponentTeam.strength * 15) / 100;
+    const strengthAdjustment20 = (opponentTeam.strength * 20) / 100;
+
+    // Adjust points based on opponent team strength
+    if (opponentTeam.strength == 2) {
+        // playerPredictedPoints += (playerPredictedPoints * strengthAdjustment20);
+    }
+
+    if (opponentTeam.strength == 4) {
+        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustment10);
+    }
+
+    if (opponentTeam.strength == 5) {
+        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustment15);
+    }
+
+    // Adjust points if player is away
+    if (!isHome) {
+        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustmentHA);
+    }
+
+    // Double the points if the player is the captain
+    if (player.isCaptain) {
+        playerPredictedPoints *= 2;
+    }
+
+    return playerPredictedPoints;
 }
 
 function fillMissingPlayers(filledPositions, subs) {
@@ -1045,6 +1092,11 @@ function updateTeamInfo(label, newValue) {
 // updateTeamInfo("Bank Balance", bankBalance + "m");
 
 function loadPlayers(gameweek = selectedGameweek) {
+    filledSlots["gk"] = 0;
+    filledSlots["def"] = 0;
+    filledSlots["mid"] = 0;
+    filledSlots["fwd"] = 0;
+
     // Function to parse cookies
     function getCookie(name) {
         const value = `; ${document.cookie}`;
@@ -1242,7 +1294,7 @@ async function Initialize() {
     await calculateSeasonPoints();
     
     selectedGameweek = getUpcomingGameweek().id;
-    updateGameweekInfo();
+    await updateGameweekInfo();
 
     // Load the players from the cookie when the page loads
     loadPlayers();

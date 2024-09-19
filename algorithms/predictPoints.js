@@ -112,23 +112,29 @@ function getExpectedPoints (player, fixture) {
 }
 
 function getLastFive(player, fixture) {
-    let playerName = player.first_name + " " + player.second_name;
-    let playerFixtureHistory = historicalData.filter(h => playerName == h.name && h.opp_team_name == getOpponentTeam(player.team, fixture));
+    // Construct player's full name once
+    const playerName = player.first_name + " " + player.second_name;
+    const opponentTeam = getOpponentTeam(player.team, fixture);
+    
+    // Retrieve precomputed player fixture history (if available)
+    const playerFixtureHistory = historicalDataCache.get(playerName) || [];
 
     let count = 0;
     let historicPoints = 0;
-    playerFixtureHistory.forEach(fixtureHistory => {
-        if (fixtureHistory.minutes >= 10) {
+
+    // Loop through the player's historical data
+    for (let i = 0; i < playerFixtureHistory.length && count < 5; i++) {
+        const fixtureHistory = playerFixtureHistory[i];
+        
+        // Only check relevant opponent team
+        if (fixtureHistory.opp_team_name === opponentTeam && fixtureHistory.minutes >= 10) {
             count++;
             historicPoints += parseFloat(fixtureHistory.total_points);
         }
-    });
-
-    if (count > 0 ) {
-        return historicPoints/count;
     }
-    
-    return 0;
+
+    // Return the average of the last 5 (or fewer) relevant fixtures
+    return count > 0 ? historicPoints / count : 0;
 }
 
 function correctPenaltiesOrder(player, allPlayers) {

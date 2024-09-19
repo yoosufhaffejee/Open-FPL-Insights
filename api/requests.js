@@ -4,7 +4,7 @@ const baseURL = 'https://fantasy.premierleague.com/api/';
 const reqType = {
     overview: 'bootstrap-static/', //Overview
     gameweeks: 'events/', // Get all gameweeks
-    gameweek: 'event/',  //A selected gameweek
+    gameweek: 'event',  //A selected gameweek
     fixtures: 'fixtures/', //Get all fixtures
     player: 'element-summary/', //Players (playderID)
     manager: 'entry/', //Get manager data (Id)
@@ -32,7 +32,7 @@ const getGameweeks = async () => {
 }
 
 const getGameweek = async (id) => {
-    const data = await doCORSRequest(`${reqType.gameweek}/${id}/`);
+    const data = await doCORSRequest(`${reqType.gameweek}/${id}/live/`);
     return data;
 }
 

@@ -4,6 +4,7 @@ let filteredPlayers = [];
 let managerPicks = [];
 let managerId = 0;
 let rating = 0;
+let points = 0;
 let seasonPoints = 0;
 let overallRating = 0;
 
@@ -133,9 +134,11 @@ async function getLatestPicks(gameweek) {
     }
 
     rating = 0;
+    points = 0;
     if (managerPicks.entry_history) {
         document.getElementById("points").hidden = false;
-        updateTeamInfo("Points", managerPicks.entry_history.points);
+        points = managerPicks.entry_history.points;
+        updateTeamInfo("Points", points);
         updateTeamInfo("Bank Balance", (managerPicks.entry_history.bank / 10) + 'm');
         rating = 100 - managerPicks.entry_history.percentile_rank;
         updateTeamInfo("GW Rating", rating + '%');
@@ -154,25 +157,41 @@ async function getLatestPicks(gameweek) {
 async function calculateSeasonPoints() {
     let seasonPoints = 0;
     let overallRating = 0;
-    gameweeks.forEach(gw => {
-        //getLatestPicks(gw.id);
+
+    // Normal for loop to handle async operations correctly
+    for (let i = 0; i < gameweeks.length; i++) {
+        const gw = gameweeks[i];
+
         let gwPoints = 0;
-        rating = 0;
-        myPlayers.forEach(player => {
-            // Update fixtures and predicted points
-            let fixture = getPlayerFixture(player, gw.id);
-            predictedPoints = calculatePlayerPredictedPoints(player, fixture, gw.id);
+        let gwRating = 0;
 
-            gwPoints += predictedPoints;
-        });
+        points = 0;
+        await getLatestPicks(gw.id); // Will wait for this promise to resolve before continuing
 
-        if (rating <= 0) {
-            rating = (gwPoints / 70) * 100;
+        if (points > 0) {
+            gwPoints += points;
+        }
+        else {
+            myPlayers.forEach(player => {
+                // Update fixtures and predicted points
+                let fixture = getPlayerFixture(player, gw.id);
+                player.predicted_points = calculatePlayerPredictedPoints(player, fixture, gw.id);
+                //gwPoints += player.predicted_points;
+            });
+
+            const bestPlayers = optimizeTeam(myPlayers);
+            bestPlayers.forEach(player => {
+                gwPoints += player.predicted_points;
+            });
+        }
+
+        if (gwRating <= 0) {
+            gwRating = (gwPoints / 70) * 100;
         }
 
         seasonPoints += gwPoints;
-        overallRating += rating;
-    });
+        overallRating += gwRating;
+    };
 
     updateTeamInfo("Overall Rating", parseInt(overallRating/gameweeks.length) + '%');
     updateTeamInfo("Season Points", parseInt(seasonPoints));
