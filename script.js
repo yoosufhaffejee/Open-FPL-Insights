@@ -600,29 +600,30 @@ function calculatePlayerPredictedPoints(player, fixture, upcomingGameweek) {
 
     if (getUpcomingGameweek() == upcomingGameweek) {
         const formBasedPoints = (parseFloat(player.form) + parseFloat(player.ep_next)) / 2;
-        // playerPredictedPoints = (playerPredictedPoints + formBasedPoints) / 2;
+        playerPredictedPoints = (playerPredictedPoints + formBasedPoints) / 2;
     }
 
     const strengthAdjustmentHA = (opponentTeam.strength * 10) / 100;
+    const strengthAdjustment5 = (opponentTeam.strength * 5) / 100;
     const strengthAdjustment10 = (opponentTeam.strength * 10) / 100;
     const strengthAdjustment15 = (opponentTeam.strength * 15) / 100;
     const strengthAdjustment20 = (opponentTeam.strength * 20) / 100;
 
     // Adjust points based on opponent team strength
-    if (opponentTeam.strength == 2) {
-        // playerPredictedPoints += (playerPredictedPoints * strengthAdjustment20);
+    if (opponentTeam.strength == 2 && playerPredictedPoints <= 10) {
+        playerPredictedPoints += (playerPredictedPoints * strengthAdjustment10);
     }
 
     if (opponentTeam.strength == 4) {
-        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustment10);
+        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustment5);
     }
 
     if (opponentTeam.strength == 5) {
-        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustment15);
+        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustment10);
     }
 
     // Adjust points if player is away
-    if (!isHome) {
+    if (!isHome && playerPredictedPoints >= 2.5) {
         playerPredictedPoints -= (playerPredictedPoints * strengthAdjustmentHA);
     }
 
