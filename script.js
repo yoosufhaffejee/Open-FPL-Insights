@@ -78,7 +78,13 @@ async function updateGameweekInfo() {
         gameweekDeadline.textContent = `Deadline: ${new Date(currentGameweek.deadline_time).toLocaleString()}`;
     }
 
-    await getLatestPicks(currentGameweek.id);
+    // Live GW
+    if (currentGameweek.started && !currentGameweek.finished) {
+        await getLiveData(currentGameweek.id);
+    }
+    else {
+        await getLatestPicks(currentGameweek.id);
+    }
 }
 
 async function getLatestPicks(gameweek) {
@@ -108,6 +114,21 @@ async function getLatestPicks(gameweek) {
     if (managerPicks.picks) {
         addPlayers(managerPicks.picks);
     }
+}
+
+async function getLiveData(gameweek) {
+    document.getElementById("points").hidden = false;
+    liveData = await getGameweek(gameweek);
+
+    points = 0;
+    myPlayers.forEach(player => {
+        if (!player.isSub) {
+            const element = liveData.elements.find(p => p.id == player.id);
+            points += element.stats.total_points;
+        }
+    });
+
+    updateTeamInfo("Points", points);
 }
 
 function addPlayers(picks) {
@@ -171,6 +192,7 @@ let bankBalance = 100;
 let myPlayers = [];
 let filteredPlayers = [];
 let managerPicks = [];
+let liveData = [];
 let managerId = 0;
 let rating = 0;
 let points = 0;
