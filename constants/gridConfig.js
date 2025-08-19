@@ -96,7 +96,8 @@ function setupGridOptions(filteredPlayers) {
             },
             {
                 headerName: 'Defensive Contributions (DC)',
-                field: 'defensive_contribution_per_90'
+                field: 'defensive_contribution_per_90',
+                valueGetter: (params) => parseFloat(params.data.selected_by_percent)
             },
             {
                 headerName: 'Special',
