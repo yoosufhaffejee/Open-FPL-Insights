@@ -95,6 +95,10 @@ function setupGridOptions(filteredPlayers) {
                 valueGetter: (params) => parseFloat(params.data.selected_by_percent)
             },
             {
+                headerName: 'Defensive Contributions (DC)',
+                field: 'defensive_contribution_per_90'
+            },
+            {
                 headerName: 'Special',
                 field: 'special',
                 valueFormatter: (params) => params.value === null ? "N/A" : params.value ? "True" : "False"
