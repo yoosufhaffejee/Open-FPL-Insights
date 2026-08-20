@@ -162,7 +162,7 @@ function showPlayerInfo(player) {
 function populatePlayerModal(data, player) {
     // Set the player name in the modal title
     document.getElementById('playerInfoModalLabel').innerHTML = `
-    <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p${player.code}.png" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;">
+    <img src="https://resources.premierleague.com/premierleague/photos/players/250x250/p${player.code}.png" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;" onerror="this.onerror=null; this.src='../../assets/empty-jersey.png';">
     ${player.first_name} ${player.second_name}`;
 
     // Clear previous data
