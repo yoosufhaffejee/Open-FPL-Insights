@@ -512,7 +512,7 @@ function renderPlayerElement(player) {
     playerElement.id = `player-${player.slotId}`;
 
     const image = player.code ?
-        `<img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p${player.code}.png" alt="${player.web_name}">`
+        `<img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p${player.code}.png" alt="${player.web_name}" onerror="this.onerror=null; this.src='assets/empty-jersey.png';">`
         : `<img src="assets/empty-jersey.png" alt="${player.web_name}">`;
 
     playerElement.innerHTML = `

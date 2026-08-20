@@ -59,13 +59,19 @@ function setupGridOptions(filteredPlayers) {
                 headerName: 'Predicted Points',
                 field: 'ep_this',
                 width: 150,
-                valueGetter: (params) => parseFloat(params.data.ep_this)
+                valueGetter: (params) => {
+                    const val = parseFloat(params.data.ep_this);
+                    return isNaN(val) ? 0 : val;
+                }
             },
             {
                 headerName: 'Next Predicted Points',
                 field: 'ep_next',
                 width: 150,
-                valueGetter: (params) => parseFloat(params.data.ep_next)
+                valueGetter: (params) => {
+                    const val = parseFloat(params.data.ep_next);
+                    return isNaN(val) ? 0 : val;
+                }
             },
             {
                 headerName: 'Chance of Playing This Round (%)',
@@ -87,17 +93,17 @@ function setupGridOptions(filteredPlayers) {
             {
                 headerName: 'Points per Game',
                 field: 'points_per_game',
-                valueGetter: (params) => parseFloat(params.data.points_per_game)
+                valueGetter: (params) => isNaN(parseFloat(params.data.points_per_game)) ? 0 : parseFloat(params.data.points_per_game)
             },
             {
                 headerName: 'Selected by Percent (%)',
                 field: 'selected_by_percent',
-                valueGetter: (params) => parseFloat(params.data.selected_by_percent)
+                valueGetter: (params) => isNaN(parseFloat(params.data.selected_by_percent)) ? 0 : parseFloat(params.data.selected_by_percent)
             },
             {
                 headerName: 'Defensive Contributions (DC)',
                 field: 'defensive_contribution_per_90',
-                valueGetter: (params) => parseFloat(params.data.defensive_contribution_per_90)
+                valueGetter: (params) => isNaN(parseFloat(params.data.defensive_contribution_per_90)) ? 0 : parseFloat(params.data.defensive_contribution_per_90)
             },
             {
                 headerName: 'Special',
@@ -119,12 +125,12 @@ function setupGridOptions(filteredPlayers) {
             {
                 headerName: 'Value Form',
                 field: 'value_form',
-                valueGetter: (params) => parseFloat(params.data.value_form)
+                valueGetter: (params) => isNaN(parseFloat(params.data.value_form)) ? 0 : parseFloat(params.data.value_form)
             },
             {
                 headerName: 'Value Season',
                 field: 'value_season',
-                valueGetter: (params) => parseFloat(params.data.value_season)
+                valueGetter: (params) => isNaN(parseFloat(params.data.value_season)) ? 0 : parseFloat(params.data.value_season)
             },
             { headerName: 'Minutes', field: 'minutes' },
             { headerName: 'Goals Scored', field: 'goals_scored' },
@@ -142,43 +148,43 @@ function setupGridOptions(filteredPlayers) {
             {
                 headerName: 'Influence',
                 field: 'influence',
-                valueGetter: (params) => parseFloat(params.data.influence)
+                valueGetter: (params) => isNaN(parseFloat(params.data.influence)) ? 0 : parseFloat(params.data.influence)
             },
             {
                 headerName: 'Creativity',
                 field: 'creativity',
-                valueGetter: (params) => parseFloat(params.data.creativity)
+                valueGetter: (params) => isNaN(parseFloat(params.data.creativity)) ? 0 : parseFloat(params.data.creativity)
             },
             {
                 headerName: 'Threat',
                 field: 'threat',
-                valueGetter: (params) => parseFloat(params.data.threat)
+                valueGetter: (params) => isNaN(parseFloat(params.data.threat)) ? 0 : parseFloat(params.data.threat)
             },
             {
                 headerName: 'ICT Index',
                 field: 'ict_index',
-                valueGetter: (params) => parseFloat(params.data.ict_index)
+                valueGetter: (params) => isNaN(parseFloat(params.data.ict_index)) ? 0 : parseFloat(params.data.ict_index)
             },
             { headerName: 'Starts', field: 'starts' },
             {
                 headerName: 'Expected Goals',
                 field: 'expected_goals',
-                valueGetter: (params) => parseFloat(params.data.expected_goals)
+                valueGetter: (params) => isNaN(parseFloat(params.data.expected_goals)) ? 0 : parseFloat(params.data.expected_goals)
             },
             {
                 headerName: 'Expected Assists',
                 field: 'expected_assists',
-                valueGetter: (params) => parseFloat(params.data.expected_assists)
+                valueGetter: (params) => isNaN(parseFloat(params.data.expected_assists)) ? 0 : parseFloat(params.data.expected_assists)
             },
             {
                 headerName: 'Expected Goal Involvements',
                 field: 'expected_goal_involvements',
-                valueGetter: (params) => parseFloat(params.data.expected_goal_involvements)
+                valueGetter: (params) => isNaN(parseFloat(params.data.expected_goal_involvements)) ? 0 : parseFloat(params.data.expected_goal_involvements)
             },
             {
                 headerName: 'Expected Goals Conceded',
                 field: 'expected_goals_conceded',
-                valueGetter: (params) => parseFloat(params.data.expected_goals_conceded)
+                valueGetter: (params) => isNaN(parseFloat(params.data.expected_goals_conceded)) ? 0 : parseFloat(params.data.expected_goals_conceded)
             },
             { headerName: 'Influence Rank', field: 'influence_rank' },
             { headerName: 'Influence Rank Type', field: 'influence_rank_type' },
@@ -218,27 +224,27 @@ function setupGridOptions(filteredPlayers) {
             {
                 headerName: 'Expected Goals per 90',
                 field: 'expected_goals_per_90',
-                valueGetter: (params) => parseFloat(params.data.expected_goals_per_90)
+                valueGetter: (params) => isNaN(parseFloat(params.data.expected_goals_per_90)) ? 0 : parseFloat(params.data.expected_goals_per_90)
             },
             {
                 headerName: 'Saves per 90',
                 field: 'saves_per_90',
-                valueGetter: (params) => parseFloat(params.data.saves_per_90)
+                valueGetter: (params) => isNaN(parseFloat(params.data.saves_per_90)) ? 0 : parseFloat(params.data.saves_per_90)
             },
             {
                 headerName: 'Expected Assists per 90',
                 field: 'expected_assists_per_90',
-                valueGetter: (params) => parseFloat(params.data.expected_assists_per_90)
+                valueGetter: (params) => isNaN(parseFloat(params.data.expected_assists_per_90)) ? 0 : parseFloat(params.data.expected_assists_per_90)
             },
             {
                 headerName: 'Expected Goal Involvements per 90',
                 field: 'expected_goal_involvements_per_90',
-                valueGetter: (params) => parseFloat(params.data.expected_goal_involvements_per_90)
+                valueGetter: (params) => isNaN(parseFloat(params.data.expected_goal_involvements_per_90)) ? 0 : parseFloat(params.data.expected_goal_involvements_per_90)
             },
             {
                 headerName: 'Expected Goals Conceded per 90',
                 field: 'expected_goals_conceded_per_90',
-                valueGetter: (params) => parseFloat(params.data.expected_goals_conceded_per_90)
+                valueGetter: (params) => isNaN(parseFloat(params.data.expected_goals_conceded_per_90)) ? 0 : parseFloat(params.data.expected_goals_conceded_per_90)
             },
             { headerName: 'Goals Conceded per 90', field: 'goals_conceded_per_90' },
             { field: 'now_cost_rank', headerName: "Now Cost Rank" },
