@@ -90,17 +90,15 @@ h1 {
     align-items: center;
     width: 100%;
     margin: 2px 0;
-    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
-    border-radius: 4px;
-    padding: 2px 0;
 }
 
 .fixture {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin: 0 4px; /* Adjust spacing between fixtures */
-    color: #fff; /* White text for contrast */
+    margin: 0 2px;
+    color: #fff;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
 }
 
 .predicted-points {
@@ -213,6 +211,11 @@ h5, h6 {
     flex: 1;
     max-width: 80px; /* Adjust max-width to fit in a single row */
     margin: 0 5px; /* Adjust margin to fit spacing */
+}
+
+.subs h5, .subs h6, .subs .fixture {
+    color: #333;
+    text-shadow: none;
 }
 
 .subs .player img {
