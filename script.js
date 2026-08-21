@@ -625,6 +625,9 @@ function calculatePlayerPredictedPoints(player, fixture, upcomingGameweek) {
         playerPredictedPoints -= (playerPredictedPoints * strengthAdjustmentAway);
     }
 
+    // Round to 1 decimal place so the captain multiplier aligns perfectly with the UI display
+    playerPredictedPoints = Math.round(playerPredictedPoints * 10) / 10;
+
     // Double the points if the player is the captain
     if (player.isCaptain) {
         playerPredictedPoints *= 2;
@@ -966,6 +969,8 @@ function populatePlayerModal(data, player) {
     
     if (fplPredictedElem && ourPredictedElem) {
         fplPredictedElem.textContent = player.ep_next ? player.ep_next : '0.0';
+        fplPredictedElem.style.color = '#333';
+        fplPredictedElem.style.textShadow = 'none';
         
         let predictedPoints = player.predicted_points;
         if (predictedPoints === undefined) {
@@ -977,7 +982,15 @@ function populatePlayerModal(data, player) {
                 }
             }
         }
+        
+        // Always show the non-captained version in this menu
+        if (player.isCaptain && predictedPoints !== undefined) {
+            predictedPoints = predictedPoints / 2;
+        }
+
         ourPredictedElem.textContent = predictedPoints !== undefined ? predictedPoints.toFixed(1) : '0.0';
+        ourPredictedElem.style.color = '#333';
+        ourPredictedElem.style.textShadow = 'none';
     }
 
     // Populate Upcoming Fixtures
