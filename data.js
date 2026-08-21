@@ -52,26 +52,25 @@ const getBasePath = () => {
     return '';
 };
 
-const loadHistoricalData = () => {
-    fetch(getBasePath() + 'fpl_data.csv')
-        .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.text();
-        })
-        .then(csvText => {
-            const data = parseCSV(csvText);
-            historicalData = data;
+const loadHistoricalData = async () => {
+    try {
+        const response = await fetch(getBasePath() + 'fpl_data.csv');
+        if (!response.ok) throw new Error('Network response was not ok');
+        const csvText = await response.text();
+        const data = parseCSV(csvText);
+        historicalData = data;
 
-            // Build cache
-            historicalData.forEach(entry => {
-                let playerName = entry.name;
-                if (!historicalDataCache.has(playerName)) {
-                    historicalDataCache.set(playerName, []);
-                }
-                historicalDataCache.get(playerName).push(entry);
-            });
-        })
-        .catch(error => console.error('Error fetching the CSV file:', error));
+        // Build cache
+        historicalData.forEach(entry => {
+            let playerName = entry.name;
+            if (!historicalDataCache.has(playerName)) {
+                historicalDataCache.set(playerName, []);
+            }
+            historicalDataCache.get(playerName).push(entry);
+        });
+    } catch (error) {
+        console.error('Error fetching the CSV file:', error);
+    }
 }
 
 // Initialize the page after fetching data
@@ -80,7 +79,7 @@ const setupPage = async () => {
     await fetchFixtures();
     await fetchGameweeks();
 
-    loadHistoricalData();
+    await loadHistoricalData();
 
     // Call page-specific initializers if they exist
     if (typeof Initialize === 'function') {
