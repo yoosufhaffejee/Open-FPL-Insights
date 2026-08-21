@@ -86,12 +86,28 @@ h1, h2, h3, h4, h5, h6 {
     border-radius: 50%;
 }
 
+.player h5 {
+    font-size: 0.85rem;
+    margin: 2px 0 0 0;
+    white-space: nowrap;
+}
+
+.player h6 {
+    font-size: 0.75rem;
+    margin: 0;
+    font-weight: normal;
+    color: #ccc;
+}
+
 .fixtures {
     display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     width: 100%;
     margin: 2px 0;
+    gap: 3px;
 }
 
 .fixture {

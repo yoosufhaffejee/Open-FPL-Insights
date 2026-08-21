@@ -47,63 +47,54 @@ function getTeamCode(teamId) {
     return team ? team.code : 0;
 }
 
+
+let defconGridOptions;
 function renderDefCon() {
-    const tbody = document.getElementById('defcon-tbody');
-    
-    // Filter Defenders and GKs with > 0 def con
     let defenders = allPlayers.filter(p => (p.element_type === 1 || p.element_type === 2) && parseFloat(p.defensive_contribution) > 0);
-    
-    // Sort by defensive_contribution_per_90 descending
     defenders.sort((a, b) => parseFloat(b.defensive_contribution_per_90) - parseFloat(a.defensive_contribution_per_90));
-    
-    // Take top 50
     defenders = defenders.slice(0, 50);
 
-    tbody.innerHTML = defenders.map(p => `
-        <tr>
-            <td>
-                <div class="player-name-cell">
-                    <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${getTeamCode(p.team)}-66.webp" alt="shirt">
-                    ${p.web_name}
-                </div>
-            </td>
-            <td>${getTeamName(p.team)}</td>
-            <td class="text-center fw-bold text-success">${p.defensive_contribution}</td>
-            <td class="text-center">${p.defensive_contribution_per_90}</td>
-            <td class="text-center">${p.clearances_blocks_interceptions}</td>
-            <td class="text-center">${p.recoveries}</td>
-            <td class="text-center">${p.tackles}</td>
-        </tr>
-    `).join('');
+    const columnDefs = [
+        { headerName: 'Player', field: 'web_name', filter: true, floatingFilter: true, cellRenderer: params => '<div class="player-name-cell"><img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_' + getTeamCode(params.data.team) + '-66.webp" alt="shirt" style="width:25px;margin-right:5px;">' + params.value + '</div>' },
+        { headerName: 'Team', field: 'team', filter: true, floatingFilter: true, valueGetter: params => getTeamName(params.data.team) },
+        { headerName: 'Total Contribution', field: 'defensive_contribution', filter: true, floatingFilter: true, cellClass: 'text-success fw-bold' },
+        { headerName: 'Per 90', field: 'defensive_contribution_per_90', filter: true, floatingFilter: true },
+        { headerName: 'CBI', field: 'clearances_blocks_interceptions', filter: true, floatingFilter: true },
+        { headerName: 'Recoveries', field: 'recoveries', filter: true, floatingFilter: true },
+        { headerName: 'Tackles', field: 'tackles', filter: true, floatingFilter: true }
+    ];
+
+    defconGridOptions = {
+        rowData: defenders,
+        columnDefs: columnDefs,
+        defaultColDef: { sortable: true, filter: true, resizable: true }
+    };
+    new agGrid.Grid(document.getElementById('defconGrid'), defconGridOptions);
 }
 
-function renderExpectedData() {
-    const tbody = document.getElementById('expected-tbody');
-    
-    // Filter players with minutes > 0
-    let players = allPlayers.filter(p => p.minutes > 0);
-    
-    // Sort by expected_goal_involvements_per_90 descending
-    players.sort((a, b) => parseFloat(b.expected_goal_involvements_per_90) - parseFloat(a.expected_goal_involvements_per_90));
-    
-    players = players.slice(0, 100);
 
-    tbody.innerHTML = players.map(p => `
-        <tr>
-            <td>
-                <div class="player-name-cell">
-                    <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${getTeamCode(p.team)}-66.webp" alt="shirt">
-                    ${p.web_name}
-                </div>
-            </td>
-            <td>${positionMap[p.element_type]}</td>
-            <td class="text-center fw-bold text-info">${p.expected_goal_involvements_per_90}</td>
-            <td class="text-center">${p.expected_goals_per_90}</td>
-            <td class="text-center">${p.expected_assists_per_90}</td>
-            <td class="text-center">${p.expected_goals}</td>
-            <td class="text-center">${p.expected_assists}</td>
-        </tr>
-    `).join('');
+let expectedGridOptions;
+function renderExpectedData() {
+    let players = allPlayers.filter(p => parseFloat(p.expected_goal_involvements) > 0);
+    players.sort((a, b) => parseFloat(b.expected_goal_involvements_per_90) - parseFloat(a.expected_goal_involvements_per_90));
+    players = players.slice(0, 50);
+
+    const columnDefs = [
+        { headerName: 'Player', field: 'web_name', filter: true, floatingFilter: true, cellRenderer: params => '<div class="player-name-cell"><img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_' + getTeamCode(params.data.team) + '-66.webp" alt="shirt" style="width:25px;margin-right:5px;">' + params.value + '</div>' },
+        { headerName: 'Pos', field: 'element_type', filter: true, floatingFilter: true, valueGetter: params => positionMap[params.data.element_type] },
+        { headerName: 'xGI / 90', field: 'expected_goal_involvements_per_90', filter: true, floatingFilter: true, cellClass: 'text-info fw-bold' },
+        { headerName: 'xG / 90', field: 'expected_goals_per_90', filter: true, floatingFilter: true },
+        { headerName: 'xA / 90', field: 'expected_assists_per_90', filter: true, floatingFilter: true },
+        { headerName: 'xG Total', field: 'expected_goals', filter: true, floatingFilter: true },
+        { headerName: 'xA Total', field: 'expected_assists', filter: true, floatingFilter: true }
+    ];
+
+    expectedGridOptions = {
+        rowData: players,
+        columnDefs: columnDefs,
+        defaultColDef: { sortable: true, filter: true, resizable: true }
+    };
+    new agGrid.Grid(document.getElementById('expectedGrid'), expectedGridOptions);
 }
 
 function renderSetPieces() {
@@ -148,36 +139,39 @@ function renderSetPieces() {
     container.innerHTML = html;
 }
 
+
+let transfersInGridOptions, transfersOutGridOptions;
 function renderTopTransfers() {
-    const inBody = document.getElementById('transfers-in-tbody');
-    const outBody = document.getElementById('transfers-out-tbody');
+    let isPreseason = allPlayers.every(p => p.transfers_in_event === 0);
+    let sortedIn = [...allPlayers];
+    let sortedOut = [...allPlayers];
     
-    let sortedIn = [...allPlayers].sort((a, b) => b.transfers_in_event - a.transfers_in_event).slice(0, 20);
-    let sortedOut = [...allPlayers].sort((a, b) => b.transfers_out_event - a.transfers_out_event).slice(0, 20);
+    if (isPreseason) {
+        sortedIn.sort(() => Math.random() - 0.5);
+        sortedOut.sort(() => Math.random() - 0.5);
+    } else {
+        sortedIn.sort((a, b) => b.transfers_in_event - a.transfers_in_event);
+        sortedOut.sort((a, b) => b.transfers_out_event - a.transfers_out_event);
+    }
     
-    inBody.innerHTML = sortedIn.map(p => `
-        <tr>
-            <td>
-                <div class="player-name-cell">
-                    <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${getTeamCode(p.team)}-66.webp" alt="shirt">
-                    ${p.web_name}
-                </div>
-            </td>
-            <td class="text-end fw-bold text-success">+${p.transfers_in_event.toLocaleString()}</td>
-        </tr>
-    `).join('');
+    sortedIn = sortedIn.slice(0, 50);
+    sortedOut = sortedOut.slice(0, 50);
+
+    const inDefs = [
+        { headerName: 'Player', field: 'web_name', filter: true, floatingFilter: true, cellRenderer: params => '<div class="player-name-cell"><img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_' + getTeamCode(params.data.team) + '-66.webp" alt="shirt" style="width:25px;margin-right:5px;">' + params.value + '</div>' },
+        { headerName: 'Transfers In', field: 'transfers_in_event', filter: true, floatingFilter: true, cellClass: 'text-success fw-bold', cellRenderer: params => '+' + (params.value || 0).toLocaleString() }
+    ];
     
-    outBody.innerHTML = sortedOut.map(p => `
-        <tr>
-            <td>
-                <div class="player-name-cell">
-                    <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${getTeamCode(p.team)}-66.webp" alt="shirt">
-                    ${p.web_name}
-                </div>
-            </td>
-            <td class="text-end fw-bold text-danger">-${p.transfers_out_event.toLocaleString()}</td>
-        </tr>
-    `).join('');
+    const outDefs = [
+        { headerName: 'Player', field: 'web_name', filter: true, floatingFilter: true, cellRenderer: params => '<div class="player-name-cell"><img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_' + getTeamCode(params.data.team) + '-66.webp" alt="shirt" style="width:25px;margin-right:5px;">' + params.value + '</div>' },
+        { headerName: 'Transfers Out', field: 'transfers_out_event', filter: true, floatingFilter: true, cellClass: 'text-danger fw-bold', cellRenderer: params => '-' + (params.value || 0).toLocaleString() }
+    ];
+
+    transfersInGridOptions = { rowData: sortedIn, columnDefs: inDefs, defaultColDef: { sortable: true, filter: true, resizable: true } };
+    transfersOutGridOptions = { rowData: sortedOut, columnDefs: outDefs, defaultColDef: { sortable: true, filter: true, resizable: true } };
+    
+    new agGrid.Grid(document.getElementById('transfersInGrid'), transfersInGridOptions);
+    new agGrid.Grid(document.getElementById('transfersOutGrid'), transfersOutGridOptions);
 }
 
 // Template Team (Top 50) Scraper
@@ -193,7 +187,7 @@ async function loadTemplateTeam() {
 
     try {
         // 1. Fetch Top 50 Managers from Overall League (314)
-        const standingsRes = await fetch('https://gh-pages-cors.haffejeeyoosuf1.workers.dev/?url=https://fantasy.premierleague.com/api/leagues-classic/314/standings/');
+        const standingsRes = await fetch('https://gh-pages-cors.haffejeeyoosuf1.workers.dev/?https://fantasy.premierleague.com/api/leagues-classic/314/standings/');
         const standingsData = await standingsRes.json();
         
         const top50 = standingsData.standings.results.slice(0, 50);
@@ -204,7 +198,7 @@ async function loadTemplateTeam() {
         
         // 2. Fetch picks for all 50 managers in parallel
         const pickPromises = top50.map(manager => 
-            fetch(`https://gh-pages-cors.haffejeeyoosuf1.workers.dev/?url=https://fantasy.premierleague.com/api/entry/${manager.entry}/event/${currentEvent.id}/picks/`)
+            fetch(`https://gh-pages-cors.haffejeeyoosuf1.workers.dev/?https://fantasy.premierleague.com/api/entry/${manager.entry}/event/${currentEvent.id}/picks/`)
                 .then(res => res.json())
                 .catch(err => null) // Ignore failed fetches
         );

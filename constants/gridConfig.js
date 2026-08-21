@@ -47,7 +47,7 @@ function setupGridOptions(filteredPlayers) {
                 field: 'now_cost',
                 width: 100,
                 valueGetter: (params) => params.data.now_cost / 10,
-                cellRenderer: (params) => '&pound;' + params.value + 'm'
+                cellRenderer: (params) => '<span style="color: #4caf50; font-weight: 500;">&pound;' + params.value + 'm</span>'
             },
             { headerName: 'Total Points', width: 120, field: 'total_points' },
             {

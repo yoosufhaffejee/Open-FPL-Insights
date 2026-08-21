@@ -564,7 +564,7 @@ function updatePlayerFixturesAndPoints(playerElement, player, predictedPoints) {
                     team.id === (playerFixture.team_a === player.team ? playerFixture.team_h : playerFixture.team_a)
                 );
 
-                fixtureElement.querySelector('.fixture-detail').textContent = `${opponentTeam.short_name} (${playerFixture.team_a === player.team ? 'A' : 'H'})`;
+                fixtureElement.querySelector('.fixture-detail').innerHTML = `${opponentTeam.short_name}<br>(${playerFixture.team_a === player.team ? 'A' : 'H'})`;
 
                 let playerPredictedPoints = calculatePlayerPredictedPoints(player, playerFixture, upcomingGameweek);
 
