@@ -80,48 +80,14 @@
                 <div id="tool-defcon" class="tool-section active-tool">
                     <h2><i class="fas fa-shield-alt text-success me-2"></i> Def Con</h2>
                     <p style="color: #bbb;">Rankings based on defensive contributions (tackles, clearances, blocks, and recoveries).</p>
-                    <div class="table-responsive">
-                        <table class="table table-dark table-striped table-hover custom-table">
-                            <thead>
-                                <tr>
-                                    <th>Player</th>
-                                    <th>Team</th>
-                                    <th class="text-center">Total Contribution</th>
-                                    <th class="text-center">Per 90</th>
-                                    <th class="text-center">CBI</th>
-                                    <th class="text-center">Recoveries</th>
-                                    <th class="text-center">Tackles</th>
-                                </tr>
-                            </thead>
-                            <tbody id="defcon-tbody">
-                                <!-- Populated by JS -->
-                            </tbody>
-                        </table>
-                    </div>
+                    <div id="defconGrid" class="ag-theme-alpine-dark" style="height: 500px; width: 100%;"></div>
                 </div>
 
                 <!-- Tool: Expected Data -->
                 <div id="tool-expected" class="tool-section">
                     <h2><i class="fas fa-chart-bar text-info me-2"></i> Expected Data</h2>
                     <p style="color: #bbb;">Underlying statistics (Expected Goals, Assists, and Goal Involvements).</p>
-                    <div class="table-responsive">
-                        <table class="table table-dark table-striped table-hover custom-table">
-                            <thead>
-                                <tr>
-                                    <th>Player</th>
-                                    <th>Pos</th>
-                                    <th class="text-center">xGI / 90</th>
-                                    <th class="text-center">xG / 90</th>
-                                    <th class="text-center">xA / 90</th>
-                                    <th class="text-center">xG Total</th>
-                                    <th class="text-center">xA Total</th>
-                                </tr>
-                            </thead>
-                            <tbody id="expected-tbody">
-                                <!-- Populated by JS -->
-                            </tbody>
-                        </table>
-                    </div>
+                    <div id="expectedGrid" class="ag-theme-alpine-dark" style="height: 500px; width: 100%;"></div>
                 </div>
 
                 <!-- Tool: Set Pieces -->

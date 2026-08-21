@@ -78,12 +78,24 @@ function renderFDR() {
                 
                 let difficulty = isHome ? f.team_h_difficulty : f.team_a_difficulty;
                 
+                let oppAttackStrength = isHome ? opponent.strength_attack_away : opponent.strength_attack_home;
+                let oppDefenseStrength = isHome ? opponent.strength_defence_away : opponent.strength_defence_home;
+
+                // If FPL populates the data later in the season, calculate the dynamic difficulty
+                if (useGoals && !useCS && oppDefenseStrength > 0) {
+                    difficulty = Math.round((oppDefenseStrength - 1000) / 75) + 1;
+                } else if (useCS && !useGoals && oppAttackStrength > 0) {
+                    difficulty = Math.round((oppAttackStrength - 1000) / 75) + 1;
+                } else if (useCS && useGoals && oppAttackStrength > 0 && oppDefenseStrength > 0) {
+                    let avgStrength = (oppAttackStrength + oppDefenseStrength) / 2;
+                    difficulty = Math.round((avgStrength - 1000) / 75) + 1;
+                }
+                
                 // Fallback bounds 1-5
                 difficulty = Math.max(1, Math.min(5, difficulty));
                 
                 let cellText = `${oppShort} (${isHome ? 'H' : 'A'})`;
                 
-                // Attack vs Defense Specific (FPL API removed exact strength values for 2024, so we project stats based on FDR)
                 const projectedMap = {
                     1: { xG: 2.5, cs: 50 },
                     2: { xG: 2.1, cs: 40 },
