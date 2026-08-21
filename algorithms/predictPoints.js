@@ -42,7 +42,7 @@ function getExpectedPoints (player, fixture) {
     let penalties = player.penalties_saved == 0 ? 0 : player.penalties_saved + player.penalties_missed;
     let penaltiesPer90 = penalties / (player.minutes / 90);
 
-    let assistsPer90 = player.expected_assists_per_90 == 0 ? 0 : player.assists / (player.minutes / 90);
+    let assistsPer90 = player.expected_assists_per_90 !== undefined && player.expected_assists_per_90 !== 0 ? parseFloat(player.expected_assists_per_90) : 0;
     expectedPoints += assistsPer90 * assistPoints;
 
     if (player.element_type === 1) {
@@ -53,32 +53,32 @@ function getExpectedPoints (player, fixture) {
         let savePointsPer90 = player.saves_per_90 !== undefined && player.saves_per_90 !== 0 ? player.saves_per_90 * (threeShotsSavedPoints / 3) : 0;
         expectedPoints += savePointsPer90;
     
-        let goalsConcededPointsPer90 = player.expected_goals_conceded_per_90 !== undefined && player.expected_goals_conceded_per_90 !== 0 ? player.expected_goals_conceded_per_90 / (twoGoalsConcededPointsDeduction / 2) : 0;
+        let goalsConcededPointsPer90 = player.expected_goals_conceded_per_90 !== undefined && player.expected_goals_conceded_per_90 !== 0 ? parseFloat(player.expected_goals_conceded_per_90) / 2 : 0;
         expectedPoints -= goalsConcededPointsPer90;
     
         let penaltiesSavedPer90 = player.penalties_saved !== undefined && player.minutes !== undefined && player.minutes !== 0 ? player.penalties_saved / (player.minutes / 90) : 0;
         let penaltySavePointsPer90 = penaltiesSavedPer90 * penaltySavedPoints;
         expectedPoints += penaltySavePointsPer90;
     
-        let goalPointsPer90 = player.expected_goals_per_90 !== undefined && player.expected_goals_per_90 !== 0 ? player.expected_goals_per_90 * goalPointsGK : 0;
+        let goalPointsPer90 = player.expected_goals_per_90 !== undefined && player.expected_goals_per_90 !== 0 ? parseFloat(player.expected_goals_per_90) * goalPointsGK : 0;
         expectedPoints += goalPointsPer90;
     }
     
     if (player.element_type === 2) {
         // Defender
-        let goalPointsPer90 = player.expected_goals_per_90 !== undefined && player.expected_goals_per_90 !== 0 ? player.expected_goals_per_90 * goalPointsDEF : 0;
+        let goalPointsPer90 = player.expected_goals_per_90 !== undefined && player.expected_goals_per_90 !== 0 ? parseFloat(player.expected_goals_per_90) * goalPointsDEF : 0;
         expectedPoints += goalPointsPer90;
     
         let cleanSheetPointsPer90 = player.clean_sheets_per_90 !== undefined && player.clean_sheets_per_90 !== 0 ? player.clean_sheets_per_90 * cleanSheetPoints : 0;
         expectedPoints += cleanSheetPointsPer90;
     
-        let goalsConcededPointsPer90 = player.expected_goals_conceded_per_90 !== undefined && player.expected_goals_conceded_per_90 !== 0 ? player.expected_goals_conceded_per_90 / (twoGoalsConcededPointsDeduction / 2) : 0;
+        let goalsConcededPointsPer90 = player.expected_goals_conceded_per_90 !== undefined && player.expected_goals_conceded_per_90 !== 0 ? parseFloat(player.expected_goals_conceded_per_90) / 2 : 0;
         expectedPoints -= goalsConcededPointsPer90;
     }
     
     if (player.element_type === 3) {
         // Midfielder
-        let goalPointsPer90 = player.expected_goals_per_90 !== undefined && player.expected_goals_per_90 !== 0 ? player.expected_goals_per_90 * goalPointsMID : 0;
+        let goalPointsPer90 = player.expected_goals_per_90 !== undefined && player.expected_goals_per_90 !== 0 ? parseFloat(player.expected_goals_per_90) * goalPointsMID : 0;
         expectedPoints += goalPointsPer90;
     
         let cleanSheetPointsPer90 = player.clean_sheets_per_90 !== undefined && player.clean_sheets_per_90 !== 0 ? player.clean_sheets_per_90 * cleanSheetPointsMID : 0;
@@ -93,7 +93,7 @@ function getExpectedPoints (player, fixture) {
     
     if (player.element_type === 4) {
         // Forward
-        let goalPointsPer90 = player.expected_goals_per_90 !== undefined && player.expected_goals_per_90 !== 0 ? player.expected_goals_per_90 * goalPointsMID : 0;
+        let goalPointsPer90 = player.expected_goals_per_90 !== undefined && player.expected_goals_per_90 !== 0 ? parseFloat(player.expected_goals_per_90) * goalPointsFWD : 0;
         expectedPoints += goalPointsPer90;
     
         correctPenaltiesOrder(player, allPlayers);
@@ -108,33 +108,52 @@ function getExpectedPoints (player, fixture) {
         expectedPoints = (expectedPoints + averagePoints) / 2;
     }
 
+    // Incorporate chance of playing
+    let chanceOfPlaying = 100;
+    if (player.chance_of_playing_next_round !== null && player.chance_of_playing_next_round !== undefined) {
+        chanceOfPlaying = player.chance_of_playing_next_round;
+    } else if (player.chance_of_playing_this_round !== null && player.chance_of_playing_this_round !== undefined) {
+        chanceOfPlaying = player.chance_of_playing_this_round;
+    }
+    expectedPoints = expectedPoints * (chanceOfPlaying / 100);
+
     return expectedPoints;
 }
 
 function getLastFive(player, fixture) {
-    // Construct player's full name once
     const playerName = player.first_name + " " + player.second_name;
     const opponentTeam = getOpponentTeam(player.team, fixture);
-    
-    // Retrieve precomputed player fixture history (if available)
     const playerFixtureHistory = historicalDataCache.get(playerName) || [];
 
-    let count = 0;
-    let historicPoints = 0;
+    let overallCount = 0;
+    let overallPoints = 0;
+    let fixtureCount = 0;
+    let fixturePoints = 0;
 
-    // Loop through the player's historical data
-    for (let i = 0; i < playerFixtureHistory.length && count < 5; i++) {
+    for (let i = 0; i < playerFixtureHistory.length; i++) {
         const fixtureHistory = playerFixtureHistory[i];
         
-        // Only check relevant opponent team
-        if (fixtureHistory.opp_team_name === opponentTeam && fixtureHistory.minutes >= 10) {
-            count++;
-            historicPoints += parseFloat(fixtureHistory.total_points);
+        if (fixtureHistory.minutes >= 10) {
+            if (overallCount < 5) {
+                overallCount++;
+                overallPoints += parseFloat(fixtureHistory.total_points);
+            }
+            if (fixtureHistory.opp_team_name === opponentTeam && fixtureCount < 5) {
+                fixtureCount++;
+                fixturePoints += parseFloat(fixtureHistory.total_points);
+            }
         }
+        
+        if (overallCount >= 5 && fixtureCount >= 5) break;
     }
 
-    // Return the average of the last 5 (or fewer) relevant fixtures
-    return count > 0 ? historicPoints / count : 0;
+    let averagePoints = 0;
+    if (overallCount > 0 && fixtureCount > 0) {
+        averagePoints = ((overallPoints / overallCount) * 0.7) + ((fixturePoints / fixtureCount) * 0.3);
+    } else if (overallCount > 0) {
+        averagePoints = overallPoints / overallCount;
+    }
+    return averagePoints;
 }
 
 function correctPenaltiesOrder(player, allPlayers) {

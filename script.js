@@ -513,7 +513,7 @@ function renderPlayerElement(player) {
 
     const isGK = player.element_type === 1;
     const shirtUrl = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${player.team_code}${isGK ? '_1' : ''}-110.webp`;
-    const image = `<img src="${shirtUrl}" alt="${player.web_name}" onerror="this.onerror=null; this.src='assets/empty-jersey.png';">`;
+    const image = `<img src="${shirtUrl}" alt="${player.web_name}" onerror="this.onerror=null; this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-110.webp';">`;
 
     playerElement.innerHTML = `
         ${image}
@@ -599,32 +599,30 @@ function calculatePlayerPredictedPoints(player, fixture, upcomingGameweek) {
     let playerPredictedPoints = getExpectedPoints(player, fixture);
 
     if (getUpcomingGameweek() == upcomingGameweek) {
-        const formBasedPoints = (parseFloat(player.form) + parseFloat(player.ep_next)) / 2;
-        playerPredictedPoints = (playerPredictedPoints + formBasedPoints) / 2;
+        player.fpl_ep_next = parseFloat(player.ep_next) || 0;
     }
 
-    const strengthAdjustmentHA = (opponentTeam.strength * 10) / 100;
-    const strengthAdjustment5 = (opponentTeam.strength * 5) / 100;
-    const strengthAdjustment10 = (opponentTeam.strength * 10) / 100;
-    const strengthAdjustment15 = (opponentTeam.strength * 15) / 100;
-    const strengthAdjustment20 = (opponentTeam.strength * 20) / 100;
+    const strengthAdjustment2 = 0.10; // +10%
+    const strengthAdjustment4 = 0.10; // -10%
+    const strengthAdjustment5 = 0.20; // -20%
+    const strengthAdjustmentAway = 0.10; // -10%
 
     // Adjust points based on opponent team strength
     if (opponentTeam.strength == 2 && playerPredictedPoints <= 10) {
-        playerPredictedPoints += (playerPredictedPoints * strengthAdjustment10);
+        playerPredictedPoints += (playerPredictedPoints * strengthAdjustment2);
     }
 
     if (opponentTeam.strength == 4) {
-        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustment5);
+        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustment4);
     }
 
     if (opponentTeam.strength == 5) {
-        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustment10);
+        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustment5);
     }
 
     // Adjust points if player is away
     if (!isHome && playerPredictedPoints >= 2.5) {
-        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustmentHA);
+        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustmentAway);
     }
 
     // Double the points if the player is the captain
@@ -951,7 +949,7 @@ function showPlayerInfo(player) {
 function populatePlayerModal(data, player) {
     // Set the player name in the modal title
     document.getElementById('playerInfoModalLabel').innerHTML = `
-    <img src="https://resources.premierleague.com/premierleague/photos/players/250x250/p${player.code}.png" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;" onerror="this.onerror=null; this.src='assets/empty-jersey.png';">
+    <img src="https://resources.premierleague.com/premierleague/photos/players/250x250/p${player.code}.png" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;" onerror="this.onerror=null; this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-110.webp';">
     ${player.first_name} ${player.second_name}`;
 
     // Clear previous data
@@ -962,6 +960,25 @@ function populatePlayerModal(data, player) {
     fixturesList.innerHTML = '';
     recentMatchesTable.innerHTML = '';
     pastSeasonsTable.innerHTML = '';
+
+    const fplPredictedElem = document.getElementById('modal-fpl-predicted');
+    const ourPredictedElem = document.getElementById('modal-our-predicted');
+    
+    if (fplPredictedElem && ourPredictedElem) {
+        fplPredictedElem.textContent = player.ep_next ? player.ep_next : '0.0';
+        
+        let predictedPoints = player.predicted_points;
+        if (predictedPoints === undefined) {
+            const upcomingGameweek = gameweeks.find(gw => gw.id >= selectedGameweek);
+            if (upcomingGameweek) {
+                const fixture = getPlayerFixture(player, upcomingGameweek.id);
+                if (fixture) {
+                    predictedPoints = calculatePlayerPredictedPoints(player, fixture, upcomingGameweek.id);
+                }
+            }
+        }
+        ourPredictedElem.textContent = predictedPoints !== undefined ? predictedPoints.toFixed(1) : '0.0';
+    }
 
     // Populate Upcoming Fixtures
     const maxFixtures = 38;
