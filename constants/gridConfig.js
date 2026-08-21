@@ -6,6 +6,7 @@ function setupGridOptions(filteredPlayers) {
         defaultColDef: {
             sortable: true,
             filter: true,
+            floatingFilter: true,
             resizable: true,
         },
         pagination: true,

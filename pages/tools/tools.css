@@ -104,12 +104,22 @@
 .set-piece-list li {
     display: flex;
     justify-content: space-between;
+    align-items: flex-start;
     margin-bottom: 8px;
     font-size: 0.9rem;
 }
 
 .sp-type {
+    font-weight: 500;
     color: #aaa;
+    white-space: nowrap;
+    margin-right: 15px;
+}
+
+.sp-taker {
+    text-align: right;
+    word-break: break-word;
+    color: #fff;
 }
 
 .sp-taker {

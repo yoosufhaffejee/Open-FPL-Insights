@@ -83,9 +83,13 @@ function renderPlanner() {
     let state = plannerState[currentGW.id];
     
     if (state.squad.length === 0) {
-        // Safety fallback if navigated forward and state wasn't pushed
-        let prevGwId = upcomingGWs[currentPlanIndex - 1].id;
-        state.squad = plannerState[prevGwId].squad.map(p => ({...p}));
+        if (currentPlanIndex > 0) {
+            // Safety fallback if navigated forward and state wasn't pushed
+            let prevGwId = upcomingGWs[currentPlanIndex - 1].id;
+            state.squad = plannerState[prevGwId].squad.map(p => ({...p}));
+        } else {
+            console.log("No squad available. Loading empty pitch.");
+        }
     }
 
     // Clear pitch

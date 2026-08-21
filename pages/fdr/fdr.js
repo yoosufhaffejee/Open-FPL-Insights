@@ -53,6 +53,10 @@ function renderFDR() {
         let rowFixtures = [];
         let totalDifficulty = 0;
         
+        // Check toggles
+        let useGoals = document.getElementById('toggleProjectedGoals').checked;
+        let useCS = document.getElementById('toggleProjectedCS').checked;
+        
         for (let i = 0; i < range; i++) {
             let gwId = startGwId + i;
             if (gwId > 38) break;
@@ -74,8 +78,18 @@ function renderFDR() {
                 
                 let difficulty = isHome ? f.team_h_difficulty : f.team_a_difficulty;
                 
-                // If the user wants Attack vs Defense specific, we'd use strength_defence/attack. 
-                // As a fallback, we use the overall difficulty.
+                // Attack vs Defense specific
+                if (useGoals && !useCS) {
+                    difficulty = isHome ? opponent.strength_defence_away : opponent.strength_defence_home;
+                    // Normalize to 2-5 scale roughly: strength usually ranges from 1000 to 1350
+                    difficulty = Math.round((difficulty - 1000) / 75) + 1;
+                } else if (useCS && !useGoals) {
+                    difficulty = isHome ? opponent.strength_attack_away : opponent.strength_attack_home;
+                    difficulty = Math.round((difficulty - 1000) / 75) + 1;
+                }
+                
+                // Ensure bounds 2-5
+                difficulty = Math.max(2, Math.min(5, difficulty));
                 
                 rowFixtures.push({
                     text: `${oppShort} (${isHome ? 'H' : 'A'})`,
@@ -107,8 +121,7 @@ function renderFDR() {
         
         let tdName = document.createElement('td');
         tdName.className = 'team-name-cell';
-        tdName.innerHTML = `<img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_-110.webp" class="team-logo" onerror="this.src='../../assets/empty-jersey.png'"> 
-                            <span>${data.team.name}</span>`;
+        tdName.innerHTML = '<img src="https://resources.premierleague.com/premierleague/badges/50/t' + data.team.code + '.png" class="team-logo" onerror="this.src=\'../../assets/empty-jersey.png\'"><span>' + data.team.name + '</span>';
         tr.appendChild(tdName);
         
         data.fixtures.forEach(fix => {

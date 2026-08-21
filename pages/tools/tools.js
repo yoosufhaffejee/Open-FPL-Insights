@@ -199,7 +199,7 @@ async function loadTemplateTeam() {
         const top50 = standingsData.standings.results.slice(0, 50);
         
         // Find current Gameweek
-        const currentEvent = events.find(e => e.is_current) || events.find(e => e.is_next);
+        const currentEvent = gameweeks.find(e => e.is_current) || gameweeks.find(e => e.is_next);
         if (!currentEvent) throw new Error("No active gameweek found.");
         
         // 2. Fetch picks for all 50 managers in parallel
