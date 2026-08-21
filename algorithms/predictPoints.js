@@ -45,6 +45,19 @@ function getExpectedPoints (player, fixture) {
     let assistsPer90 = player.expected_assists_per_90 !== undefined && player.expected_assists_per_90 !== 0 ? parseFloat(player.expected_assists_per_90) : 0;
     expectedPoints += assistsPer90 * assistPoints;
 
+    // Defensive Contribution Points (Outfield players only)
+    if (player.element_type !== 1) {
+        let defConPer90 = parseFloat(player.defensive_contribution_per_90);
+        if (!isNaN(defConPer90) && defConPer90 > 0) {
+            // Defenders need 10 actions, Mid/Fwd need 12 actions
+            let threshold = (player.element_type === 2) ? 10 : 12;
+            // Approximate the probability of hitting the threshold in a single match
+            let prob = Math.pow(defConPer90 / threshold, 2) * 0.5;
+            if (prob > 0.95) prob = 0.95; // Cap at 95% certainty (1.9 points)
+            expectedPoints += (prob * 2); // 2 points awarded
+        }
+    }
+
     if (player.element_type === 1) {
         // Goalkeeper
         let cleanSheetPointsPer90 = player.clean_sheets_per_90 !== undefined && player.clean_sheets_per_90 !== 0 ? player.clean_sheets_per_90 * cleanSheetPoints : 0;

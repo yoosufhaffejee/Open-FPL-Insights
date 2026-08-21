@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fixture Ticker (FDR) - Open FPL Insights</title>
+    <link rel="icon" href="../../assets/favicon.png" type="image/x-icon">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Fontawesome CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="../../style.css" rel="stylesheet">
+    <link href="fdr.css" rel="stylesheet">
+</head>
+<body class="fdr-page" style="background-color: #121212;">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 border-bottom border-secondary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="../../index.html">Open FPL Insights</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../../index.html">Team</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="fdr.html">Fixture Ticker</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../planner/planner.html">Planner</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../tools/tools.html">Tools</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../fixtures/fixtures.html">Fixtures</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../leagues/leagues.html">Leagues</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4">
+        <div class="fdr-header d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h2 class="text-white fw-bold">FIXTURE TICKER</h2>
+                <p class="text-white-50 mb-0">Fixture Difficulty with customisable gameweek range & team ratings.</p>
+            </div>
+        </div>
+
+        <div class="fdr-controls d-flex flex-wrap gap-3 mb-4 p-3 rounded" style="background-color: #1e1e1e; border: 1px solid #333;">
+            <div class="form-check form-switch d-flex align-items-center">
+                <input class="form-check-input mt-0 me-2" type="checkbox" id="toggleProjectedGoals" role="switch">
+                <label class="form-check-label text-white" for="toggleProjectedGoals">Projected Goals <i class="fas fa-info-circle text-muted"></i></label>
+            </div>
+            <div class="form-check form-switch d-flex align-items-center">
+                <input class="form-check-input mt-0 me-2" type="checkbox" id="toggleProjectedCS" role="switch">
+                <label class="form-check-label text-white" for="toggleProjectedCS">Projected Clean Sheets <i class="fas fa-info-circle text-muted"></i></label>
+            </div>
+            
+            <div class="ms-auto d-flex gap-2">
+                <select id="sortTeams" class="form-select bg-dark text-white border-secondary">
+                    <option value="easiest">Easiest (Overall)</option>
+                    <option value="hardest">Hardest (Overall)</option>
+                </select>
+                <select id="gwRange" class="form-select bg-dark text-white border-secondary">
+                    <option value="5">Next 5 GWs</option>
+                    <option value="10">Next 10 GWs</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="table-responsive" style="border-radius: 8px; overflow: hidden; border: 1px solid #333;">
+            <table class="table fdr-table table-dark table-bordered text-center align-middle mb-0" id="fdrTable">
+                <thead>
+                    <tr id="fdrHeaderRow" style="background-color: #1a1a1a;">
+                        <th style="width: 15%" class="text-start ps-3">TEAM</th>
+                        <!-- GW columns will be injected here -->
+                    </tr>
+                </thead>
+                <tbody id="fdrBody">
+                    <!-- Team rows will be injected here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../api/requests.js"></script>
+    <script src="../../data.js"></script>
+    <script src="fdr.js"></script>
+</body>
+</html>

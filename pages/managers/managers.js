@@ -381,6 +381,8 @@ function getPlayerFixture(player, gameweekId) {
 
 // Function to calculate predicted points for a player and a fixture
 function calculatePlayerPredictedPoints(player, fixture, upcomingGameweek) {
+    if (!fixture) return 0;
+
     let isHome = fixture.team_h === player.team;
     const opponentTeam = teams.find(team =>
         team.id === (fixture.team_a === player.team ? fixture.team_h : fixture.team_a)

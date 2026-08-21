@@ -39,14 +39,41 @@ function setupGridOptions(filteredPlayers) {
             { headerName: 'Code', field: 'code', hide: true },
             { headerName: 'Photo', field: 'photo', hide: true },
             { headerName: 'Element Type', field: 'element_type', hide: true },
-            { headerName: 'Web Name', width: 150, field: 'web_name', floatingFilter: true, pinned: 'left' },
+            { headerName: 'Web Name', width: 150, field: 'web_name', floatingFilter: true, pinned: 'left', cellRenderer: (params) => '<span style="font-weight:bold;color:#fff;">' + params.value + '</span>' },
             { headerName: 'First Name', field: 'first_name', hide: true },
             { headerName: 'Second Name', field: 'second_name', hide: true },
             {
                 headerName: 'Price',
                 field: 'now_cost',
                 width: 100,
-                valueGetter: (params) => params.data.now_cost / 10
+                valueGetter: (params) => params.data.now_cost / 10,
+                cellRenderer: (params) => {
+                    return '<span style="color:#00ff85; font-weight:bold;">£' + params.value + 'm</span>';
+                }
+            },
+            {
+                headerName: 'Selected by Percent (%)',
+                field: 'selected_by_percent',
+                width: 150,
+                valueGetter: (params) => isNaN(parseFloat(params.data.selected_by_percent)) ? 0 : parseFloat(params.data.selected_by_percent),
+                cellRenderer: (params) => {
+                    let val = params.value;
+                    if (!val) return '0%';
+                    let color = val > 20 ? '#00ff85' : (val > 5 ? '#f1c40f' : '#e74c3c');
+                    return '<span style="color:' + color + '; font-weight:bold;">' + val + '%</span>';
+                }
+            },
+            {
+                headerName: 'Chance of Playing Next Round (%)',
+                field: 'chance_of_playing_next_round',
+                width: 180,
+                valueFormatter: (params) => params.value == null ? "N/A" : params.value,
+                cellRenderer: (params) => {
+                    let val = params.value;
+                    if (val === 'N/A' || val == 100 || val == null) return '<span class="badge bg-success text-dark" style="font-size:0.9em;">100%</span>';
+                    if (val == 0) return '<span class="badge bg-danger" style="font-size:0.9em;">0%</span>';
+                    return '<span class="badge bg-warning text-dark" style="font-size:0.9em;">' + val + '%</span>';
+                }
             },
             { headerName: 'Total Points', width: 150, field: 'total_points' },
             {
@@ -78,11 +105,7 @@ function setupGridOptions(filteredPlayers) {
                 field: 'chance_of_playing_this_round',
                 valueFormatter: (params) => params.value == null ? "N/A" : params.value
             },
-            {
-                headerName: 'Chance of Playing Next Round (%)',
-                field: 'chance_of_playing_next_round',
-                valueFormatter: (params) => params.value == null ? "N/A" : params.value
-            },
+            
             { headerName: 'Dreamteam Count', field: 'dreamteam_count', width: 250 },
             { headerName: 'Event Points', field: 'event_points' },
             {
@@ -95,11 +118,7 @@ function setupGridOptions(filteredPlayers) {
                 field: 'points_per_game',
                 valueGetter: (params) => isNaN(parseFloat(params.data.points_per_game)) ? 0 : parseFloat(params.data.points_per_game)
             },
-            {
-                headerName: 'Selected by Percent (%)',
-                field: 'selected_by_percent',
-                valueGetter: (params) => isNaN(parseFloat(params.data.selected_by_percent)) ? 0 : parseFloat(params.data.selected_by_percent)
-            },
+            
             {
                 headerName: 'Defensive Contributions (DC)',
                 field: 'defensive_contribution_per_90',

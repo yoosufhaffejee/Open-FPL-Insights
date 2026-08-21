@@ -21,9 +21,9 @@
 
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 border-bottom border-secondary">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#">Open FPL Insights</a>
+            <a class="navbar-brand" href="../../index.html">Open FPL Insights</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
@@ -34,10 +34,19 @@
                         <a class="nav-link" href="../../index.html">Team</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="../fdr/fdr.html">Fixture Ticker</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../planner/planner.html">Planner</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../tools/tools.html">Tools</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="../fixtures/fixtures.html">Fixtures</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="../leagues/leagues.html">Leagues</a>
+                        <a class="nav-link active" href="#">Leagues</a>
                     </li>
                 </ul>
             </div>
@@ -54,10 +63,13 @@
         </div>
 
         <!-- League Names Grid -->
-        <div id="playerLeaguesContainer" class="ag-theme-alpine mb-5" style="height: 200px; width: 100%;"></div>
+        <div id="playerLeaguesContainer" class="ag-theme-alpine-dark mb-5" style="height: 200px; width: 100%;"></div>
+
+        <!-- Add a container for the ag-Grid -->
+        <div id="myGrid" class="ag-theme-alpine-dark" style="height: 600px; width: auto; margin-top: 20px;"></div>
 
         <!-- League Standings Grid -->
-        <div id="leagueStandingsContainer" class="ag-theme-alpine" style="height: 400px; width: 100%;"></div>
+        <div id="leagueStandingsContainer" class="ag-theme-alpine-dark" style="height: 400px; width: 100%;"></div>
     </div>
 
     <!-- JavaScript Dependencies -->

@@ -591,6 +591,8 @@ function getPlayerFixture(player, gameweekId) {
 
 // Function to calculate predicted points for a player and a fixture
 function calculatePlayerPredictedPoints(player, fixture, upcomingGameweek) {
+    if (!fixture) return 0;
+
     let isHome = fixture.team_h === player.team;
     const opponentTeam = teams.find(team =>
         team.id === (fixture.team_a === player.team ? fixture.team_h : fixture.team_a)
@@ -1289,25 +1291,35 @@ function autoPickPlayers() {
     document.getElementById('autoPickButton').disabled = true;
 
     if (allPlayers) {
-        // Select the best team from allPlayers
-        myPlayers = selectBestTeam(allPlayers);
+        // Select the best team from allPlayers while keeping existing picks
+        myPlayers = selectBestTeam(allPlayers, myPlayers || []);
 
-        // Assign slotIds to the auto-picked players
-        myPlayers.forEach((player, index) => {
-            const positionPrefix = positionMap[player.element_type];
-            if (positionPrefix && filledSlots[positionPrefix] < maxSlots[positionPrefix]) {
-                // Assign the next available slot for this position
-                const slotId = availableSlots[positionPrefix][filledSlots[positionPrefix]];
+        // Reset filledSlots before re-assigning
+        for (let position in filledSlots) {
+            filledSlots[position] = 0;
+        }
 
-                // Set the player's slotId
-                player.slotId = slotId;
+        // First pass: mark already slotted players
+        myPlayers.forEach(player => {
+            if (player.slotId) {
+                const positionPrefix = positionMap[player.element_type];
+                filledSlots[positionPrefix]++;
+            }
+        });
 
-                // Determine if the player is a substitute based on their position
-                player.isSub = ['pos2', 'pos7', 'pos12', 'pos15'].includes(slotId);
-
-                // Increment filledSlots count if player is not a sub
-                if (!player.isSub) {
-                    filledSlots[positionPrefix]++;
+        // Second pass: assign slots to new players
+        myPlayers.forEach(player => {
+            if (!player.slotId) {
+                const positionPrefix = positionMap[player.element_type];
+                // Find next available slot
+                for (let i = 0; i < availableSlots[positionPrefix].length; i++) {
+                    const candidateSlot = availableSlots[positionPrefix][i];
+                    if (!myPlayers.find(p => p.slotId === candidateSlot)) {
+                        player.slotId = candidateSlot;
+                        player.isSub = ['pos2', 'pos7', 'pos12', 'pos15'].includes(candidateSlot);
+                        filledSlots[positionPrefix]++;
+                        break;
+                    }
                 }
             }
         });
@@ -1336,7 +1348,9 @@ function displayPlayers(filteredPlayers) {
 
     // Your Javascript code to create the Data Grid
     const myGridElement = document.querySelector('#myGrid');
-    grid = agGrid.createGrid(myGridElement, gridOptions);
+    if (myGridElement) {
+        grid = agGrid.createGrid(myGridElement, gridOptions);
+    }
 }
 
 async function Initialize() {

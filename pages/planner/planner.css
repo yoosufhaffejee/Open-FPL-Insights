@@ -1,0 +1,121 @@
+body.planner-page {
+    background-color: #121212 !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.planner-page .pitch-container {
+    background-color: #138808; /* Fallback green */
+    position: relative;
+    overflow: hidden;
+}
+
+/* Ensure the pitch renders nicely */
+.planner-page .row {
+    margin: 0;
+}
+
+.planner-page .player {
+    display: inline-block;
+    text-align: center;
+    width: 20%; /* 5 players max per row */
+    padding: 5px;
+    margin-bottom: 10px;
+    position: relative;
+}
+
+.planner-page .player img.shirt {
+    width: 50px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+.planner-page .player .player-info {
+    background-color: white;
+    border-radius: 4px;
+    padding: 4px;
+    margin-top: -5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    position: relative;
+    z-index: 2;
+}
+
+.planner-page .player .player-info h5 {
+    font-size: 0.75rem;
+    font-weight: bold;
+    margin: 0;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.planner-page .player .fixture-info {
+    font-size: 0.65rem;
+    display: flex;
+    justify-content: space-between;
+    margin-top: 2px;
+}
+
+.planner-page .player .predicted-points {
+    font-weight: bold;
+    color: #333;
+}
+
+.planner-page .player .fixture-detail {
+    color: #666;
+}
+
+.chip-card {
+    transition: 0.2s all;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.chip-card:hover {
+    border-color: #fff;
+    opacity: 0.8 !important;
+}
+
+.chip-card.active {
+    background-color: #00ff85 !important;
+    color: #111 !important;
+    opacity: 1 !important;
+}
+
+.chip-card.active .text-white-50 {
+    color: #444 !important;
+}
+
+.player-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #333;
+    cursor: pointer;
+    transition: 0.2s background-color;
+}
+
+.player-list-item:hover {
+    background-color: #2a2a2a;
+}
+
+.player-list-item .shirt {
+    width: 30px;
+    height: auto;
+    margin-right: 10px;
+}
+
+.btn-transfer {
+    background-color: #00ff85;
+    color: #111;
+    font-weight: bold;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+}
+
+.btn-transfer:hover {
+    background-color: #00cc6a;
+}

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FPL Tools - Open FPL Insights</title>
+    <link rel="icon" href="../../assets/favicon.png" type="image/x-icon">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Fontawesome CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="../../style.css" rel="stylesheet">
+    <link href="tools.css" rel="stylesheet">
+</head>
+<body class="tools-page">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 border-bottom border-secondary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="../../index.html">Open FPL Insights</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../../index.html">Team</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../../pages/managers/managers.html">Managers</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../../pages/fixtures/fixtures.html">Fixtures</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../../pages/leagues/leagues.html">Leagues</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../../pages/fdr/fdr.html">Fixture Ticker</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../../pages/planner/planner.html">Planner</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="../../pages/tools/tools.html">Tools</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid content-container">
+        <div class="row">
+            <!-- Sidebar Navigation -->
+            <div class="col-md-3 col-lg-2 sidebar-menu mb-4">
+                <div class="list-group list-group-flush" id="tools-nav">
+                    <button class="list-group-item list-group-item-action active" data-tool="defcon">
+                        <i class="fas fa-shield-alt text-success me-2"></i> Def Con
+                    </button>
+                    <button class="list-group-item list-group-item-action" data-tool="expected">
+                        <i class="fas fa-chart-bar text-info me-2"></i> Expected Data
+                    </button>
+                    <button class="list-group-item list-group-item-action" data-tool="setpieces">
+                        <i class="fas fa-futbol text-warning me-2"></i> Set Pieces
+                    </button>
+                    <button class="list-group-item list-group-item-action" data-tool="transfers">
+                        <i class="fas fa-exchange-alt text-primary me-2"></i> Top Transfers
+                    </button>
+                    <button class="list-group-item list-group-item-action" data-tool="template">
+                        <i class="fas fa-crown text-warning me-2"></i> Template Team (Top 50)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="col-md-9 col-lg-10 main-content">
+                
+                <!-- Tool: Def Con -->
+                <div id="tool-defcon" class="tool-section active-tool">
+                    <h2><i class="fas fa-shield-alt text-success me-2"></i> Def Con</h2>
+                    <p class="text-muted">Rankings based on defensive contributions (tackles, clearances, blocks, and recoveries).</p>
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped table-hover custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Player</th>
+                                    <th>Team</th>
+                                    <th class="text-center">Total Contribution</th>
+                                    <th class="text-center">Per 90</th>
+                                    <th class="text-center">CBI</th>
+                                    <th class="text-center">Recoveries</th>
+                                    <th class="text-center">Tackles</th>
+                                </tr>
+                            </thead>
+                            <tbody id="defcon-tbody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tool: Expected Data -->
+                <div id="tool-expected" class="tool-section">
+                    <h2><i class="fas fa-chart-bar text-info me-2"></i> Expected Data</h2>
+                    <p class="text-muted">Underlying statistics (Expected Goals, Assists, and Goal Involvements).</p>
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped table-hover custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Player</th>
+                                    <th>Pos</th>
+                                    <th class="text-center">xGI / 90</th>
+                                    <th class="text-center">xG / 90</th>
+                                    <th class="text-center">xA / 90</th>
+                                    <th class="text-center">xG Total</th>
+                                    <th class="text-center">xA Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expected-tbody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tool: Set Pieces -->
+                <div id="tool-setpieces" class="tool-section">
+                    <h2><i class="fas fa-futbol text-warning me-2"></i> Set Pieces</h2>
+                    <p class="text-muted">A cheat sheet of designated set piece takers for each team.</p>
+                    <div id="setpieces-container" class="row">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Tool: Top Transfers -->
+                <div id="tool-transfers" class="tool-section">
+                    <h2><i class="fas fa-exchange-alt text-primary me-2"></i> Market Trends</h2>
+                    <p class="text-muted">Most bought and sold players for the upcoming Gameweek.</p>
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <h4 class="text-success text-center">Top Transfers In</h4>
+                            <div class="table-responsive">
+                                <table class="table table-dark table-striped custom-table">
+                                    <thead><tr><th>Player</th><th class="text-end">Transfers In</th></tr></thead>
+                                    <tbody id="transfers-in-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <h4 class="text-danger text-center">Top Transfers Out</h4>
+                            <div class="table-responsive">
+                                <table class="table table-dark table-striped custom-table">
+                                    <thead><tr><th>Player</th><th class="text-end">Transfers Out</th></tr></thead>
+                                    <tbody id="transfers-out-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tool: Template Team -->
+                <div id="tool-template" class="tool-section">
+                    <h2><i class="fas fa-crown text-warning me-2"></i> Template Team (Top 50)</h2>
+                    <p class="text-muted">The 15-man squad representing the most owned players among the Top 50 global managers.</p>
+                    
+                    <div id="template-loading" class="text-center py-5">
+                        <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <h4 class="mt-3">Scraping live data from Top 50 Global Managers...</h4>
+                        <p class="text-muted">This takes a few seconds.</p>
+                    </div>
+
+                    <div id="template-pitch-wrapper" style="display: none;">
+                        <p class="text-center text-success mb-3">Scraping Complete! Showing Effective Ownership (EO) among the Top 50.</p>
+                        <div class="pitch-container" id="template-pitch">
+                            <!-- Populated by JS with Ownership % in player info -->
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="../../helpers/helpers.js"></script>
+    <script src="../../api/requests.js"></script>
+    <script src="../../data.js"></script>
+    <script src="tools.js"></script>
+</body>
+</html>

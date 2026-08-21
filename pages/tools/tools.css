@@ -1,0 +1,133 @@
+.tools-page .content-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.sidebar-menu .list-group-item {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+    border: 1px solid #333;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.sidebar-menu .list-group-item:hover {
+    background-color: #2a2a2a;
+    color: #00ff85;
+}
+
+.sidebar-menu .list-group-item.active {
+    background-color: #2a2a2a;
+    color: #00ff85;
+    border-color: #00ff85;
+    border-left: 4px solid #00ff85;
+}
+
+.tool-section {
+    display: none;
+    background-color: #1e1e1e;
+    border: 1px solid #333;
+    border-radius: 12px;
+    padding: 25px;
+    min-height: 500px;
+}
+
+.tool-section.active-tool {
+    display: block;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Custom Table Styles */
+.custom-table {
+    margin-top: 15px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.custom-table th {
+    background-color: #2a2a2a;
+    color: #aaa;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    border-bottom: 2px solid #444;
+}
+
+.custom-table td {
+    vertical-align: middle;
+    border-color: #333;
+    color: #fff;
+    font-weight: 500;
+}
+
+.custom-table tbody tr:hover td {
+    background-color: rgba(0, 255, 133, 0.1);
+}
+
+.player-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.player-name-cell img {
+    width: 30px;
+}
+
+/* Set Pieces Styles */
+.set-piece-card {
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.set-piece-card h5 {
+    color: #00ff85;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 5px;
+}
+
+.set-piece-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.set-piece-list li {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.sp-type {
+    color: #aaa;
+}
+
+.sp-taker {
+    font-weight: bold;
+    color: #fff;
+}
+
+/* Template Team Customizations */
+#template-pitch .player-info h5 {
+    font-size: 0.8em;
+}
+
+.ownership-badge {
+    background-color: #00ff85;
+    color: #111;
+    font-size: 0.7em;
+    font-weight: bold;
+    padding: 2px 5px;
+    border-radius: 4px;
+    margin-top: 2px;
+}

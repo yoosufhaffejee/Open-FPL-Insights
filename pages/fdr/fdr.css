@@ -1,0 +1,76 @@
+body.fdr-page {
+    background-color: #121212 !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.fdr-table th {
+    border-bottom: 2px solid #333 !important;
+    color: #ccc;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+.fdr-table td {
+    border-color: #333 !important;
+    padding: 0;
+    vertical-align: middle;
+}
+
+/* Custom styling for the cells to match the screenshot */
+.fdr-cell {
+    padding: 12px 8px;
+    font-weight: 600;
+    color: white;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5); /* subtle shadow for readability */
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.9rem;
+}
+
+/* FDR Colors */
+.fdr-2 { background-color: #00ff87 !important; color: #111; text-shadow: none; } /* Easy - Bright Green */
+.fdr-3 { background-color: #ebebe4 !important; color: #111; text-shadow: none; } /* Normal - Grey/White */
+.fdr-4 { background-color: #ff005a !important; color: white; } /* Hard - Pink/Red */
+.fdr-5 { background-color: #861d46 !important; color: white; } /* Very Hard - Dark Red */
+
+/* We'll calculate gradient or slightly different colors for Attack vs Defense later, 
+   but standard FPL FDR colors are a good start. 
+   Wait, the screenshot uses:
+   FDR 2: #00ff85 (Bright green)
+   FDR 3: #585d65 (Dark grey)
+   FDR 4: #ff005a (Bright red)
+   FDR 5: #861d46 (Dark maroon)
+*/
+
+.fdr-2 { background-color: #00ff85 !important; color: #111; text-shadow: none; } 
+.fdr-3 { background-color: #585d65 !important; color: #fff; text-shadow: none; } 
+.fdr-4 { background-color: #ff005a !important; color: #fff; text-shadow: none; } 
+.fdr-5 { background-color: #861d46 !important; color: #fff; text-shadow: none; } 
+
+.team-logo {
+    width: 24px;
+    height: 24px;
+    margin-right: 8px;
+    object-fit: contain;
+}
+
+.form-check-input:checked {
+    background-color: #00ff85;
+    border-color: #00ff85;
+}
+
+.fdr-controls .form-check-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.team-name-cell {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px !important;
+    background-color: #1a1a1a;
+}
