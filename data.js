@@ -41,9 +41,23 @@ const fetchGameweeks = async () => {
     }
 };
 
-const loadHistoricalData = (isRoot = true) => {
-    fetch(isRoot ? 'fpl_data.csv' : '../../fpl_data.csv')
-        .then(response => response.text())
+const getBasePath = () => {
+    const scripts = document.getElementsByTagName('script');
+    for (let i = 0; i < scripts.length; i++) {
+        const src = scripts[i].getAttribute('src');
+        if (src && src.endsWith('data.js')) {
+            return src.replace('data.js', '');
+        }
+    }
+    return '';
+};
+
+const loadHistoricalData = () => {
+    fetch(getBasePath() + 'fpl_data.csv')
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.text();
+        })
         .then(csvText => {
             const data = parseCSV(csvText);
             historicalData = data;
@@ -56,7 +70,6 @@ const loadHistoricalData = (isRoot = true) => {
                 }
                 historicalDataCache.get(playerName).push(entry);
             });
-            //console.log(data);
         })
         .catch(error => console.error('Error fetching the CSV file:', error));
 }
@@ -67,19 +80,14 @@ const setupPage = async () => {
     await fetchFixtures();
     await fetchGameweeks();
 
-    // Initialize other functionalities or UI components here
-    try {
-        loadHistoricalData();
-        Initialize(); // Ensure this function is defined elsewhere
-    } catch (error) {
-        //console.log("Init skipped");
-    }
+    loadHistoricalData();
 
-    try {
-        loadHistoricalData(false);
-        updateGameweek(); // Ensure this function is defined elsewhere
-    } catch (error) {
-        //console.log("Init Managers skipped");
+    // Call page-specific initializers if they exist
+    if (typeof Initialize === 'function') {
+        Initialize();
+    }
+    if (typeof updateGameweek === 'function') {
+        updateGameweek();
     }
 };
 

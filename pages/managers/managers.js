@@ -305,9 +305,9 @@ function renderPlayerElement(player) {
     playerElement.className = 'player';
     playerElement.id = `player-${player.slotId}`;
 
-    const image = player.code ?
-        `<img src="https://resources.premierleague.com/premierleague/photos/players/250x250/p${player.code}.png" alt="${player.web_name}" onerror="this.onerror=null; this.src='../../assets/empty-jersey.png';">`
-        : `<img src="../../assets/empty-jersey.png" alt="${player.web_name}">`;
+    const isGK = player.element_type === 1;
+    const shirtUrl = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${player.team_code}${isGK ? '_1' : ''}-110.webp`;
+    const image = `<img src="${shirtUrl}" alt="${player.web_name}" onerror="this.onerror=null; this.src='../../assets/empty-jersey.png';">`;
 
     playerElement.innerHTML = `
         ${image}
