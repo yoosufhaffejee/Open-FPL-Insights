@@ -107,7 +107,7 @@ function renderFDR() {
         
         let tdName = document.createElement('td');
         tdName.className = 'team-name-cell';
-        tdName.innerHTML = `<img src="https://fantasy.premierleague.com/dist/img/badges/badge_${data.team.code}_40.png" class="team-logo" onerror="this.src='../../assets/empty-jersey.png'"> 
+        tdName.innerHTML = `<img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_-110.webp" class="team-logo" onerror="this.src='../../assets/empty-jersey.png'"> 
                             <span>${data.team.name}</span>`;
         tr.appendChild(tdName);
         

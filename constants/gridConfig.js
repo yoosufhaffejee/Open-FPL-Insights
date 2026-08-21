@@ -19,13 +19,12 @@ function setupGridOptions(filteredPlayers) {
                 filter: false,
                 cellRenderer: (params) => {
                     const button = document.createElement('button');
-                    button.className = 'btn btn-primary';
+                    button.className = 'btn btn-primary btn-sm';
                     button.disabled = myPlayers.some(player => player?.web_name == params.data.web_name) ||
                         !canAddPlayer(params.data.element_type) ||
                         bankBalance + 5 <= params.data.now_cost / 10;
                     button.innerText = '+';
                     button.addEventListener('click', () => {
-                        //myPlayers.push(allPlayers.find(player => player.id == params.data.id));
                         addPlayer(allPlayers.find(player => player.id == params.data.id));
                         updateTeamUI();
                         grid.refreshCells();
@@ -39,7 +38,7 @@ function setupGridOptions(filteredPlayers) {
             { headerName: 'Code', field: 'code', hide: true },
             { headerName: 'Photo', field: 'photo', hide: true },
             { headerName: 'Element Type', field: 'element_type', hide: true },
-            { headerName: 'Web Name', width: 150, field: 'web_name', floatingFilter: true, pinned: 'left', cellRenderer: (params) => '<span style="font-weight:bold;color:#fff;">' + params.value + '</span>' },
+            { headerName: 'Web Name', width: 150, field: 'web_name', floatingFilter: true, pinned: 'left' },
             { headerName: 'First Name', field: 'first_name', hide: true },
             { headerName: 'Second Name', field: 'second_name', hide: true },
             {
@@ -47,35 +46,9 @@ function setupGridOptions(filteredPlayers) {
                 field: 'now_cost',
                 width: 100,
                 valueGetter: (params) => params.data.now_cost / 10,
-                cellRenderer: (params) => {
-                    return '<span style="color:#00ff85; font-weight:bold;">£' + params.value + 'm</span>';
-                }
+                cellRenderer: (params) => '&pound;' + params.value + 'm'
             },
-            {
-                headerName: 'Selected by Percent (%)',
-                field: 'selected_by_percent',
-                width: 150,
-                valueGetter: (params) => isNaN(parseFloat(params.data.selected_by_percent)) ? 0 : parseFloat(params.data.selected_by_percent),
-                cellRenderer: (params) => {
-                    let val = params.value;
-                    if (!val) return '0%';
-                    let color = val > 20 ? '#00ff85' : (val > 5 ? '#f1c40f' : '#e74c3c');
-                    return '<span style="color:' + color + '; font-weight:bold;">' + val + '%</span>';
-                }
-            },
-            {
-                headerName: 'Chance of Playing Next Round (%)',
-                field: 'chance_of_playing_next_round',
-                width: 180,
-                valueFormatter: (params) => params.value == null ? "N/A" : params.value,
-                cellRenderer: (params) => {
-                    let val = params.value;
-                    if (val === 'N/A' || val == 100 || val == null) return '<span class="badge bg-success text-dark" style="font-size:0.9em;">100%</span>';
-                    if (val == 0) return '<span class="badge bg-danger" style="font-size:0.9em;">0%</span>';
-                    return '<span class="badge bg-warning text-dark" style="font-size:0.9em;">' + val + '%</span>';
-                }
-            },
-            { headerName: 'Total Points', width: 150, field: 'total_points' },
+            { headerName: 'Total Points', width: 120, field: 'total_points' },
             {
                 headerName: 'Form',
                 field: 'form',
@@ -83,68 +56,45 @@ function setupGridOptions(filteredPlayers) {
                 valueGetter: (params) => parseFloat(params.data.form)
             },
             {
+                headerName: 'Selected by %',
+                field: 'selected_by_percent',
+                width: 140,
+                valueGetter: (params) => isNaN(parseFloat(params.data.selected_by_percent)) ? 0 : parseFloat(params.data.selected_by_percent),
+                cellRenderer: (params) => {
+                    let val = params.value;
+                    if (!val) return '0%';
+                    return val + '%';
+                }
+            },
+            {
+                headerName: 'Playing Chance (%)',
+                field: 'chance_of_playing_next_round',
+                width: 170,
+                valueFormatter: (params) => params.value == null ? "100" : params.value,
+                cellRenderer: (params) => {
+                    let val = params.value;
+                    if (val === 'N/A' || val == 100 || val == null) return '<span class="badge bg-success">100%</span>';
+                    if (val == 0) return '<span class="badge bg-danger">0%</span>';
+                    return '<span class="badge bg-warning text-dark">' + val + '%</span>';
+                }
+            },
+            {
+                headerName: 'DC per 90',
+                field: 'defensive_contribution_per_90',
+                width: 150,
+                valueGetter: (params) => parseFloat(params.data.defensive_contribution_per_90) || 0
+            },
+            {
                 headerName: 'Predicted Points',
                 field: 'ep_this',
                 width: 150,
-                valueGetter: (params) => {
-                    const val = parseFloat(params.data.ep_this);
-                    return isNaN(val) ? 0 : val;
-                }
+                valueGetter: (params) => isNaN(parseFloat(params.data.ep_this)) ? 0 : parseFloat(params.data.ep_this)
             },
             {
                 headerName: 'Next Predicted Points',
                 field: 'ep_next',
-                width: 150,
-                valueGetter: (params) => {
-                    const val = parseFloat(params.data.ep_next);
-                    return isNaN(val) ? 0 : val;
-                }
-            },
-            {
-                headerName: 'Chance of Playing This Round (%)',
-                field: 'chance_of_playing_this_round',
-                valueFormatter: (params) => params.value == null ? "N/A" : params.value
-            },
-            
-            { headerName: 'Dreamteam Count', field: 'dreamteam_count', width: 250 },
-            { headerName: 'Event Points', field: 'event_points' },
-            {
-                headerName: 'In Dreamteam',
-                field: 'in_dreamteam',
-                valueFormatter: (params) => params.value === null ? "N/A" : params.value ? "True" : "False"
-            },
-            {
-                headerName: 'Points per Game',
-                field: 'points_per_game',
-                valueGetter: (params) => isNaN(parseFloat(params.data.points_per_game)) ? 0 : parseFloat(params.data.points_per_game)
-            },
-            
-            {
-                headerName: 'Defensive Contributions (DC)',
-                field: 'defensive_contribution_per_90',
-                valueGetter: (params) => isNaN(parseFloat(params.data.defensive_contribution_per_90)) ? 0 : parseFloat(params.data.defensive_contribution_per_90)
-            },
-            {
-                headerName: 'Special',
-                field: 'special',
-                valueFormatter: (params) => params.value === null ? "N/A" : params.value ? "True" : "False"
-            },
-            {
-                headerName: 'Squad Number',
-                field: 'squad_number',
-                valueFormatter: (params) => params.value == null ? "N/A" : params.value
-            },
-            { headerName: 'Status', field: 'status' },
-            { headerName: 'Team', field: 'team' },
-            { headerName: 'Team Code', field: 'team_code' },
-            { headerName: 'Transfers In', field: 'transfers_in' },
-            { headerName: 'Transfers In Event', field: 'transfers_in_event' },
-            { headerName: 'Transfers Out', field: 'transfers_out' },
-            { headerName: 'Transfers Out Event', field: 'transfers_out_event', width: 300 },
-            {
-                headerName: 'Value Form',
-                field: 'value_form',
-                valueGetter: (params) => isNaN(parseFloat(params.data.value_form)) ? 0 : parseFloat(params.data.value_form)
+                width: 170,
+                valueGetter: (params) => isNaN(parseFloat(params.data.ep_next)) ? 0 : parseFloat(params.data.ep_next)
             },
             {
                 headerName: 'Value Season',

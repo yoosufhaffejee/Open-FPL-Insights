@@ -8,6 +8,8 @@
 body {
     font-family: Arial, sans-serif;
     padding: 20px;
+    background-color: #121212;
+    color: #e0e0e0;
 }
 
 /* Navbar styles */
@@ -36,7 +38,7 @@ h1 {
 /* Pitch container */
 .pitch-container {
     background-image: url('assets/soccer-pitch.jpg');
-    background-size: cover;
+    background-size: 100% 100%;
     background-position: center;
     background-repeat: no-repeat;
     width: 100%;
@@ -348,6 +350,10 @@ h1 {
     background: #00ff85;
     color: #111;
     border-color: #00ff85;
+}
+
+.card-title, .card-body h5 { 
+    color: #fff !important; 
 }
 
 .gameweek-info {
