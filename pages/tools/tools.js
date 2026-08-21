@@ -69,7 +69,7 @@ function renderDefCon() {
         columnDefs: columnDefs,
         defaultColDef: { sortable: true, filter: true, resizable: true }
     };
-    new agGrid.Grid(document.getElementById('defconGrid'), defconGridOptions);
+    agGrid.createGrid(document.getElementById('defconGrid'), defconGridOptions);
 }
 
 
@@ -94,7 +94,7 @@ function renderExpectedData() {
         columnDefs: columnDefs,
         defaultColDef: { sortable: true, filter: true, resizable: true }
     };
-    new agGrid.Grid(document.getElementById('expectedGrid'), expectedGridOptions);
+    agGrid.createGrid(document.getElementById('expectedGrid'), expectedGridOptions);
 }
 
 function renderSetPieces() {
@@ -170,8 +170,8 @@ function renderTopTransfers() {
     transfersInGridOptions = { rowData: sortedIn, columnDefs: inDefs, defaultColDef: { sortable: true, filter: true, resizable: true } };
     transfersOutGridOptions = { rowData: sortedOut, columnDefs: outDefs, defaultColDef: { sortable: true, filter: true, resizable: true } };
     
-    new agGrid.Grid(document.getElementById('transfersInGrid'), transfersInGridOptions);
-    new agGrid.Grid(document.getElementById('transfersOutGrid'), transfersOutGridOptions);
+    agGrid.createGrid(document.getElementById('transfersInGrid'), transfersInGridOptions);
+    agGrid.createGrid(document.getElementById('transfersOutGrid'), transfersOutGridOptions);
 }
 
 // Template Team (Top 50) Scraper
@@ -236,6 +236,10 @@ async function loadTemplateTeam() {
         // 5. Select Best Valid 15-man Squad from the highest EO players
         const squad = selectTemplateSquad(templatePlayers);
         
+        if (squad.length === 0) {
+            throw new Error("No player picks are publicly available yet. Teams remain hidden until the Gameweek 1 deadline passes.");
+        }
+        
         // Cache and Render
         sessionStorage.setItem('templateTeam', JSON.stringify(squad));
         renderTemplatePitch(squad);
@@ -244,7 +248,7 @@ async function loadTemplateTeam() {
         console.error("Failed to load template team", error);
         document.getElementById('template-loading').innerHTML = `
             <div class="alert alert-danger" role="alert">
-                Failed to scrape live data. The FPL API might be updating or blocking requests. Please try again later.
+                ${error.message.includes("publicly available") ? error.message : "Failed to scrape live data. The FPL API might be updating or blocking requests. Please try again later."}
             </div>
         `;
     }

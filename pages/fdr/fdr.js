@@ -78,21 +78,30 @@ function renderFDR() {
                 
                 let difficulty = isHome ? f.team_h_difficulty : f.team_a_difficulty;
                 
-                // Attack vs Defense specific
+                // Fallback bounds 1-5
+                difficulty = Math.max(1, Math.min(5, difficulty));
+                
+                let cellText = `${oppShort} (${isHome ? 'H' : 'A'})`;
+                
+                // Attack vs Defense Specific (FPL API removed exact strength values for 2024, so we project stats based on FDR)
+                const projectedMap = {
+                    1: { xG: 2.5, cs: 50 },
+                    2: { xG: 2.1, cs: 40 },
+                    3: { xG: 1.5, cs: 25 },
+                    4: { xG: 1.1, cs: 15 },
+                    5: { xG: 0.8, cs: 5  }
+                };
+                
                 if (useGoals && !useCS) {
-                    difficulty = isHome ? opponent.strength_defence_away : opponent.strength_defence_home;
-                    // Normalize to 2-5 scale roughly: strength usually ranges from 1000 to 1350
-                    difficulty = Math.round((difficulty - 1000) / 75) + 1;
+                    cellText += `<br><small style="font-size: 0.8em; font-weight: 600;">${projectedMap[difficulty].xG} xG</small>`;
                 } else if (useCS && !useGoals) {
-                    difficulty = isHome ? opponent.strength_attack_away : opponent.strength_attack_home;
-                    difficulty = Math.round((difficulty - 1000) / 75) + 1;
+                    cellText += `<br><small style="font-size: 0.8em; font-weight: 600;">${projectedMap[difficulty].cs}% CS</small>`;
+                } else if (useCS && useGoals) {
+                    cellText += `<br><small style="font-size: 0.75em; font-weight: 600;">${projectedMap[difficulty].xG} xG | ${projectedMap[difficulty].cs}% CS</small>`;
                 }
                 
-                // Ensure bounds 2-5
-                difficulty = Math.max(2, Math.min(5, difficulty));
-                
                 rowFixtures.push({
-                    text: `${oppShort} (${isHome ? 'H' : 'A'})`,
+                    text: cellText,
                     difficulty: difficulty
                 });
                 totalDifficulty += difficulty;
