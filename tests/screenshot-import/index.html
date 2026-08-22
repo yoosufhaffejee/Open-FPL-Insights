@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Screenshot Importer Tests</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .pass { color: green; }
+        .fail { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Player Matcher Tests</h1>
+    <div id="results"></div>
+
+    <script src="../../screenshot-import/player-matcher.js"></script>
+    <script>
+        const mockPlayers = [
+            { id: 1, web_name: 'Haaland', first_name: 'Erling', second_name: 'Haaland', element_type: 4, team: 13 },
+            { id: 2, web_name: 'Salah', first_name: 'Mohamed', second_name: 'Salah', element_type: 3, team: 11 },
+            { id: 3, web_name: 'Bruno Fernandes', first_name: 'Bruno', second_name: 'Borges Fernandes', element_type: 3, team: 14 },
+            { id: 4, web_name: 'Szoboszlai', first_name: 'Dominik', second_name: 'Szoboszlai', element_type: 3, team: 11 },
+            { id: 5, web_name: 'João Pedro', first_name: 'João Pedro', second_name: 'Junqueira de Jesus', element_type: 4, team: 5 },
+            { id: 6, web_name: 'Reece James', first_name: 'Reece', second_name: 'James', element_type: 2, team: 6 }
+        ];
+
+        const matcher = new PlayerMatcher(mockPlayers, []);
+        let passed = 0;
+        let failed = 0;
+
+        function assertMatch(ocrText, expectedId, position = null) {
+            const results = matcher.match(ocrText, position);
+            const topMatch = results.length > 0 ? results[0].playerId : null;
+            const div = document.createElement('div');
+            
+            if (topMatch === expectedId) {
+                div.className = 'pass';
+                div.innerText = `PASS: "${ocrText}" -> Match ${expectedId}`;
+                passed++;
+            } else {
+                div.className = 'fail';
+                div.innerText = `FAIL: "${ocrText}" -> Expected ${expectedId}, got ${topMatch} (Confidence: ${results.length > 0 ? results[0].score : 0})`;
+                failed++;
+            }
+            document.getElementById('results').appendChild(div);
+        }
+
+        // Exact match
+        assertMatch('Haaland', 1);
+        
+        // OCR typos
+        assertMatch('Fernades', 3);
+        assertMatch('Szoboslai', 4);
+        assertMatch('Salahh', 2);
+        
+        // Accented characters
+        assertMatch('JOÃO PEDRO', 5);
+        assertMatch('Joao Pedro', 5);
+        
+        // Ambiguous OCR
+        assertMatch('Reece Janes', 6);
+        assertMatch('Reeco James', 6);
+
+        const summary = document.createElement('h3');
+        summary.innerText = `Results: ${passed} passed, ${failed} failed.`;
+        document.getElementById('results').appendChild(summary);
+    </script>
+</body>
+</html>

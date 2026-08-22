@@ -31,7 +31,7 @@ function setupGridOptions(filteredPlayers) {
                         updateTeamUI();
                         grid.refreshCells();
                         document.getElementById('saveButton').disabled = false;
-                        document.getElementById('autoPickButton').disabled = true;
+
                     });
                     return button;
                 }

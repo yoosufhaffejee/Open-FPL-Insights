@@ -1,0 +1,124 @@
+/**
+ * Open-FPL-Insights Screenshot Importer
+ * Main Orchestrator
+ */
+
+class ScreenshotImporter {
+    constructor(players, teams) {
+        this.players = players;
+        this.teams = teams;
+        
+        this.layoutDetector = new ScreenshotLayoutDetector();
+        this.matcher = new PlayerMatcher(players, teams);
+        this.confidenceScorer = new ConfidenceScorer();
+        
+        this.worker = null;
+        
+        // Listeners for UI
+        this.onProgress = null;
+        this.onComplete = null;
+        this.onError = null;
+    }
+
+    async processImage(file) {
+        try {
+            if (this.onProgress) this.onProgress({ message: 'Loading image...', progress: 5 });
+
+            const imageBitmap = await createImageBitmap(file);
+            
+            const layoutCheck = this.layoutDetector.detect(imageBitmap.width, imageBitmap.height);
+            if (!layoutCheck.supported) {
+                throw new Error("We couldn't recognise this as an FPL team screenshot. Please upload a screenshot of your Fantasy Team page.");
+            }
+
+            // Start worker
+            if (this.worker) {
+                this.worker.postMessage({ type: 'dispose' });
+            }
+            
+            this.worker = new Worker('screenshot-import/screenshot-worker.js');
+            
+            this.worker.onmessage = (e) => {
+                const { type, payload, message, progress, results, error } = e.data;
+                
+                if (type === 'progress') {
+                    if (this.onProgress) this.onProgress({ message, progress });
+                } else if (type === 'complete') {
+                    this.handleWorkerComplete(results);
+                } else if (type === 'error') {
+                    if (this.onError) this.onError(new Error(error));
+                }
+            };
+            
+            // Transfer imageBitmap to worker
+            this.worker.postMessage({
+                type: 'process',
+                payload: { imageBitmap }
+            }, [imageBitmap]);
+
+        } catch (error) {
+            if (this.onError) this.onError(error);
+        }
+    }
+
+    handleWorkerComplete(ocrResults) {
+        if (this.onProgress) this.onProgress({ message: 'Matching players...', progress: 95 });
+
+        const finalResults = [];
+        const seenPlayerIds = new Set();
+
+        for (const result of ocrResults) {
+            // Pick best variant text (usually threshold or original)
+            // Just test all and pick highest matcher score
+            
+            let bestCandidates = [];
+            let bestConfidence = 0;
+            let ocrConf = 0;
+            let bestRawText = "";
+            
+            for (const variant of result.variants) {
+                if (!variant.text || variant.text.length < 2) continue;
+                
+                const candidates = this.matcher.match(variant.text, result.position);
+                if (candidates.length > 0 && candidates[0].score > bestConfidence) {
+                    bestConfidence = candidates[0].score;
+                    bestCandidates = candidates;
+                    ocrConf = variant.confidence;
+                    bestRawText = variant.text;
+                }
+            }
+            
+            if (bestCandidates.length > 0) {
+                const topMatch = bestCandidates[0];
+                const isDuplicate = seenPlayerIds.has(topMatch.playerId);
+                
+                const scoreResult = this.confidenceScorer.score(bestCandidates, ocrConf, true, isDuplicate);
+                
+                if (scoreResult.status === 'automatic' || scoreResult.status === 'needs-review') {
+                    seenPlayerIds.add(scoreResult.finalCandidate.playerId);
+                }
+                
+                finalResults.push({
+                    slotIndex: result.slotIndex,
+                    rowName: result.rowName,
+                    position: result.position,
+                    rawText: bestRawText,
+                    match: scoreResult
+                });
+            }
+        }
+        
+        // Filter out unresolved or garbage that has no strong candidate
+        const filteredResults = finalResults.filter(r => r.match.status !== 'unresolved' && r.match.confidence > 0.3);
+
+        if (this.onProgress) this.onProgress({ message: 'Complete', progress: 100 });
+        if (this.onComplete) this.onComplete(filteredResults);
+    }
+    
+    cancel() {
+        if (this.worker) {
+            this.worker.postMessage({ type: 'dispose' });
+            this.worker = null;
+        }
+    }
+}

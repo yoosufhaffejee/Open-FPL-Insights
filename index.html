@@ -671,6 +671,7 @@
         <button id="resetButton" class="btn btn-danger" onclick="resetPlayers()">Reset</button>
         <button id="saveButton" class="btn btn-primary" onclick="savePlayers()">Save</button>
         <button id="autoPickButton" class="btn btn-success" onclick="autoPickPlayers()">Auto Pick</button>
+        <button id="importScreenshotButton" class="btn btn-info" onclick="openScreenshotImportModal()">Import Screenshot</button>
     </div>
 
     <div id="filters">
@@ -717,6 +718,13 @@
     <script src="algorithms/optimizeTeam.js"></script>
     <script src="helpers/helpers.js"></script>
     <script src="data.js"></script>
+    <script src="screenshot-import/screenshot-layout-detector.js"></script>
+    <script src="screenshot-import/player-card-detector.js"></script>
+    <script src="screenshot-import/image-preprocessor.js"></script>
+    <script src="screenshot-import/player-matcher.js"></script>
+    <script src="screenshot-import/confidence-scorer.js"></script>
+    <script src="screenshot-import/screenshot-importer.js"></script>
+    <script src="screenshot-import/ui/screenshot-import-modal.js"></script>
     <script src="script.js"></script>
 </body>
 

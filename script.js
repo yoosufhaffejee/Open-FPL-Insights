@@ -410,6 +410,13 @@ function updateTeamUI() {
         fwd: [...availableSlots.fwd]
     };
 
+    // Sort players: Field players first, then Subs sorted by position (GK first)
+    myPlayers.sort((a, b) => {
+        if (a.isSub !== b.isSub) return a.isSub ? 1 : -1;
+        if (a.isSub && b.isSub) return a.element_type - b.element_type;
+        return 0;
+    });
+
     // Iterate through each player and update the UI
     myPlayers.forEach(player => {
         const positionPrefix = positionMap[player.element_type];
@@ -439,6 +446,11 @@ function updateTeamUI() {
         bankBalance -= player.now_cost / 10;
         updateTeamInfo("Bank Balance", `${bankBalance.toFixed(1)}m`);
         updateTeamInfo("Predicted Points", predictedPoints.toFixed(0));
+    
+    // Ensure Auto Pick button is disabled only when 15 real players exist
+    const realPlayersCount = myPlayers.filter(p => p.now_cost > 0).length;
+    const btn = document.getElementById("autoPickButton");
+    if (btn) btn.disabled = realPlayersCount === 15;
     });
     
     if (rating <= 0) {
@@ -654,7 +666,8 @@ function fillMissingPlayers(filledPositions, subs) {
     let remainingOnFieldPlayers = numOfOnFieldPlayers + subs - (filledPositions.gk + filledPositions.def + filledPositions.mid + filledPositions.fwd);
 
     // Generate list of players to add
-    const playersToAdd = [];
+    const fieldPlayersToAdd = [];
+    const subsToAdd = [];
     
     let count = 0;
     // Add remaining missing players as substitutes
@@ -663,7 +676,7 @@ function fillMissingPlayers(filledPositions, subs) {
             const isMissing = missingPlayers[pos] > 0;
             if (isMissing && remainingSubs > 0) {
                 const addToSubs = Math.min(1, remainingSubs);
-                playersToAdd.push(...Array(addToSubs).fill({ web_name: 'Player', now_cost: 0, element_type: getKeyByValue(pos), isSub: true }));
+                subsToAdd.push(...Array(addToSubs).fill({ web_name: 'Player', now_cost: 0, element_type: getKeyByValue(pos), isSub: true }));
                 remainingSubs -= addToSubs;
                 missingPlayers[pos] -= addToSubs;
             }
@@ -680,11 +693,13 @@ function fillMissingPlayers(filledPositions, subs) {
         const missing = missingPlayers[pos];
         if (missing > 0 && remainingOnFieldPlayers > 0) {
             const addToField = Math.min(missing, remainingOnFieldPlayers);
-            playersToAdd.push(...Array(addToField).fill({ web_name: 'Player', now_cost: 0, element_type: getKeyByValue(pos), isSub: false }));
+            fieldPlayersToAdd.push(...Array(addToField).fill({ web_name: 'Player', now_cost: 0, element_type: getKeyByValue(pos), isSub: false }));
             remainingOnFieldPlayers -= addToField;
             missingPlayers[pos] -= addToField;
         }
     });
+
+    const playersToAdd = [...fieldPlayersToAdd, ...subsToAdd];
 
     // Add empty placeholders if needed
     const maxPlayersPerPosition = {
@@ -1218,9 +1233,7 @@ function loadPlayers(gameweek = selectedGameweek) {
             return player;
         }).filter(player => player !== undefined); // Filter out any undefined players
         
-        // Ensure the Auto Pick button is disabled if the team is full of real players (15 players)
-        const realPlayersCount = myPlayers.filter(p => p.now_cost > 0).length;
-        document.getElementById('autoPickButton').disabled = realPlayersCount === 15;
+        
 
         // Update the UI to reflect the loaded team
         updateTeamUI();
