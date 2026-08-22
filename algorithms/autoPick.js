@@ -121,8 +121,8 @@ function selectBestTeam(allPlayers, currentTeam = []) {
             
             if (replaceablePlayers.length === 0) break; // Can't remove preselected
 
-            // Sort by cost/score ratio to find someone to downgrade
-            replaceablePlayers.sort((a, b) => (b.cost / (b.compositeScore + 0.01)) - (a.cost / (a.compositeScore + 0.01)));
+            // Sort by cost descending to find the most expensive player to downgrade
+            replaceablePlayers.sort((a, b) => b.cost - a.cost);
             let targetToRemove = replaceablePlayers[0];
 
             // Remove target
@@ -178,8 +178,8 @@ function selectBestTeam(allPlayers, currentTeam = []) {
         // Random factor between 0.0 and 0.4 (10-40% score variance for diversity)
         let result = buildTeam(availablePlayers, currentTeam, 0.3);
         
-        // Ensure valid team size and within budget
-        if (result.team.length === 15 && result.totalCost <= budget) {
+        // Ensure valid team size and within budget (added small epsilon for floating point math)
+        if (result.team.length === 15 && result.totalCost <= budget + 0.001) {
             // Calculate total composite score of non-preselected additions
             let addedScore = 0;
             result.team.forEach(p => {

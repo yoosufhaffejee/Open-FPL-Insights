@@ -88,6 +88,12 @@ const setupPage = async () => {
     if (typeof updateGameweek === 'function') {
         updateGameweek();
     }
+
+    const loader = document.getElementById('global-loader');
+    if (loader) {
+        loader.style.opacity = '0';
+        setTimeout(() => loader.style.display = 'none', 300);
+    }
 };
 
 // Start the process

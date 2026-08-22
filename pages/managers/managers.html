@@ -17,6 +17,14 @@
 </head>
 
 <body>
+    <!-- Global Loader -->
+    <div id="global-loader" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #121212; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.3s ease-out;">
+        <div class="spinner-border text-success" role="status" style="width: 4rem; height: 4rem;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <h4 class="mt-4 text-white">Loading FPL Data...</h4>
+    </div>
+
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 border-bottom border-secondary">
         <div class="container-fluid">

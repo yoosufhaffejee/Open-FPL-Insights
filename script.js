@@ -1221,8 +1221,8 @@ function loadPlayers(gameweek = selectedGameweek) {
             return player;
         }).filter(player => player !== undefined); // Filter out any undefined players
         
-        // Ensure the Auto Pick button is disabled if players are loaded
-        document.getElementById('autoPickButton').disabled = myPlayers.length > 0;
+        // Ensure the Auto Pick button is disabled if the team is full (15 players)
+        document.getElementById('autoPickButton').disabled = myPlayers.length === 15;
 
         // Update the UI to reflect the loaded team
         updateTeamUI();
