@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 headerName: "Manager Name", 
                 field: "player_name",
                 cellRenderer: (params) => {
-                    return `<span style="color: blue; text-decoration: underline; cursor: pointer;">${params.value}</span>`;
+                    return `<span style="color: #00ff85; text-decoration: underline; cursor: pointer;">${params.value}</span>`;
                 }
             },
             { headerName: "ManagerTeam Name", field: "entry_name" },

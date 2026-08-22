@@ -10,7 +10,14 @@ let overallRating = 0;
 
 document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
-    const entryId = urlParams.get('entry');
+    let entryId = urlParams.get('entry');
+
+    if (!entryId) {
+        const match = document.cookie.match(new RegExp('(^| )managerId=([^;]+)'));
+        if (match) {
+            entryId = match[2];
+        }
+    }
 
     if (entryId) {
         try {
@@ -871,4 +878,22 @@ function populatePlayerModal(data, player) {
         const pastSeasonsTable = document.getElementById('past-seasons-table').querySelector('tbody');
         pastSeasonsTable.insertAdjacentHTML('beforeend', pastSeasonRow);
     });
+}
+function copyPlayers() {
+    // Extract player IDs, slotIds, and isSub from the myPlayers array
+    const playerData = myPlayers.map(player => ({
+        id: player.id,
+        slotId: player.slotId,
+        isSub: player.isSub, // Include the isSub property
+        isCaptain : player.isCaptain,
+        isVice: player.isVice
+    }));
+
+    // Convert the playerData array to a JSON string
+    const dataJSON = JSON.stringify({ selectedGameweek, players: playerData });
+
+    // Save the JSON string in a cookie
+    document.cookie = `myPlayersGW${selectedGameweek}=${dataJSON}; path=/; max-age=31536000`; // Cookie expires in 1 year
+    
+    alert('Team copied to your main Team view for Gameweek ' + selectedGameweek + '!');
 }

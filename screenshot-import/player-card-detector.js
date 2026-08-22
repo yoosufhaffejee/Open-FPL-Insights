@@ -64,88 +64,104 @@ class PlayerCardDetector {
         };
     }
 
-    getExpectedRegions(layout, imageWidth, imageHeight, sourceCanvas = null) {
+    getExpectedRegions(layout, imageWidth, imageHeight, sourceCanvas) {
+        const ctx = sourceCanvas.getContext('2d', { willReadFrequently: true });
+        const imgData = ctx.getImageData(0, 0, imageWidth, imageHeight).data;
+        
+        // 1. Find all Y-clusters (horizontal bands of white pixels representing name plates)
+        const whiteRows = new Int32Array(imageHeight);
+        
+        for (let y = 0; y < imageHeight; y += 2) {
+            for (let x = 0; x < imageWidth; x += 4) {
+                const i = (y * imageWidth + x) * 4;
+                const r = imgData[i];
+                const g = imgData[i+1];
+                const b = imgData[i+2];
+                // FPL Name Plates are white (use >220 for compression artifacts)
+                if (r > 220 && g > 220 && b > 220) {
+                    whiteRows[y]++;
+                }
+            }
+        }
+        
+        const yClusters = [];
+        let currentY = null;
+        
+        // A single name plate spans ~15% of width. Since we step x by 4, max white is width/4.
+        // We set a very low threshold (2%) to catch even a single name plate in a row.
+        const minWhiteY = (imageWidth / 4) * 0.02; 
+        
+        for (let y = 0; y < imageHeight; y += 2) {
+            if (whiteRows[y] > minWhiteY) {
+                if (!currentY) currentY = { start: y, end: y };
+                else currentY.end = y;
+            } else {
+                if (currentY) {
+                    // Close cluster if gap is too large (allow tiny gaps)
+                    if (y - currentY.end > (imageHeight * 0.01)) {
+                        yClusters.push(currentY);
+                        currentY = null;
+                    }
+                }
+            }
+        }
+        if (currentY) yClusters.push(currentY);
+        
+        // Filter out thin lines (e.g. pitch lines, text artifacts)
+        const minHeight = imageHeight * 0.015; 
+        const validYClusters = yClusters.filter(c => (c.end - c.start) > minHeight);
+        
         const regions = [];
-        
-        let pitchX = 0;
-        let pitchY = 0;
-        let pitchWidth = imageWidth;
-        let pitchHeight = imageHeight;
-
-        if (sourceCanvas) {
-            const bounds = this.findPitchBounds(sourceCanvas, imageWidth, imageHeight);
-            pitchX = bounds.x;
-            pitchY = bounds.y;
-            pitchWidth = bounds.width;
-            pitchHeight = bounds.height;
-        }
-
-        // Now we calculate everything relative to the GREEN pitch area!
-        // FPL uses two completely different responsive layouts:
-        // 1. Mobile (Tall): The Substitutes box is an overlay INSIDE the green pitch.
-        // 2. Desktop (Wide): The Substitutes box is appended BELOW the green pitch on the purple background.
-        
-        const isMobilePitch = (pitchHeight / pitchWidth) > 1.1;
-
-        const nameWidthPct = 0.22; 
-        const nameHeightPct = 0.08; 
-        
-        let rows;
-        if (isMobilePitch) {
-            rows = [
-                { name: 'GK',  y: 0.16, counts: [1], type: 1 },
-                { name: 'DEF', y: 0.34, counts: [3, 4, 5], type: 2 },
-                { name: 'MID', y: 0.53, counts: [2, 3, 4, 5], type: 3 },
-                { name: 'FWD', y: 0.72, counts: [1, 2, 3], type: 4 },
-                { name: 'BENCH', y: 0.90, counts: [4], type: null }
-            ];
-        } else {
-            rows = [
-                { name: 'GK',  y: 0.21, counts: [1], type: 1 },
-                { name: 'DEF', y: 0.46, counts: [3, 4, 5], type: 2 },
-                { name: 'MID', y: 0.71, counts: [2, 3, 4, 5], type: 3 },
-                { name: 'FWD', y: 0.94, counts: [1, 2, 3], type: 4 },
-                { name: 'BENCH', y: 1.22, counts: [4], type: null }
-            ];
-        }
-
         let slotIndex = 0;
-
-        for (const row of rows) {
-            for (const count of row.counts) {
-                const spacing = 1.0 / (count + 1);
-                for (let i = 1; i <= count; i++) {
-                    const xCenter = spacing * i;
+        
+        // For each detected row of name plates, we generate overlapping X-regions.
+        // This covers every possible formation (1 to 5 players per row).
+        const possibleCounts = [1, 2, 3, 4, 5];
+        const nameWidthPct = 0.22; // Safe width for any device
+        
+        let yClusterIndex = 0;
+        const rowLabels = ['GK', 'DEF', 'MID', 'FWD', 'BENCH'];
+        
+        for (const yC of validYClusters) {
+            // Give Tesseract some breathing room (10px padding)
+            const padding = 10;
+            const bY = Math.max(0, yC.start - padding);
+            const bH = Math.min(imageHeight - bY, (yC.end - yC.start) + padding * 2);
+            
+            // Assign a nice UI label if we found exactly 5 rows
+            let rowName = `Row ${yClusterIndex + 1}`;
+            if (validYClusters.length === 5 && yClusterIndex < 5) {
+                rowName = rowLabels[yClusterIndex];
+            }
+            
+            for (const count of possibleCounts) {
+                const spacing = 1.0 / count;
+                for (let i = 0; i < count; i++) {
+                    const xCenter = (i + 0.5) * spacing;
+                    const boxWidth = nameWidthPct * imageWidth;
+                    const boxX = (xCenter * imageWidth) - (boxWidth / 2);
                     
-                    const boxX = pitchX + (xCenter - (nameWidthPct / 2)) * pitchWidth;
-                    const boxY = pitchY + (row.y * pitchHeight);
+                    const bX = Math.floor(Math.max(0, boxX));
+                    const bW = Math.floor(Math.min(imageWidth - bX, boxWidth));
                     
-                    const boxWidth = nameWidthPct * pitchWidth;
-                    const boxHeight = nameHeightPct * pitchHeight;
-
-                    // Clamp bounds to image dimensions so we don't error out on cropped edges
-                    const clampedX = Math.max(0, Math.min(boxX, imageWidth - 1));
-                    const clampedY = Math.max(0, Math.min(boxY, imageHeight - 1));
-                    const clampedWidth = Math.min(boxWidth - (clampedX - boxX), imageWidth - clampedX);
-                    const clampedHeight = Math.min(boxHeight - (clampedY - boxY), imageHeight - clampedY);
-
-                    if (clampedWidth > 5 && clampedHeight > 5) { // Ensure area is large enough to OCR
+                    if (bW > 5 && bH > 5) {
                         regions.push({
                             slotIndex: slotIndex++,
-                            rowName: row.name,
-                            expectedPosition: row.type, 
+                            rowName: rowName,
+                            expectedPosition: null, 
                             bounds: {
-                                x: clampedX,
-                                y: clampedY,
-                                width: clampedWidth,
-                                height: clampedHeight
+                                x: bX,
+                                y: bY,
+                                width: bW,
+                                height: bH
                             }
                         });
                     }
                 }
             }
+            yClusterIndex++;
         }
-
+        
         return regions;
     }
 }
