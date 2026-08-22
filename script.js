@@ -382,10 +382,7 @@ function removePlayer(player) {
         console.log(`Player with ID ${player.id} not found.`);
     }
 
-    // Check if all players have been removed; if so, enable the 'autoPickButton'
-    if (myPlayers.length === 0) {
-        document.getElementById('autoPickButton').disabled = false;
-    }
+
 }
 
 let predictedPoints = 0;
@@ -1221,8 +1218,9 @@ function loadPlayers(gameweek = selectedGameweek) {
             return player;
         }).filter(player => player !== undefined); // Filter out any undefined players
         
-        // Ensure the Auto Pick button is disabled if the team is full (15 players)
-        document.getElementById('autoPickButton').disabled = myPlayers.length === 15;
+        // Ensure the Auto Pick button is disabled if the team is full of real players (15 players)
+        const realPlayersCount = myPlayers.filter(p => p.now_cost > 0).length;
+        document.getElementById('autoPickButton').disabled = realPlayersCount === 15;
 
         // Update the UI to reflect the loaded team
         updateTeamUI();

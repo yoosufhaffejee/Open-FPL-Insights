@@ -27,8 +27,11 @@ function formatFixtureDateTime(kickoffTime) {
 
 // Function to get the upcoming gameweek where 'finished' is false
 function getUpcomingGameweek() {
-    // Find the first gameweek where 'finished' is false
-    return gameweeks.find(gameweek => gameweek.finished === false);
+    // Prioritize 'is_next' to skip currently in-progress gameweeks where the deadline has passed.
+    // Fall back to the first unfinished gameweek if 'is_next' is not set (e.g. before season starts).
+    const nextGw = gameweeks.find(gw => gw.is_next);
+    if (nextGw) return nextGw;
+    return gameweeks.find(gw => gw.finished === false) || gameweeks[gameweeks.length - 1];
 }
 
 function getLastGameweekId() {

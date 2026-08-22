@@ -77,6 +77,7 @@ function renderDefCon() {
     ];
 
     defconGridOptions = {
+        theme: 'legacy',
         rowData: defenders,
         columnDefs: columnDefs,
         defaultColDef: { sortable: true, filter: true, resizable: true }
@@ -102,6 +103,7 @@ function renderExpectedData() {
     ];
 
     expectedGridOptions = {
+        theme: 'legacy',
         rowData: players,
         columnDefs: columnDefs,
         defaultColDef: { sortable: true, filter: true, resizable: true }
@@ -179,8 +181,8 @@ function renderTopTransfers() {
         { headerName: 'Transfers Out', field: 'transfers_out_event', filter: true, floatingFilter: true, cellClass: 'text-danger fw-bold', cellRenderer: params => '-' + (params.value || 0).toLocaleString() }
     ];
 
-    transfersInGridOptions = { rowData: sortedIn, columnDefs: inDefs, defaultColDef: { sortable: true, filter: true, resizable: true } };
-    transfersOutGridOptions = { rowData: sortedOut, columnDefs: outDefs, defaultColDef: { sortable: true, filter: true, resizable: true } };
+    transfersInGridOptions = { theme: 'legacy', rowData: sortedIn, columnDefs: inDefs, defaultColDef: { sortable: true, filter: true, resizable: true } };
+    transfersOutGridOptions = { theme: 'legacy', rowData: sortedOut, columnDefs: outDefs, defaultColDef: { sortable: true, filter: true, resizable: true } };
     
     agGrid.createGrid(document.getElementById('transfersInGrid'), transfersInGridOptions);
     agGrid.createGrid(document.getElementById('transfersOutGrid'), transfersOutGridOptions);
