@@ -125,14 +125,21 @@ class PlayerCardDetector {
         for (const yC of validYClusters) {
             // Give Tesseract some breathing room (10px padding)
             const padding = 10;
-            const bY = Math.max(0, yC.start - padding);
-            const bH = Math.min(imageHeight - bY, (yC.end - yC.start) + padding * 2);
             
             // Assign a nice UI label if we found exactly 5 rows
             let rowName = `Row ${yClusterIndex + 1}`;
             if (validYClusters.length === 5 && yClusterIndex < 5) {
                 rowName = rowLabels[yClusterIndex];
             }
+            
+            // The white pixel cluster might include white shirts (like Spurs), making the box too tall.
+            // The text (name plate) is always at the bottom of the player card.
+            // We cap the height to the bottom 6% of the image height to isolate the text.
+            const maxNamePlateHeight = imageHeight * 0.06;
+            const actualStart = Math.max(yC.start, yC.end - maxNamePlateHeight);
+            
+            const bY = Math.max(0, Math.floor(actualStart - padding));
+            const bH = Math.min(imageHeight - bY, Math.floor((yC.end - actualStart) + padding * 2));
             
             for (const count of possibleCounts) {
                 const spacing = 1.0 / count;
