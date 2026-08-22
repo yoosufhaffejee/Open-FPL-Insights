@@ -19,8 +19,8 @@
 }
 
 .accordion-button:not(.collapsed) {
-    color: #0d6efd;
-    background-color: #f8f9fa; /* Lighter background for expanded state */
+    color: #00ff85;
+    background-color: #343a40; /* Lighter background for expanded state */
 }
 
 .accordion-button::after {

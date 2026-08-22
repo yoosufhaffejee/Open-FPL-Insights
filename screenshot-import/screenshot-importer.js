@@ -65,12 +65,8 @@ class ScreenshotImporter {
         if (this.onProgress) this.onProgress({ message: 'Matching players...', progress: 95 });
 
         const finalResults = [];
-        const seenPlayerIds = new Set();
 
         for (const result of ocrResults) {
-            // Pick best variant text (usually threshold or original)
-            // Just test all and pick highest matcher score
-            
             let bestCandidates = [];
             let bestConfidence = 0;
             let ocrConf = 0;
@@ -89,14 +85,7 @@ class ScreenshotImporter {
             }
             
             if (bestCandidates.length > 0) {
-                const topMatch = bestCandidates[0];
-                const isDuplicate = seenPlayerIds.has(topMatch.playerId);
-                
-                const scoreResult = this.confidenceScorer.score(bestCandidates, ocrConf, true, isDuplicate);
-                
-                if (scoreResult.status === 'automatic' || scoreResult.status === 'needs-review') {
-                    seenPlayerIds.add(scoreResult.finalCandidate.playerId);
-                }
+                const scoreResult = this.confidenceScorer.score(bestCandidates, ocrConf);
                 
                 finalResults.push({
                     slotIndex: result.slotIndex,
@@ -109,10 +98,21 @@ class ScreenshotImporter {
         }
         
         // Filter out unresolved or garbage that has no strong candidate
-        const filteredResults = finalResults.filter(r => r.match.status !== 'unresolved' && r.match.confidence > 0.3);
+        const validResults = finalResults.filter(r => r.match.status !== 'unresolved' && r.match.confidence > 0.4);
+
+        // Deduplicate globally: If multiple crops found the same player (due to overlapping formation scanning), keep the highest confidence one.
+        const playerMap = new Map();
+        for (const res of validResults) {
+            const pid = res.match.finalCandidate.playerId;
+            if (!playerMap.has(pid) || playerMap.get(pid).match.confidence < res.match.confidence) {
+                playerMap.set(pid, res);
+            }
+        }
+
+        const uniqueResults = Array.from(playerMap.values());
 
         if (this.onProgress) this.onProgress({ message: 'Complete', progress: 100 });
-        if (this.onComplete) this.onComplete(filteredResults);
+        if (this.onComplete) this.onComplete(uniqueResults);
     }
     
     cancel() {
