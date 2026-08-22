@@ -128,8 +128,13 @@ class PlayerCardDetector {
             
             // Assign a nice UI label if we found exactly 5 rows
             let rowName = `Row ${yClusterIndex + 1}`;
+            let expectedPosition = null;
             if (validYClusters.length === 5 && yClusterIndex < 5) {
                 rowName = rowLabels[yClusterIndex];
+                // FPL element_types: 1=GK, 2=DEF, 3=MID, 4=FWD
+                if (yClusterIndex < 4) {
+                    expectedPosition = yClusterIndex + 1; 
+                }
             }
             
             // The white pixel cluster might include white shirts (like Spurs), making the box too tall.
@@ -155,7 +160,7 @@ class PlayerCardDetector {
                         regions.push({
                             slotIndex: slotIndex++,
                             rowName: rowName,
-                            expectedPosition: null, 
+                            expectedPosition: expectedPosition, 
                             bounds: {
                                 x: bX,
                                 y: bY,

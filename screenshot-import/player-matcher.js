@@ -15,7 +15,7 @@ class PlayerMatcher {
             .toLowerCase()
             .trim()
             .replace(/\s+/g, ' ')
-            .replace(/[^\w\sÀ-ÿ'-]/g, '') // Remove most punctuation except hyphens/apostrophes and letters
+            .replace(/[^\w\s\u00C0-\u00FF'-]/g, '') // Remove most punctuation except hyphens/apostrophes and letters
             .replace(/[']/g, '') // Remove apostrophes
             .normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // Remove accents
     }

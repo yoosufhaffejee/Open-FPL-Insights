@@ -831,6 +831,7 @@ function populatePlayerModal(data, player) {
             <td>${match.penalties_saved}</td>
             <td>${match.penalties_missed}</td>
             <td>${match.bps}</td>
+            <td>${match.defensive_contribution}</td>
             <td>${match.influence}</td>
             <td>${match.creativity}</td>
             <td>${match.threat}</td>

@@ -94,6 +94,11 @@ function renderFixtures() {
                                     <td>${getStatDetails(fixture, 'bps', 'h')}</td>
                                     <td>${getStatDetails(fixture, 'bps', 'a')}</td>
                                 </tr>
+                                <tr>
+                                    <td>Defensive Contributions</td>
+                                    <td>${getStatDetails(fixture, 'defensive_contribution', 'h')}</td>
+                                    <td>${getStatDetails(fixture, 'defensive_contribution', 'a')}</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -285,6 +290,7 @@ function populatePlayerModal(data, player) {
             <td>${match.penalties_saved}</td>
             <td>${match.penalties_missed}</td>
             <td>${match.bps}</td>
+            <td>${match.defensive_contribution}</td>
             <td>${match.influence}</td>
             <td>${match.creativity}</td>
             <td>${match.threat}</td>
