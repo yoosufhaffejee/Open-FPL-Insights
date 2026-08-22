@@ -70,6 +70,7 @@ class PlayerMatcher {
         if (!normalizedOcr || normalizedOcr.length < 2) return [];
 
         const candidates = [];
+        const ocrWords = normalizedOcr.split(/\s+/);
 
         for (const player of this.players) {
             const normalizedWebName = this.normalizeText(player.web_name);
@@ -79,18 +80,36 @@ class PlayerMatcher {
 
             let score = 0;
 
-            // 1. Exact match (highly favored)
+            const paddedOcr = ` ${normalizedOcr} `;
+            const paddedWebName = ` ${normalizedWebName} `;
+            const paddedSecondName = ` ${normalizedSecondName} `;
+
+            // 1. Exact Match or Perfect Substring Match
             if (normalizedWebName === normalizedOcr || normalizedFullName === normalizedOcr) {
                 score = 1.0;
-            } else if (normalizedSecondName === normalizedOcr) {
+            } else if (paddedOcr.includes(paddedWebName) || paddedOcr.includes(` ${normalizedFullName} `)) {
+                score = 1.0;
+            } else if (normalizedSecondName.length > 3 && paddedOcr.includes(paddedSecondName)) {
                 score = 0.95;
             } else {
-                // 2. Fuzzy match
-                const webNameSim = this.similarity(normalizedOcr, normalizedWebName);
-                const fullNameSim = this.similarity(normalizedOcr, normalizedFullName);
-                const secondNameSim = this.similarity(normalizedOcr, normalizedSecondName);
+                // 2. Fuzzy match against individual words to ignore garbage text
+                let bestSim = 0;
+                
+                for (const word of ocrWords) {
+                    if (word.length < 3) continue;
+                    bestSim = Math.max(bestSim, this.similarity(word, normalizedWebName));
+                    if (normalizedSecondName.length > 3) {
+                        bestSim = Math.max(bestSim, this.similarity(word, normalizedSecondName));
+                    }
+                }
+                
+                for (let i = 0; i < ocrWords.length - 1; i++) {
+                    const pair = `${ocrWords[i]} ${ocrWords[i+1]}`;
+                    bestSim = Math.max(bestSim, this.similarity(pair, normalizedWebName));
+                    bestSim = Math.max(bestSim, this.similarity(pair, normalizedFullName));
+                }
 
-                score = Math.max(webNameSim, fullNameSim, secondNameSim);
+                score = bestSim;
             }
 
             // 3. Apply position/team constraints (bonuses/penalties)
