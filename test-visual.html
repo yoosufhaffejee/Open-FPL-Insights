@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Visual Debugger - Player Crops</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #222; color: #fff; }
+        canvas { border: 2px solid #555; max-width: 100%; height: auto; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Bounding Box Visualizer</h1>
+    <p>Upload a screenshot to see where the scanner is looking. Red boxes are the OCR regions.</p>
+    <input type="file" id="file" accept="image/*">
+    <br>
+    <canvas id="canvas"></canvas>
+
+    <!-- Load the detector -->
+    <script src="screenshot-import/player-card-detector.js"></script>
+    <script>
+        document.getElementById('file').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.getElementById('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                
+                // Draw original image
+                ctx.drawImage(img, 0, 0);
+                
+                // Get bounds
+                const detector = new PlayerCardDetector();
+                const regions = detector.getExpectedRegions('fpl-mobile-pitch', img.width, img.height, canvas);
+                
+                // Draw green pitch bounds (if found)
+                const pitchBounds = detector.findPitchBounds(canvas, img.width, img.height);
+                ctx.strokeStyle = 'blue';
+                ctx.lineWidth = 4;
+                ctx.strokeRect(pitchBounds.x, pitchBounds.y, pitchBounds.width, pitchBounds.height);
+
+                // Draw all OCR regions in red
+                ctx.strokeStyle = 'red';
+                ctx.lineWidth = 3;
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+
+                regions.forEach(region => {
+                    const b = region.bounds;
+                    ctx.strokeRect(b.x, b.y, b.width, b.height);
+                    ctx.fillRect(b.x, b.y, b.width, b.height);
+                });
+            };
+            img.src = URL.createObjectURL(file);
+        });
+    </script>
+</body>
+</html>

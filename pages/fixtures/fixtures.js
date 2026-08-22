@@ -43,8 +43,8 @@ function renderFixtures() {
                                 <img src="https://resources.premierleague.com/premierleague/badges/100/t${homeTeam.code}.png" class="team-logo me-2" alt="${homeTeam.short_name}">
                                 <span>${homeTeam.short_name}</span>
                             </div>
-                            <div>${fixture.finished ?
-                `${fixture.team_h_score ? fixture.team_h_score : '0'} - ${fixture.team_a_score ? fixture.team_a_score : '0'}` :
+                            <div>${fixture.started ?
+                `${fixture.team_h_score !== null ? fixture.team_h_score : '0'} - ${fixture.team_a_score !== null ? fixture.team_a_score : '0'}` :
                 new Date(fixture.kickoff_time).toLocaleTimeString()}</div>
                             <div class="d-flex align-items-center">
                                 <img src="https://resources.premierleague.com/premierleague/badges/100/t${awayTeam.code}.png" class="team-logo me-2" alt="${awayTeam.short_name}">
@@ -184,7 +184,7 @@ function populatePlayerModal(data, player) {
         
         let predictedPoints = player.predicted_points;
         if (predictedPoints === undefined) {
-            const upcomingGameweek = gameweeks.find(gw => gw.id >= selectedGameweek);
+            const upcomingGameweek = gameweeks.find(gw => gw.id >= currentGW);
             if (upcomingGameweek) {
                 const fixture = getPlayerFixture(player, upcomingGameweek.id);
                 if (fixture) {
@@ -332,4 +332,58 @@ function populatePlayerModal(data, player) {
         const pastSeasonsTable = document.getElementById('past-seasons-table').querySelector('tbody');
         pastSeasonsTable.insertAdjacentHTML('beforeend', pastSeasonRow);
     });
+}
+
+function getPlayerFixture(player, gameweekId) {
+    return fixtures.find(fixture => fixture.event === gameweekId &&
+                (fixture.team_a === player.team || fixture.team_h === player.team));
+}
+
+// Function to calculate predicted points for a player and a fixture
+function calculatePlayerPredictedPoints(player, fixture, upcomingGameweek) {
+    if (!fixture) return 0;
+
+    let isHome = fixture.team_h === player.team;
+    const opponentTeam = teams.find(team =>
+        team.id === (fixture.team_a === player.team ? fixture.team_h : fixture.team_a)
+    );
+
+    let playerPredictedPoints = getExpectedPoints(player, fixture);
+
+    if (getUpcomingGameweek() == upcomingGameweek) {
+        player.fpl_ep_next = parseFloat(player.ep_next) || 0;
+    }
+
+    const strengthAdjustment2 = 0.10; // +10%
+    const strengthAdjustment4 = 0.10; // -10%
+    const strengthAdjustment5 = 0.20; // -20%
+    const strengthAdjustmentAway = 0.10; // -10%
+
+    // Adjust points based on opponent team strength
+    if (opponentTeam.strength == 2 && playerPredictedPoints <= 10) {
+        playerPredictedPoints += (playerPredictedPoints * strengthAdjustment2);
+    }
+
+    if (opponentTeam.strength == 4) {
+        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustment4);
+    }
+
+    if (opponentTeam.strength == 5) {
+        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustment5);
+    }
+
+    // Adjust points if player is away
+    if (!isHome && playerPredictedPoints >= 2.5) {
+        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustmentAway);
+    }
+
+    // Round to 1 decimal place so the captain multiplier aligns perfectly with the UI display
+    playerPredictedPoints = Math.round(playerPredictedPoints * 10) / 10;
+
+    // Double the points if the player is the captain
+    if (player.isCaptain) {
+        playerPredictedPoints *= 2;
+    }
+
+    return playerPredictedPoints;
 }

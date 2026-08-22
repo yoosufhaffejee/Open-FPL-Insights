@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (event.colDef.field === "name") {
                 selectedLeagueId = event.data.id; // Correctly capture the league ID
                 setStandingsGridDatasource(selectedLeagueId);
+                leagueStandingsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         }
     };
