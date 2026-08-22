@@ -144,7 +144,7 @@ class PlayerCardDetector {
                     const bX = Math.floor(Math.max(0, boxX));
                     const bW = Math.floor(Math.min(imageWidth - bX, boxWidth));
                     
-                    if (bW > 5 && bH > 5) {
+                    if (bW > 20 && bH > 10) {
                         regions.push({
                             slotIndex: slotIndex++,
                             rowName: rowName,

@@ -21,7 +21,7 @@ async function initializeOcr() {
     });
     
     await ocrWorker.setParameters({
-        tessedit_pageseg_mode: Tesseract.PSM.AUTO,
+        tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
         // Include common accented characters
         tessedit_char_whitelist: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ -'áéíóúÁÉÍÓÚñÑçÇâêîôûäëïöüãõ"
     });
