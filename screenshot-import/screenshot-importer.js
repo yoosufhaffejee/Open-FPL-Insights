@@ -1,10 +1,10 @@
 class ScreenshotImporter {
-    constructor(players, teams, playerMatcher, confidenceScorer, layoutDetector) {
+    constructor(players, teams) {
         this.players = players;
         this.teams = teams;
-        this.matcher = playerMatcher; 
-        this.confidenceScorer = confidenceScorer;
-        this.layoutDetector = layoutDetector;
+        this.matcher = new PlayerMatcher(players, teams); 
+        this.confidenceScorer = new ConfidenceScorer(); // Keep for legacy UI if needed
+        this.layoutDetector = new LayoutDetector(); // Keep for legacy UI if needed
         
         this.worker = null;
         
@@ -94,20 +94,23 @@ class ScreenshotImporter {
         console.log("Final Unique Players sorted by Y:", uniquePlayers);
         
         if (this.onComplete) {
-            // Because we changed the return structure to be much simpler:
-            // We just format it back to what the UI index.html expects
             const formattedResults = uniquePlayers.map((match, i) => {
+                const candidates = this.matcher.match(match.originalText);
+                
                 return {
-                    region: { slotIndex: i, rowName: (i >= 11 ? 'BENCH' : 'PITCH') },
-                    ocrText: match.originalText,
+                    rowName: (i >= 11 ? 'BENCH' : 'PITCH'),
+                    rawText: match.originalText,
+                    region: { slotIndex: i },
                     match: {
-                        status: match.confidence > 0.9 ? 'automatic' : 'needs-review',
+                        status: match.confidence > 0.90 ? 'automatic' : 'needs-review',
                         confidence: match.confidence,
                         finalCandidate: {
                             playerId: match.player.id,
+                            playerName: match.player.web_name,
                             player: match.player,
                             score: match.confidence
-                        }
+                        },
+                        alternatives: candidates.slice(1) // Provide the fallback candidates
                     }
                 };
             });
