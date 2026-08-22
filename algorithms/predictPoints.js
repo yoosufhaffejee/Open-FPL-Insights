@@ -116,9 +116,10 @@ function getExpectedPoints (player, fixture) {
         expectedPoints -= penaltyMissPointsPer90;
     }
 
-    let averagePoints = getLastFive(player, fixture);
-    if(averagePoints > 0) {
-        expectedPoints = (expectedPoints + averagePoints) / 2;
+    let lastFiveData = getLastFive(player, fixture);
+    if(lastFiveData.averagePoints > 0 && lastFiveData.count > 0) {
+        let formWeight = Math.min(lastFiveData.count, 5) * 0.1;
+        expectedPoints = (expectedPoints * (1 - formWeight)) + (lastFiveData.averagePoints * formWeight);
     }
 
     // Incorporate chance of playing
@@ -181,7 +182,7 @@ function getLastFive(player, fixture) {
     } else if (overallCount > 0) {
         averagePoints = overallPoints / overallCount;
     }
-    return averagePoints;
+    return { averagePoints, count: overallCount };
 }
 
 function correctPenaltiesOrder(player, allPlayers) {

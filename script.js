@@ -707,6 +707,15 @@ function calculatePlayerPredictedPoints(player, fixture, upcomingGameweek) {
     // Round to 1 decimal place so the captain multiplier aligns perfectly with the UI display
     playerPredictedPoints = Math.round(playerPredictedPoints * 10) / 10;
 
+    // Average with FPL Model to make it more realistic and dilute extremes
+    if (getUpcomingGameweek() == upcomingGameweek && player.fpl_ep_next !== undefined) {
+        let fplModelScore = parseFloat(player.fpl_ep_next);
+        if (!isNaN(fplModelScore)) {
+            playerPredictedPoints = (playerPredictedPoints + fplModelScore) / 2;
+            playerPredictedPoints = Math.round(playerPredictedPoints * 10) / 10;
+        }
+    }
+
     // Double the points if the player is the captain
     if (player.isCaptain) {
         playerPredictedPoints *= 2;
