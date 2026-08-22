@@ -20,6 +20,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (toolId === 'template' && !templateLoaded) {
                 loadTemplateTeam();
             }
+            
+            // Force AG Grid to recalculate its dimensions when its container becomes visible
+            setTimeout(() => {
+                if (toolId === 'defcon' && typeof defconGridOptions !== 'undefined' && defconGridOptions.api) {
+                    defconGridOptions.api.sizeColumnsToFit();
+                } else if (toolId === 'expected' && typeof expectedGridOptions !== 'undefined' && expectedGridOptions.api) {
+                    expectedGridOptions.api.sizeColumnsToFit();
+                } else if (toolId === 'transfers' && typeof transfersInGridOptions !== 'undefined' && transfersInGridOptions.api) {
+                    transfersInGridOptions.api.sizeColumnsToFit();
+                    transfersOutGridOptions.api.sizeColumnsToFit();
+                }
+            }, 50);
         });
     });
 });
