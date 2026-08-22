@@ -2,6 +2,7 @@ let bankBalance = 100;
 let myPlayers = [];
 let filteredPlayers = [];
 let managerPicks = [];
+let currentLiveData = null;
 let managerId = 0;
 let rating = 0;
 let points = 0;
@@ -134,10 +135,12 @@ async function updateGameweekInfo() {
 
 async function getLatestPicks(gameweek) {
     managerPicks = [];
+    currentLiveData = null;
     document.getElementById("points").hidden = true;
 
     if (gameweek <= getLastGameweekId() && managerId > 0) {
         managerPicks = await getManagerPicks(managerId, gameweek);
+        currentLiveData = await getGameweek(gameweek);
     }
 
     rating = 0;
@@ -369,7 +372,27 @@ function updatePlayerFixturesAndPoints(playerElement, player, predictedPoints) {
 
                 let playerPredictedPoints = calculatePlayerPredictedPoints(player, playerFixture, upcomingGameweek);
 
-                fixtureElement.querySelector('.predicted-points').textContent = playerPredictedPoints.toFixed(1);
+                // If it's the current gameweek and we have live data, show actual points
+                let actualPoints = null;
+                if (fixtureIndex === 0 && currentLiveData && currentLiveData.elements) {
+                    let livePlayer = currentLiveData.elements.find(e => e.id === player.id);
+                    if (livePlayer) {
+                        let multiplier = 1;
+                        if (managerPicks && managerPicks.picks) {
+                            let pick = managerPicks.picks.find(p => p.element === player.id);
+                            if (pick) multiplier = pick.multiplier;
+                        }
+                        actualPoints = livePlayer.stats.total_points * multiplier;
+                    }
+                }
+
+                if (actualPoints !== null) {
+                    fixtureElement.querySelector('.predicted-points').textContent = actualPoints;
+                    fixtureElement.querySelector('.predicted-points').style.fontWeight = 'bold'; // Emphasize it's actual
+                } else {
+                    fixtureElement.querySelector('.predicted-points').textContent = playerPredictedPoints.toFixed(1);
+                    fixtureElement.querySelector('.predicted-points').style.fontWeight = 'normal';
+                }
 
                 if (fixtureIndex === 0 && !player.isSub) {
                     predictedPoints += playerPredictedPoints;
