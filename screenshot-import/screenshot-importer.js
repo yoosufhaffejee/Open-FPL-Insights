@@ -101,11 +101,8 @@ class ScreenshotImporter {
         
         console.log("Final matched results:", finalResults);
 
-        // Filter out unresolved or garbage that has no strong candidate
-        // We will temporarily allow unresolved matches > 0.4 so we can debug them in the UI
-        const validResults = finalResults.filter(r => r.match.confidence > 0.4);
-
-        console.log("Valid results after > 0.4 filter:", validResults);
+        // Filter out unresolved or low-confidence matches before deduplication
+        const validResults = finalResults.filter(r => r.match.status !== 'unresolved' && r.match.confidence > 0.4);
 
         // Deduplicate globally: If multiple crops found the same player (due to overlapping formation scanning), keep the highest confidence one.
         const playerMap = new Map();
