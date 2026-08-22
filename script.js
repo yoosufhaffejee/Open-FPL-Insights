@@ -390,7 +390,73 @@ function removePlayer(player) {
 let predictedPoints = 0;
 
  // Function to update the team UI
+
+function validateAndFixFormation() {
+    if (!myPlayers || myPlayers.length !== 15) return;
+    
+    let field = myPlayers.filter(p => !p.isSub);
+    let gkCount = field.filter(p => p.element_type === 1).length;
+    let defCount = field.filter(p => p.element_type === 2).length;
+    let midCount = field.filter(p => p.element_type === 3).length;
+    let fwdCount = field.filter(p => p.element_type === 4).length;
+
+    let isValid = (field.length === 11) && 
+                  (gkCount === 1) && 
+                  (defCount >= 3 && defCount <= 5) && 
+                  (midCount >= 2 && midCount <= 5) && 
+                  (fwdCount >= 1 && fwdCount <= 3);
+
+    if (isValid) return; // Everything is fine, respect user's choices
+
+    console.log("Formation is invalid. Auto-correcting to a valid FPL formation based on predicted points.");
+
+    // Create a temporary array sorted by position and points
+    let sortedPlayers = [...myPlayers].sort((a, b) => {
+        if (a.element_type !== b.element_type) return a.element_type - b.element_type;
+        return (b.predicted_points || 0) - (a.predicted_points || 0);
+    });
+
+    let gks = sortedPlayers.filter(p => p.element_type === 1);
+    let defs = sortedPlayers.filter(p => p.element_type === 2);
+    let mids = sortedPlayers.filter(p => p.element_type === 3);
+    let fwds = sortedPlayers.filter(p => p.element_type === 4);
+
+    let starters = [];
+    let subs = [];
+
+    // 1. Mandatory minimums: 1 GK, 3 DEF, 2 MID, 1 FWD
+    if (gks.length > 0) starters.push(gks.shift());
+    for(let i=0; i<3 && defs.length > 0; i++) starters.push(defs.shift());
+    for(let i=0; i<2 && mids.length > 0; i++) starters.push(mids.shift());
+    if (fwds.length > 0) starters.push(fwds.shift());
+
+    // 2. Remaining 4 spots for outfielders
+    let remainingOutfielders = [...defs, ...mids, ...fwds];
+    remainingOutfielders.sort((a,b) => (b.predicted_points || 0) - (a.predicted_points || 0));
+
+    while (starters.length < 11 && remainingOutfielders.length > 0) {
+        starters.push(remainingOutfielders.shift());
+    }
+
+    // 3. The rest are subs
+    if (gks.length > 0) subs.push(gks.shift());
+    subs.push(...remainingOutfielders);
+
+    // Apply isSub to the original myPlayers objects
+    starters.forEach(p => {
+        let original = myPlayers.find(orig => orig.id === p.id);
+        if (original) original.isSub = false;
+    });
+    
+    subs.forEach(p => {
+        let original = myPlayers.find(orig => orig.id === p.id);
+        if (original) original.isSub = true;
+    });
+}
+
 function updateTeamUI() {
+    validateAndFixFormation();
+
     // Clear existing players from rows
     document.querySelectorAll('.row').forEach(row => row.innerHTML = '');
 

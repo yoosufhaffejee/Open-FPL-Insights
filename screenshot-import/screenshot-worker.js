@@ -57,7 +57,7 @@ self.onmessage = async (e) => {
                 
                 self.postMessage({ 
                     type: 'progress', 
-                    message: `Reading players (${i + 1}/${totalRegions})...`, 
+                    message: `Reading players (${Math.round(((i + 1) / totalRegions) * 100)}%)...`,
                     progress: 30 + Math.floor((i / totalRegions) * 50) 
                 });
 
