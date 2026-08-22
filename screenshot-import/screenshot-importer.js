@@ -64,6 +64,8 @@ class ScreenshotImporter {
     handleWorkerComplete(ocrResults) {
         if (this.onProgress) this.onProgress({ message: 'Matching players...', progress: 95 });
 
+        console.log("Worker returned OCR results:", ocrResults);
+
         const finalResults = [];
 
         for (const result of ocrResults) {
@@ -97,8 +99,13 @@ class ScreenshotImporter {
             }
         }
         
+        console.log("Final matched results:", finalResults);
+
         // Filter out unresolved or garbage that has no strong candidate
-        const validResults = finalResults.filter(r => r.match.status !== 'unresolved' && r.match.confidence > 0.4);
+        // We will temporarily allow unresolved matches > 0.4 so we can debug them in the UI
+        const validResults = finalResults.filter(r => r.match.confidence > 0.4);
+
+        console.log("Valid results after > 0.4 filter:", validResults);
 
         // Deduplicate globally: If multiple crops found the same player (due to overlapping formation scanning), keep the highest confidence one.
         const playerMap = new Map();
@@ -110,6 +117,8 @@ class ScreenshotImporter {
         }
 
         const uniqueResults = Array.from(playerMap.values());
+        
+        console.log("Unique results after deduplication:", uniqueResults);
 
         if (this.onProgress) this.onProgress({ message: 'Complete', progress: 100 });
         if (this.onComplete) this.onComplete(uniqueResults);

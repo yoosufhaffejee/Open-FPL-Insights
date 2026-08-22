@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head><title>Debug Regions</title></head>
+<body>
+    <input type="file" id="file" accept="image/*">
+    <pre id="out"></pre>
+    <canvas id="canvas" style="display:none;"></canvas>
+    
+    <script src="screenshot-import/player-card-detector.js"></script>
+    <script>
+        document.getElementById('file').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.getElementById('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                
+                const detector = new PlayerCardDetector();
+                const bounds = detector.findPitchBounds(canvas, img.width, img.height);
+                document.getElementById('out').innerText = "Bounds: " + JSON.stringify(bounds, null, 2) + "\n\n";
+                
+                const regions = detector.getExpectedRegions('fpl-mobile-pitch', img.width, img.height, canvas);
+                document.getElementById('out').innerText += "Regions: " + JSON.stringify(regions, null, 2);
+            };
+            img.src = URL.createObjectURL(file);
+        });
+    </script>
+</body>
+</html>
