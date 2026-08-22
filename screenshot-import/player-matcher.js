@@ -11,7 +11,24 @@ class PlayerMatcher {
 
     normalizeText(text) {
         if (!text) return '';
-        return text
+        
+        const replacements = {
+            'ø': 'o', 'Ø': 'O',
+            'æ': 'ae', 'Æ': 'AE',
+            'œ': 'oe', 'Œ': 'OE',
+            'ł': 'l', 'Ł': 'L',
+            'ı': 'i',
+            'ß': 'ss',
+            'ð': 'd', 'Ð': 'D',
+            'þ': 'th', 'Þ': 'TH'
+        };
+        
+        let processed = text;
+        for (const [key, val] of Object.entries(replacements)) {
+            processed = processed.split(key).join(val);
+        }
+        
+        return processed
             .toLowerCase()
             .trim()
             .replace(/\s+/g, ' ')
