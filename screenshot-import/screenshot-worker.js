@@ -34,69 +34,68 @@ self.onmessage = async (e) => {
         try {
             await initializeOcr();
             
-            self.postMessage({ type: 'progress', message: 'Reading full screenshot...', progress: 30 });
+            self.postMessage({ type: 'progress', message: 'Detecting layout...', progress: 20 });
             
             const imageBitmap = payload.imageBitmap;
+            const layout = payload.layout || 'fpl-mobile-pitch';
             const width = imageBitmap.width;
             const height = imageBitmap.height;
             
+            // Draw to offscreen canvas to allow pixel manipulation
             const canvas = new OffscreenCanvas(width, height);
             const ctx = canvas.getContext('2d');
             ctx.drawImage(imageBitmap, 0, 0);
 
-            // 1. Run Tesseract on the ENTIRE image
-            // We use PSM.AUTO (default) or PSM.SPARSE_TEXT to find all text scattered around
-            await ocrWorker.setParameters({
-                tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT
-            });
+            self.postMessage({ type: 'progress', message: 'Preparing player regions...', progress: 30 });
+            const regions = cardDetector.getExpectedRegions(layout, width, height, canvas);
             
-            const ocrResult = await ocrWorker.recognize(canvas);
-            self.postMessage({ type: 'progress', message: 'Matching players...', progress: 85 });
-            
-            // 2. Extract all words with their Y-coordinates
-            const words = ocrResult.data.words || [];
-            
-            // We will pass the raw words back to the main thread, and the main thread 
-            // can use PlayerMatcher to find the players!
-            // Wait, we can just do it right here in the worker if we have the players data.
-            // But the worker doesn't have the full players list (it was passed to PlayerMatcher in main thread).
-            // Actually, in the old architecture, the worker just passed raw OCR text back, and the main thread did the matching.
-            
-            // Group words into lines based on Y-coordinate proximity to handle two-word names
-            const lines = [];
-            for (const word of words) {
-                // Find a line that this word belongs to
-                const cy = (word.bbox.y0 + word.bbox.y1) / 2;
-                let foundLine = false;
-                for (const line of lines) {
-                    if (Math.abs(line.y - cy) < 15) { // within 15 pixels vertically
-                        line.words.push(word);
-                        foundLine = true;
-                        break;
+            const results = [];
+            const totalRegions = regions.length;
+
+            for (let i = 0; i < totalRegions; i++) {
+                const region = regions[i];
+                
+                self.postMessage({ 
+                    type: 'progress', 
+                    message: `Reading players (${i + 1}/${totalRegions})...`, 
+                    progress: 30 + Math.floor((i / totalRegions) * 50) 
+                });
+
+                // Convert bounds to actual pixels for the offscreen canvas
+                const variants = await preprocessor.processRegion(canvas, region.bounds);
+                
+                const regionResults = [];
+
+                for (const variant of variants) {
+                    // Tesseract.js in Web Worker can accept OffscreenCanvas or ImageBitmap
+                    // OffscreenCanvas is standard. Let's try recognizing the canvas.
+                    
+                    try {
+                        const ocrResult = await ocrWorker.recognize(variant.canvas);
+                        regionResults.push({
+                            text: ocrResult.data.text.trim(),
+                            confidence: ocrResult.data.confidence,
+                            source: variant.name
+                        });
+                    } catch (ocrErr) {
+                        console.error('OCR Error on variant', variant.name, ocrErr);
                     }
                 }
-                if (!foundLine) {
-                    lines.push({ y: cy, words: [word] });
-                }
+                
+                results.push({
+                    slotIndex: region.slotIndex,
+                    rowName: region.rowName,
+                    position: region.expectedPosition,
+                    variants: regionResults
+                });
             }
-            
-            const rawTexts = [];
-            for (const line of lines) {
-                // Sort words left to right
-                line.words.sort((a, b) => a.bbox.x0 - b.bbox.x0);
-                const text = line.words.map(w => w.text).join(' ');
-                if (text.length > 2) {
-                    rawTexts.push({
-                        text: text,
-                        y: line.y
-                    });
-                }
-            }
+
+            self.postMessage({ type: 'progress', message: 'Matching players...', progress: 85 });
             
             // Cleanup
             imageBitmap.close();
             
-            self.postMessage({ type: 'complete', rawTexts });
+            self.postMessage({ type: 'complete', results });
             
         } catch (error) {
             self.postMessage({ type: 'error', error: error.message });

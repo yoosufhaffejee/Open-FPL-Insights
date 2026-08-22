@@ -1,8 +1,16 @@
+/**
+ * Open-FPL-Insights Screenshot Importer
+ * Main Orchestrator
+ */
+
 class ScreenshotImporter {
     constructor(players, teams) {
         this.players = players;
         this.teams = teams;
-        this.matcher = new PlayerMatcher(players, teams); 
+        
+        this.layoutDetector = new ScreenshotLayoutDetector();
+        this.matcher = new PlayerMatcher(players, teams);
+        this.confidenceScorer = new ConfidenceScorer();
         
         this.worker = null;
         
@@ -18,6 +26,11 @@ class ScreenshotImporter {
 
             const imageBitmap = await createImageBitmap(file);
             
+            const layoutCheck = this.layoutDetector.detect(imageBitmap.width, imageBitmap.height);
+            if (!layoutCheck.supported) {
+                throw new Error("We couldn't recognise this as an FPL team screenshot. Please upload a screenshot of your Fantasy Team page.");
+            }
+
             // Start worker
             if (this.worker) {
                 this.worker.postMessage({ type: 'dispose' });
@@ -26,12 +39,12 @@ class ScreenshotImporter {
             this.worker = new Worker('screenshot-import/screenshot-worker.js');
             
             this.worker.onmessage = (e) => {
-                const { type, payload, message, progress, rawTexts, error } = e.data;
+                const { type, payload, message, progress, results, error } = e.data;
                 
                 if (type === 'progress') {
                     if (this.onProgress) this.onProgress({ message, progress });
                 } else if (type === 'complete') {
-                    this.handleWorkerComplete(rawTexts);
+                    this.handleWorkerComplete(results);
                 } else if (type === 'error') {
                     if (this.onError) this.onError(new Error(error));
                 }
@@ -40,7 +53,7 @@ class ScreenshotImporter {
             // Transfer imageBitmap to worker
             this.worker.postMessage({
                 type: 'process',
-                payload: { imageBitmap }
+                payload: { imageBitmap, layout: layoutCheck.layout }
             }, [imageBitmap]);
 
         } catch (error) {
@@ -48,72 +61,64 @@ class ScreenshotImporter {
         }
     }
 
-    handleWorkerComplete(rawTexts) {
-        if (!this.matcher) {
-            console.error("PlayerMatcher not initialized!");
-            return;
-        }
+    handleWorkerComplete(ocrResults) {
+        if (this.onProgress) this.onProgress({ message: 'Matching players...', progress: 95 });
 
-        if (!rawTexts) return;
-        
-        console.log("Raw OCR Texts:", rawTexts);
-        
-        const matchedPlayers = [];
+        console.log("Worker returned OCR results:", ocrResults);
 
-        // 1. Match each line of text against the player database
-        for (const line of rawTexts) {
-            const candidates = this.matcher.match(line.text);
+        const finalResults = [];
+
+        for (const result of ocrResults) {
+            let bestCandidates = [];
+            let bestConfidence = 0;
+            let ocrConf = 0;
+            let bestRawText = "";
             
-            if (candidates && candidates.length > 0) {
-                const best = candidates[0];
-                if (best.score > 0.75) {
-                    matchedPlayers.push({
-                        player: best.player,
-                        confidence: best.score,
-                        y: line.y,
-                        originalText: line.text
-                    });
+            for (const variant of result.variants) {
+                if (!variant.text || variant.text.length < 2) continue;
+                
+                const candidates = this.matcher.match(variant.text, result.position);
+                if (candidates.length > 0 && candidates[0].score > bestConfidence) {
+                    bestConfidence = candidates[0].score;
+                    bestCandidates = candidates;
+                    ocrConf = variant.confidence;
+                    bestRawText = variant.text;
                 }
             }
-        }
-        
-        // 2. Deduplicate
-        const uniqueMap = new Map();
-        for (const match of matchedPlayers) {
-            const id = match.player.id;
-            if (!uniqueMap.has(id) || uniqueMap.get(id).confidence < match.confidence) {
-                uniqueMap.set(id, match);
+            
+            if (bestCandidates.length > 0) {
+                const scoreResult = this.confidenceScorer.score(bestCandidates, ocrConf);
+                
+                finalResults.push({
+                    slotIndex: result.slotIndex,
+                    rowName: result.rowName,
+                    position: result.position,
+                    rawText: bestRawText,
+                    match: scoreResult
+                });
             }
         }
         
-        const uniquePlayers = Array.from(uniqueMap.values());
-        uniquePlayers.sort((a, b) => a.y - b.y);
-        
-        console.log("Final Unique Players sorted by Y:", uniquePlayers);
-        
-        if (this.onComplete) {
-            const formattedResults = uniquePlayers.map((match, i) => {
-                const candidates = this.matcher.match(match.originalText);
-                
-                return {
-                    rowName: (i >= 11 ? 'BENCH' : 'PITCH'),
-                    rawText: match.originalText,
-                    region: { slotIndex: i },
-                    match: {
-                        status: match.confidence > 0.90 ? 'automatic' : 'needs-review',
-                        confidence: match.confidence,
-                        finalCandidate: {
-                            playerId: match.player.id,
-                            playerName: match.player.web_name,
-                            player: match.player,
-                            score: match.confidence
-                        },
-                        alternatives: candidates.slice(1) // Provide the fallback candidates
-                    }
-                };
-            });
-            this.onComplete(formattedResults);
+        console.log("Final matched results:", finalResults);
+
+        // Filter out unresolved or low-confidence matches before deduplication
+        const validResults = finalResults.filter(r => r.match.status !== 'unresolved' && r.match.confidence > 0.4);
+
+        // Deduplicate globally: If multiple crops found the same player (due to overlapping formation scanning), keep the highest confidence one.
+        const playerMap = new Map();
+        for (const res of validResults) {
+            const pid = res.match.finalCandidate.playerId;
+            if (!playerMap.has(pid) || playerMap.get(pid).match.confidence < res.match.confidence) {
+                playerMap.set(pid, res);
+            }
         }
+
+        const uniqueResults = Array.from(playerMap.values());
+        
+        console.log("Unique results after deduplication:", uniqueResults);
+
+        if (this.onProgress) this.onProgress({ message: 'Complete', progress: 100 });
+        if (this.onComplete) this.onComplete(uniqueResults);
     }
     
     cancel() {
