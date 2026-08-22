@@ -127,8 +127,15 @@ class PlayerMatcher {
             });
         }
 
-        // Sort by highest score
-        candidates.sort((a, b) => b.score - a.score);
+        // Sort by highest score, then break ties using ownership popularity
+        candidates.sort((a, b) => {
+            if (b.score !== a.score) {
+                return b.score - a.score;
+            }
+            const aSelected = parseFloat(a.player.selected_by_percent || "0");
+            const bSelected = parseFloat(b.player.selected_by_percent || "0");
+            return bSelected - aSelected;
+        });
 
         return candidates.slice(0, 3); // Return top 3
     }
