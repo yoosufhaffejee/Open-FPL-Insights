@@ -53,7 +53,7 @@ class ScreenshotImporter {
             // Transfer imageBitmap to worker
             this.worker.postMessage({
                 type: 'process',
-                payload: { imageBitmap }
+                payload: { imageBitmap, layout: layoutCheck.layout }
             }, [imageBitmap]);
 
         } catch (error) {

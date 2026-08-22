@@ -136,29 +136,44 @@ function getExpectedPoints (player, fixture) {
 function getLastFive(player, fixture) {
     const playerName = player.first_name + " " + player.second_name;
     const opponentTeam = getOpponentTeam(player.team, fixture);
-    const playerFixtureHistory = historicalDataCache.get(playerName) || [];
+    
+    if (!db) return 0;
 
+    const overallQuery = `
+        SELECT total_points 
+        FROM fpl_data 
+        WHERE name = $name AND minutes >= 10 
+        ORDER BY kickoff_time DESC 
+        LIMIT 5
+    `;
+    const overallStmt = db.prepare(overallQuery);
+    overallStmt.bind({$name: playerName});
+    
     let overallCount = 0;
     let overallPoints = 0;
+    while(overallStmt.step()) {
+        overallPoints += parseFloat(overallStmt.get()[0]);
+        overallCount++;
+    }
+    overallStmt.free();
+
+    const fixtureQuery = `
+        SELECT total_points 
+        FROM fpl_data 
+        WHERE name = $name AND opp_team_name = $opp AND minutes >= 10 
+        ORDER BY kickoff_time DESC 
+        LIMIT 5
+    `;
+    const fixtureStmt = db.prepare(fixtureQuery);
+    fixtureStmt.bind({$name: playerName, $opp: opponentTeam});
+    
     let fixtureCount = 0;
     let fixturePoints = 0;
-
-    for (let i = 0; i < playerFixtureHistory.length; i++) {
-        const fixtureHistory = playerFixtureHistory[i];
-        
-        if (fixtureHistory.minutes >= 10) {
-            if (overallCount < 5) {
-                overallCount++;
-                overallPoints += parseFloat(fixtureHistory.total_points);
-            }
-            if (fixtureHistory.opp_team_name === opponentTeam && fixtureCount < 5) {
-                fixtureCount++;
-                fixturePoints += parseFloat(fixtureHistory.total_points);
-            }
-        }
-        
-        if (overallCount >= 5 && fixtureCount >= 5) break;
+    while(fixtureStmt.step()) {
+        fixturePoints += parseFloat(fixtureStmt.get()[0]);
+        fixtureCount++;
     }
+    fixtureStmt.free();
 
     let averagePoints = 0;
     if (overallCount > 0 && fixtureCount > 0) {

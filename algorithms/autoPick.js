@@ -17,6 +17,9 @@ function selectBestTeam(allPlayers, currentTeam = []) {
     let currentCost = 0;
     let preSelectedIds = new Set();
     
+    // Filter out ghost players before processing pre-selected players
+    currentTeam = currentTeam.filter(p => p.id !== undefined && p.now_cost > 0);
+    
     currentTeam.forEach(p => {
         currentCost += p.now_cost / 10.0;
         preSelectedIds.add(p.id);

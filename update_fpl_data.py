@@ -1,10 +1,12 @@
 import os
 import pandas as pd
 import glob
+import sqlite3
 
 def main():
     repo_data_dir = r"C:\Users\Yoosuf\Documents\Fantasy-Premier-League\data"
     output_csv = r"C:\Users\Yoosuf\Documents\Open-FPL-Insights\fpl_data.csv"
+    output_sqlite = r"C:\Users\Yoosuf\Documents\Open-FPL-Insights\fpl_data.sqlite"
     
     master_csv_path = os.path.join(repo_data_dir, "cleaned_merged_seasons.csv")
     
@@ -63,6 +65,7 @@ def main():
             
         new_dfs.append(df_gw)
         
+    df_combined = df_master
     if new_dfs:
         print("Concatenating new seasons with base data...")
         df_combined = pd.concat([df_master] + new_dfs, ignore_index=True, sort=False)
@@ -71,8 +74,20 @@ def main():
         df_combined.to_csv(output_csv, index=False)
         print("Successfully updated fpl_data.csv!")
     else:
-        print("No new seasons with data found to add.")
+        print("No new seasons with data found to add to CSV.")
         print(f"To ensure latest data, make sure you do a 'git pull' inside {repo_data_dir}")
+
+    print(f"Saving data to SQLite database at {output_sqlite}...")
+    conn = sqlite3.connect(output_sqlite)
+    df_combined.to_sql('fpl_data', conn, if_exists='replace', index=False)
+    
+    print("Creating indexes...")
+    cursor = conn.cursor()
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_name ON fpl_data(name)")
+    conn.commit()
+    conn.close()
+    
+    print("Successfully updated fpl_data.sqlite!")
 
 if __name__ == "__main__":
     main()

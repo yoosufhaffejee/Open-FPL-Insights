@@ -122,9 +122,11 @@ async function getLiveData(gameweek) {
 
     points = 0;
     myPlayers.forEach(player => {
-        if (!player.isSub) {
+        if (!player.isSub && player.id) {
             const element = liveData.elements.find(p => p.id == player.id);
-            points += element.stats.total_points;
+            if (element) {
+                points += element.stats.total_points;
+            }
         }
     });
 

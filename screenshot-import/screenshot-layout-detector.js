@@ -8,7 +8,7 @@ class ScreenshotLayoutDetector {
         const aspectRatio = imageHeight / imageWidth;
 
         // FPL mobile screenshots are usually tall (e.g., 16:9, 19.5:9 portrait)
-        if (aspectRatio > 1.2) {
+        if (aspectRatio >= 1.0) {
             return {
                 supported: true,
                 layout: 'fpl-mobile-pitch',
@@ -16,18 +16,20 @@ class ScreenshotLayoutDetector {
             };
         }
         
-        // Desktop or other layouts
+        // Desktop or other wider layouts
         if (aspectRatio < 1.0) {
             return {
-                supported: true, // We'll try our best
+                supported: true,
                 layout: 'fpl-desktop-pitch',
-                confidence: 0.5
+                confidence: 0.8
             };
         }
 
+        // Catch-all (should never reach here since everything is >= 1.0 or < 1.0, but good for safety)
         return {
-            supported: false,
-            reason: 'unsupported-layout'
+            supported: true,
+            layout: 'fpl-mobile-pitch',
+            confidence: 0.5
         };
     }
 }

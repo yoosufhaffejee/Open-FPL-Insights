@@ -2,8 +2,8 @@
 // Screenshot Worker
 
 self.importScripts(
-    '../player-card-detector.js',
-    '../image-preprocessor.js',
+    './player-card-detector.js',
+    './image-preprocessor.js',
     'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'
 );
 
@@ -37,6 +37,7 @@ self.onmessage = async (e) => {
             self.postMessage({ type: 'progress', message: 'Detecting layout...', progress: 20 });
             
             const imageBitmap = payload.imageBitmap;
+            const layout = payload.layout || 'fpl-mobile-pitch';
             const width = imageBitmap.width;
             const height = imageBitmap.height;
             
@@ -46,7 +47,7 @@ self.onmessage = async (e) => {
             ctx.drawImage(imageBitmap, 0, 0);
 
             self.postMessage({ type: 'progress', message: 'Preparing player regions...', progress: 30 });
-            const regions = cardDetector.getExpectedRegions('fpl-mobile-pitch', width, height);
+            const regions = cardDetector.getExpectedRegions(layout, width, height, canvas);
             
             const results = [];
             const totalRegions = regions.length;

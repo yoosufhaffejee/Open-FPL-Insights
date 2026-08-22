@@ -3,10 +3,9 @@ let gameweeks = [];
 let fixtures = [];
 let allPlayers = [];
 let selectedGW = 1;
-let historicalData = [];
 
-// Store historical data in a lookup table based on player names for faster lookup
-const historicalDataCache = new Map();
+let db;
+
 
 // Fetch general data
 const fetchOverview = async () => {
@@ -54,22 +53,18 @@ const getBasePath = () => {
 
 const loadHistoricalData = async () => {
     try {
-        const response = await fetch(getBasePath() + 'fpl_data.csv');
-        if (!response.ok) throw new Error('Network response was not ok');
-        const csvText = await response.text();
-        const data = parseCSV(csvText);
-        historicalData = data;
-
-        // Build cache
-        historicalData.forEach(entry => {
-            let playerName = entry.name;
-            if (!historicalDataCache.has(playerName)) {
-                historicalDataCache.set(playerName, []);
-            }
-            historicalDataCache.get(playerName).push(entry);
+        const sqlPromise = initSqlJs({
+          locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
         });
+        const dataPromise = fetch(getBasePath() + 'fpl_data.sqlite').then(res => {
+            if (!res.ok) throw new Error('Network response was not ok');
+            return res.arrayBuffer();
+        });
+        
+        const [SQL, buf] = await Promise.all([sqlPromise, dataPromise]);
+        db = new SQL.Database(new Uint8Array(buf));
     } catch (error) {
-        console.error('Error fetching the CSV file:', error);
+        console.error('Error fetching the SQLite db:', error);
     }
 }
 
