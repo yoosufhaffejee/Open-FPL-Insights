@@ -3,8 +3,6 @@ class ScreenshotImporter {
         this.players = players;
         this.teams = teams;
         this.matcher = new PlayerMatcher(players, teams); 
-        this.confidenceScorer = new ConfidenceScorer(); // Keep for legacy UI if needed
-        this.layoutDetector = new LayoutDetector(); // Keep for legacy UI if needed
         
         this.worker = null;
         
