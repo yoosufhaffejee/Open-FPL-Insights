@@ -174,6 +174,13 @@ function calculateExpectedPointsCore(player, fixture) {
     // Add small bump to overall team expected points to reach ~60 average (algorithm naturally outputs ~45)
     expectedPoints = expectedPoints * 1.15;
     
+    // Blend with FPL's ep_next at 25% weight to smooth outliers
+    // (FPL's model is conservative but catches edge cases we might miss)
+    const fplPred = parseFloat(player.ep_next);
+    if (!isNaN(fplPred) && fplPred > 0) {
+        expectedPoints = (expectedPoints * 0.75) + (fplPred * 0.25);
+    }
+    
     return expectedPoints;
 }
 

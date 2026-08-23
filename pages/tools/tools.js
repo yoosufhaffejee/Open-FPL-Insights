@@ -1,3 +1,4 @@
+if (typeof positionMap === 'undefined') { var positionMap = {1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD'}; }
 // Tab Switching Logic
 document.addEventListener('DOMContentLoaded', () => {
     const tabs = document.querySelectorAll('#tools-nav .list-group-item');

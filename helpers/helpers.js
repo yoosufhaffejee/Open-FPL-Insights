@@ -224,7 +224,9 @@ function showOnboardingModal(assetPrefix = './', forceShow = false) {
     const m = new bootstrap.Modal(document.getElementById('fplOnboardingModal'));
     m.show();
 }
-\n\ndocument.addEventListener('DOMContentLoaded', () => {
+
+
+document.addEventListener('DOMContentLoaded', () => {
     let inPagesDir = window.location.pathname.includes('/pages/');
     let assetPrefix = inPagesDir ? '../../' : '';
     

@@ -374,9 +374,9 @@ function removePlayer(player) {
         filledSlots[positionPrefix]--;
 
         // Refresh Grid
-        grid.updateGridOptions({
-            rowData: filteredPlayers
-        });
+        if (grid) {
+            grid.updateGridOptions({ rowData: filteredPlayers });
+        }
 
         // Update the UI to reflect the changes
         updateTeamUI();
@@ -590,7 +590,7 @@ function renderPlayerElement(player) {
 
     const isGK = player.element_type === 1;
     const shirtUrl = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${player.team_code}${isGK ? '_1' : ''}-110.webp`;
-    const image = `<img src="${shirtUrl}" alt="${player.web_name}" onerror="if(!this.dataset.triedShirt){this.dataset.triedShirt='1';this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-110.webp';}else{this.onerror=null;this.src='https://resources.premierleague.com/premierleague/photos/players/250x250/Photo-Missing.png';}">`;
+    const image = `<img src="${shirtUrl}" alt="${player.web_name}" onerror="playerImgOnerror(this, ${player.team_code}, ${player.element_type})">`;
 
     playerElement.innerHTML = `
         ${image}
@@ -1402,10 +1402,7 @@ function autoPickPlayers() {
                 }
             }
         });
-
-        grid.updateGridOptions({
-            rowData: filteredPlayers
-        });
+        if (grid) { grid.updateGridOptions({ rowData: filteredPlayers }); }
 
         updateTeamUI();
     }
