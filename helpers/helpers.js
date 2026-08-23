@@ -105,16 +105,7 @@ function _getCookieVal(name) {
     return null;
 }
 
-function addHelpNavButton(assetPrefix) {
-    // Attempt to add a Help button to the navbar if it exists
-    const navUl = document.querySelector('.navbar-nav');
-    if (navUl && !document.getElementById('nav-help-btn')) {
-        const li = document.createElement('li');
-        li.className = 'nav-item';
-        li.id = 'nav-help-btn';
-        li.innerHTML = `<a class="nav-link text-warning" href="#" onclick="showOnboardingModal('${assetPrefix}', true)"><i class="fas fa-question-circle"></i> Help & Setup</a>`;
-        navUl.appendChild(li);
-    }
+
 }
 
 function showOnboardingModal(assetPrefix = './', forceShow = false) {
@@ -230,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let inPagesDir = window.location.pathname.includes('/pages/');
     let assetPrefix = inPagesDir ? '../../' : '';
     
-    addHelpNavButton(assetPrefix);
+    
     
     // Slight delay to not interrupt initial rendering/fetching
     setTimeout(() => {
