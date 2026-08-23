@@ -222,27 +222,31 @@ function showPlayerInfo(player) {
 
 // Function to populate the modal with player data
 function populatePlayerModal(data, player) {
-    // Set the player name in the modal title
-    document.getElementById('playerInfoModalLabel').innerHTML = `
-    <img src="https://resources.premierleague.com/premierleague/photos/players/250x250/p${player.code}.png" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;" onerror="if(!this.dataset.triedShirt){this.dataset.triedShirt='1';this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-110.webp';}else{this.onerror=null;this.src='https://resources.premierleague.com/premierleague/photos/players/250x250/Photo-Missing.png';}">
-    ${player.first_name} ${player.second_name}`;
-
-    // Clear previous data
-    const fixturesList = document.getElementById('upcoming-fixtures-list');
-    const recentMatchesTable = document.querySelector('#recent-matches-table tbody');
-    const pastSeasonsTable = document.querySelector('#past-seasons-table tbody');
-
-    fixturesList.innerHTML = '';
-    recentMatchesTable.innerHTML = '';
-    pastSeasonsTable.innerHTML = '';
-
     const fplPredictedElem = document.getElementById('modal-fpl-predicted');
     const ourPredictedElem = document.getElementById('modal-our-predicted');
     
+    // 1. Header with Photo & Key Stats
+    document.getElementById('playerInfoModalLabel').innerHTML = `
+        <div class="d-flex align-items-center gap-3 w-100">
+            <img src="https://resources.premierleague.com/premierleague/photos/players/250x250/p${player.code}.png" 
+                 style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; background: #eee;" 
+                 onerror="playerImgOnerror(this, ${player.team_code})">
+            <div>
+                <h3 class="mb-0 fw-bold">${player.first_name} ${player.second_name}</h3>
+                <div class="d-flex gap-2 text-muted fs-6 mt-1 align-items-center">
+                    <span class="badge bg-secondary">${positionMap[player.element_type]}</span>
+                    <span><i class="fas fa-pound-sign"></i> ${(player.now_cost / 10).toFixed(1)}m</span>
+                    <span><i class="fas fa-users"></i> ${player.selected_by_percent}% owned</span>
+                    <span><i class="fas fa-star text-warning"></i> ${player.total_points} pts</span>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // 2. Predictions
     if (fplPredictedElem && ourPredictedElem) {
         fplPredictedElem.textContent = player.ep_next ? player.ep_next : '0.0';
         fplPredictedElem.style.color = '#333';
-        fplPredictedElem.style.textShadow = 'none';
         
         let predictedPoints = player.predicted_points;
         if (predictedPoints === undefined) {
@@ -255,148 +259,88 @@ function populatePlayerModal(data, player) {
             }
         }
         
-        // Always show the non-captained version in this menu
         if (player.isCaptain && predictedPoints !== undefined) {
             predictedPoints = predictedPoints / 2;
         }
 
         ourPredictedElem.textContent = predictedPoints !== undefined ? predictedPoints.toFixed(1) : '0.0';
         ourPredictedElem.style.color = '#333';
-        ourPredictedElem.style.textShadow = 'none';
     }
 
-    // Populate Upcoming Fixtures
-    const maxFixtures = 38;
+    // 3. Upcoming Fixtures (FDR Styled)
+    const fixturesList = document.getElementById('upcoming-fixtures-list');
+    fixturesList.innerHTML = '';
+    const maxFixtures = 10; // Only show next 10 for compactness
     data.fixtures.slice(0, maxFixtures).forEach(fixture => {
         const opponentTeam = getTeamById(fixture.is_home ? fixture.team_a : fixture.team_h);
         const difficultyClass = getDifficultyClass(fixture.difficulty);
         const homeAway = fixture.is_home ? 'H' : 'A';
 
         const fixtureItem = document.createElement('div');
-        fixtureItem.classList.add('p-2', 'flex-shrink-0', 'border', 'rounded', 'me-2');
-        fixtureItem.style.width = '150px'; // Adjust width as needed for better visibility
+        fixtureItem.className = `p-2 flex-shrink-0 border rounded me-2 text-center text-dark ${difficultyClass}`;
+        fixtureItem.style.width = '100px'; 
+        fixtureItem.style.fontWeight = 'bold';
 
-        // Create the fixture item content
         fixtureItem.innerHTML = `
-            <div><strong>GW${fixture.event}:</strong> ${opponentTeam.short_name} (${homeAway})</div>
+            <div style="font-size: 0.8rem; opacity: 0.8;">GW${fixture.event}</div>
             <div>
                 <img src="https://resources.premierleague.com/premierleague/badges/100/t${opponentTeam.code}.png" 
                      alt="${opponentTeam.short_name}" 
-                     style="width: 40px; height: 40px;">
+                     style="width: 35px; height: 35px; margin: 4px 0;">
             </div>
-            <div><span class="badge ${difficultyClass}">${fixture.difficulty}</span></div>
-            <div>${formatFixtureDateTime(fixture.kickoff_time)}</div>
+            <div>${opponentTeam.short_name} (${homeAway})</div>
         `;
-
         fixturesList.appendChild(fixtureItem);
     });
 
-    // Populate Recent Matches
-    // Sort matches by date, with the most recent match first
+    // 4. Recent Matches (Condensed)
+    const recentMatchesTable = document.querySelector('#recent-matches-table tbody');
+    recentMatchesTable.innerHTML = '';
     const sortedHistory = data.history.sort((a, b) => new Date(b.kickoff_time) - new Date(a.kickoff_time));
 
     sortedHistory.forEach(match => {
-        const opponentTeam = getTeamById(match.opponent_team); // Get the opponent team by ID
-
-        // Determine the match result: Win, Loss, or Draw
+        const opponentTeam = getTeamById(match.opponent_team);
         let resultBadge;
         if (match.team_h_score === match.team_a_score) {
-            resultBadge = `<span class="badge bg-secondary">D</span>`;  // Draw badge (grey)
+            resultBadge = `<span class="badge bg-secondary">D</span>`;
         } else if ((match.was_home && match.team_h_score > match.team_a_score) ||
                 (!match.was_home && match.team_a_score > match.team_h_score)) {
-            resultBadge = `<span class="badge bg-success">W</span>`;  // Win badge (green)
+            resultBadge = `<span class="badge bg-success">W</span>`;
         } else {
-            resultBadge = `<span class="badge bg-danger">L</span>`;  // Loss badge (red)
+            resultBadge = `<span class="badge bg-danger">L</span>`;
         }
 
-        // Format score as "HomeTeamScore-AwayTeamScore"
         const score = match.was_home 
             ? `${match.team_h_score}-${match.team_a_score}`
             : `${match.team_a_score}-${match.team_h_score}`;
 
-        // Create table row with opponent image, score, and result
+        // Create condensed row (FPL key stats only)
         const matchRow = `
         <tr>
             <td>${match.round}</td>
-            <td>${formatFixtureDateTime(match.kickoff_time)}</td>
             <td>
-                <div class="d-flex flex-column align-items-center">
+                <div class="d-flex align-items-center gap-2">
                     <img src="https://resources.premierleague.com/premierleague/badges/100/t${opponentTeam.code}.png" 
-                         alt="${opponentTeam.short_name}" style="width: 30px; height: 30px;">
-                    <span>${opponentTeam.short_name}</span>
+                         alt="${opponentTeam.short_name}" style="width: 25px; height: 25px;">
+                    ${opponentTeam.short_name} ${match.was_home ? '(H)' : '(A)'}
                 </div>
             </td>
-            <td>${score}</td>
-            <td>${resultBadge}</td>
-            <td>${match.total_points}</td>
-            <td>${match.bonus}</td>
-            <td>${(match.value/10).toFixed(1)}m</td>
+            <td>${score} ${resultBadge}</td>
+            <td class="fw-bold">${match.total_points}</td>
             <td>${match.minutes}</td>
             <td>${match.goals_scored}</td>
             <td>${match.assists}</td>
-            <td>${match.saves}</td>
             <td>${match.clean_sheets}</td>
-            <td>${match.goals_conceded}</td>
-            <td>${match.expected_goals}</td>
-            <td>${match.expected_goal_involvements}</td>
-            <td>${match.expected_assists}</td>
-            <td>${match.expected_goals_conceded}</td>
-            <td>${match.yellow_cards}</td>
-            <td>${match.red_cards}</td>
-            <td>${match.own_goals}</td>
-            <td>${match.penalties_saved}</td>
-            <td>${match.penalties_missed}</td>
+            <td>${match.saves}</td>
+            <td>${match.bonus}</td>
             <td>${match.bps}</td>
-            <td>${match.defensive_contribution}</td>
-            <td>${match.influence}</td>
-            <td>${match.creativity}</td>
-            <td>${match.threat}</td>
-            <td>${match.ict_index}</td>
-            <td>${match.starts}</td>
-            <td>${match.selected}</td>
-            <td>${match.transfers_in}</td>
-            <td>${match.transfers_out}</td>
         </tr>`;
         
         recentMatchesTable.insertAdjacentHTML('beforeend', matchRow);
     });
 
-    // Populate Past Seasons
-    data.history_past.forEach(season => {
-        const pastSeasonRow = `
-            <tr>
-                <td>${season.season_name}</td>
-                <td>${(season.start_cost/10).toFixed(1)}m</td>
-                <td>${(season.end_cost/10).toFixed(1)}m</td>
-                <td>${season.total_points}</td>
-                <td>${season.minutes}</td>
-                <td>${season.goals_scored}</td>
-                <td>${season.assists}</td>
-                <td>${season.clean_sheets}</td>
-                <td>${season.goals_conceded}</td>
-                <td>${season.own_goals}</td>
-                <td>${season.penalties_saved}</td>
-                <td>${season.penalties_missed}</td>
-                <td>${season.yellow_cards}</td>
-                <td>${season.red_cards}</td>
-                <td>${season.saves}</td>
-                <td>${season.bonus}</td>
-                <td>${season.bps}</td>
-                <td>${season.influence}</td>
-                <td>${season.creativity}</td>
-                <td>${season.threat}</td>
-                <td>${season.ict_index}</td>
-                <td>${season.expected_goals}</td>
-                <td>${season.expected_assists}</td>
-                <td>${season.expected_goal_involvements}</td>
-                <td>${season.expected_goals_conceded}</td>
-            </tr>
-        `;
-        const pastSeasonsTable = document.getElementById('past-seasons-table').querySelector('tbody');
-        pastSeasonsTable.insertAdjacentHTML('beforeend', pastSeasonRow);
-    });
+    // We've hidden past seasons or updated it similarly in HTML...
 }
-
 function getPlayerFixture(player, gameweekId) {
     return fixtures.find(fixture => fixture.event === gameweekId &&
                 (fixture.team_a === player.team || fixture.team_h === player.team));
@@ -553,32 +497,66 @@ function renderTeamLineup(plPlayers, plSubstitutes, fplTeamId, startingContainer
 }
 
 function matchPlayer(plPlayer, teamPlayers) {
-    // Extract names from new footballapi shape (name.display / name.last) or old shape
     const plDisplayName = (plPlayer.name ? plPlayer.name.display : (plPlayer.knownName || '')) || '';
     const plLastName = (plPlayer.name ? plPlayer.name.last : (plPlayer.lastName || '')) || '';
 
     const normDisplay = plDisplayName.toLowerCase().replace(/[^a-z]/g, '');
     const normLast = plLastName.toLowerCase().replace(/[^a-z]/g, '');
+    
+    // Some PL names are just last names, some have initials
+    const plInitials = plDisplayName.split(' ').map(n => n[0]).join('').toLowerCase();
 
     let bestMatch = null;
     let bestScore = Infinity;
 
     teamPlayers.forEach(fplPlayer => {
         const fplName = `${fplPlayer.first_name} ${fplPlayer.second_name}`.toLowerCase().replace(/[^a-z]/g, '');
-        const fplWebName = fplPlayer.web_name.toLowerCase().replace(/[^a-z]/g, '');
+        const fplWebNameRaw = fplPlayer.web_name.toLowerCase();
+        const fplWebName = fplWebNameRaw.replace(/[^a-z]/g, '');
+        const fplLastName = fplPlayer.second_name.toLowerCase().replace(/[^a-z]/g, '');
+        const fplFirstName = fplPlayer.first_name.toLowerCase().replace(/[^a-z]/g, '');
         
-        // Exact matches first (fast path)
+        // Exact matches (fast path)
         if (fplWebName === normLast || fplWebName === normDisplay || fplName === normDisplay) {
             bestMatch = fplPlayer;
-            bestScore = 0;
+            bestScore = -100;
             return;
+        }
+        
+        // Handle "B.Fernandes" (FPL) matching "Bruno Fernandes" (PL)
+        if (fplWebNameRaw.includes('.') && plDisplayName.toLowerCase().includes(fplWebNameRaw.split('.')[1].replace(/[^a-z]/g, ''))) {
+            // e.g. b.fernandes -> fernandes, which is in "bruno fernandes"
+            // check initial matches too
+            if (fplWebNameRaw.split('.')[0] === plDisplayName.toLowerCase()[0]) {
+                bestMatch = fplPlayer;
+                bestScore = -50;
+                return;
+            }
+        }
+        
+        // Handle "Matheus Cunha" matching "Cunha"
+        if (normDisplay.includes(fplWebName) && fplWebName.length > 3) {
+            let score = -10;
+            if (score < bestScore) {
+                bestScore = score;
+                bestMatch = fplPlayer;
+            }
+        }
+        if (fplName.includes(normLast) && normLast.length > 3) {
+            let score = -5;
+            if (score < bestScore) {
+                bestScore = score;
+                bestMatch = fplPlayer;
+            }
         }
 
         const d1 = levenshtein(normDisplay, fplName);
         const d2 = levenshtein(normLast, fplWebName);
-        const score = Math.min(d1, d2);
+        const d3 = levenshtein(normDisplay, fplWebName);
         
-        if (score < bestScore && score < 5) {
+        const score = Math.min(d1, d2, d3);
+        
+        if (score < 4 && score < bestScore) {
             bestScore = score;
             bestMatch = fplPlayer;
         }
@@ -680,4 +658,8 @@ window.addEventListener('DOMContentLoaded', () => {
     // We can delay it slightly to let fixtures load first
     setTimeout(renderStandings, 1000);
 });
+
+
+
+
 

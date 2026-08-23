@@ -68,7 +68,7 @@
                             <h5 class="text-white fw-bold mb-0">Transfer Planner</h5>
                             <div class="input-group input-group-sm" style="width: 150px;">
                                 <span class="input-group-text bg-secondary text-white border-secondary">Start FTs</span>
-                                <input type="number" id="startFts" class="form-control bg-dark text-white border-secondary text-center" value="1" min="1" max="5">
+                                <input type="number" id="startFts" class="form-control bg-dark text-white border-secondary text-center" value="0" min="0" max="5">
                             </div>
                         </div>
                         <button class="btn btn-outline-light btn-sm" id="resetPlanBtn"><i class="fas fa-undo"></i> Reset</button>
@@ -126,6 +126,7 @@
                                     <option value="form">Form</option>
                                     <option value="selected_by_percent">Selected by %</option>
                                     <option value="expected_goal_involvements">xGI</option>
+                                    <option value="predicted_pts">Exp Pts (GW)</option>
                                 </select>
                             </div>
                         </div>
@@ -141,7 +142,7 @@
                         </div>
                     </div>
                     
-                    <div class="d-flex text-white-50 small fw-bold px-2 mb-1 mt-2">
+                    <div class="d-flex text-white-50 small fw-bold px-2 mb-1 mt-2 align-items-center">
                         <div style="flex: 1;">Player</div>
                         <div style="width: 40px; text-align: center;">Price</div>
                         <div style="width: 40px; text-align: center;" id="plannerSortLabel">Pts</div>

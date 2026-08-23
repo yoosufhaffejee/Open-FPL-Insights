@@ -23,13 +23,13 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Force AG Grid to recalculate its dimensions when its container becomes visible
             setTimeout(() => {
-                if (toolId === 'defcon' && typeof defconGridOptions !== 'undefined' && defconGridOptions.api) {
-                    defconGridOptions.api.sizeColumnsToFit();
-                } else if (toolId === 'expected' && typeof expectedGridOptions !== 'undefined' && expectedGridOptions.api) {
-                    expectedGridOptions.api.sizeColumnsToFit();
-                } else if (toolId === 'transfers' && typeof transfersInGridOptions !== 'undefined' && transfersInGridOptions.api) {
-                    transfersInGridOptions.api.sizeColumnsToFit();
-                    transfersOutGridOptions.api.sizeColumnsToFit();
+                if (toolId === 'defcon' && typeof defconGridOptions !== 'undefined' && defconGridApi) {
+                    defconGridApi.sizeColumnsToFit();
+                } else if (toolId === 'expected' && typeof expectedGridOptions !== 'undefined' && expectedGridApi) {
+                    expectedGridApi.sizeColumnsToFit();
+                } else if (toolId === 'transfers' && typeof transfersInGridOptions !== 'undefined' && transfersInGridApi) {
+                    transfersInGridApi.sizeColumnsToFit();
+                    transfersOutGridApi.sizeColumnsToFit();
                 }
             }, 50);
         });
@@ -98,6 +98,7 @@ function getTeamCode(teamId) {
 
 
 let defconGridOptions;
+let defconGridApi;
 function renderDefCon() {
     let defenders = allPlayers.filter(p => (p.element_type === 1 || p.element_type === 2) && parseFloat(p.defensive_contribution) > 0);
     defenders.sort((a, b) => parseFloat(b.defensive_contribution) - parseFloat(a.defensive_contribution));
@@ -114,16 +115,16 @@ function renderDefCon() {
     ];
 
     defconGridOptions = {
-        theme: 'legacy',
         rowData: defenders,
         columnDefs: columnDefs,
         defaultColDef: { sortable: true, filter: true, resizable: true }
     };
-    agGrid.createGrid(document.getElementById('defconGrid'), defconGridOptions);
+    defconGridApi = agGrid.createGrid(document.getElementById('defconGrid'), defconGridOptions);
 }
 
 
 let expectedGridOptions;
+let expectedGridApi;
 function renderExpectedData() {
     let players = allPlayers.filter(p => parseFloat(p.expected_goal_involvements) > 0);
     players.sort((a, b) => parseFloat(b.expected_goal_involvements_per_90) - parseFloat(a.expected_goal_involvements_per_90));
@@ -140,12 +141,11 @@ function renderExpectedData() {
     ];
 
     expectedGridOptions = {
-        theme: 'legacy',
         rowData: players,
         columnDefs: columnDefs,
         defaultColDef: { sortable: true, filter: true, resizable: true }
     };
-    agGrid.createGrid(document.getElementById('expectedGrid'), expectedGridOptions);
+    expectedGridApi = agGrid.createGrid(document.getElementById('expectedGrid'), expectedGridOptions);
 }
 
 function renderSetPieces() {
@@ -192,6 +192,7 @@ function renderSetPieces() {
 
 
 let transfersInGridOptions, transfersOutGridOptions;
+let transfersInGridApi, transfersOutGridApi;
 function renderTopTransfers() {
     let isPreseason = allPlayers.every(p => p.transfers_in_event === 0);
     let sortedIn = [...allPlayers];
@@ -218,11 +219,13 @@ function renderTopTransfers() {
         { headerName: 'Transfers Out', field: 'transfers_out_event', filter: true, floatingFilter: true, cellClass: 'text-danger fw-bold', cellRenderer: params => '-' + (params.value || 0).toLocaleString() }
     ];
 
-    transfersInGridOptions = { theme: 'legacy', rowData: sortedIn, columnDefs: inDefs, defaultColDef: { sortable: true, filter: true, resizable: true } };
-    transfersOutGridOptions = { theme: 'legacy', rowData: sortedOut, columnDefs: outDefs, defaultColDef: { sortable: true, filter: true, resizable: true } };
+    transfersInGridOptions = {
+ rowData: sortedIn, columnDefs: inDefs, defaultColDef: { sortable: true, filter: true, resizable: true } };
+    transfersOutGridOptions = {
+ rowData: sortedOut, columnDefs: outDefs, defaultColDef: { sortable: true, filter: true, resizable: true } };
     
-    agGrid.createGrid(document.getElementById('transfersInGrid'), transfersInGridOptions);
-    agGrid.createGrid(document.getElementById('transfersOutGrid'), transfersOutGridOptions);
+    transfersInGridApi = agGrid.createGrid(document.getElementById('transfersInGrid'), transfersInGridOptions);
+    transfersOutGridApi = agGrid.createGrid(document.getElementById('transfersOutGrid'), transfersOutGridOptions);
 }
 
 // Template Team (Top 50) Scraper
@@ -384,4 +387,6 @@ function renderTemplatePitch(squad) {
         </div>
     `;
 }
+
+
 

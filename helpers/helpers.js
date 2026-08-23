@@ -80,3 +80,12 @@ function getOpponentTeam(playerTeamId, fixture) {
         return teams.find(t => t.id == fixture.team_a).name;
     }
 }
+function playerImgOnerror(el, teamCode) {
+    if (!el.dataset.triedShirt) {
+        el.dataset.triedShirt = '1';
+        el.src = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}-110.webp`;
+    } else {
+        el.onerror = null;
+        el.src = 'https://resources.premierleague.com/premierleague/photos/players/250x250/Photo-Missing.png';
+    }
+}
