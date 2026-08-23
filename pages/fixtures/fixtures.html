@@ -1,243 +1,105 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-bs-theme="dark">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Open FPL Insights</title>
     <link rel="icon" href="../../assets/favicon.png" type="image/x-icon">
-
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Fontawesome CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <!-- Custom CSS -->
     <link rel="stylesheet" href="../../style.css">
     <link rel="stylesheet" href="fixtures.css">
 </head>
-
 <body>
-    <!-- Global Loader -->
-    <div id="global-loader" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #121212; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.3s ease-out;">
-        <div class="spinner-border text-success mb-4" role="status" style="width: 4rem; height: 4rem;">
-            <span class="visually-hidden">Loading...</span>
-        </div>
+    <div id="global-loader" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background-color:#121212;z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:opacity 0.3s ease-out;">
+        <div class="spinner-border text-success mb-4" role="status" style="width:4rem;height:4rem;"><span class="visually-hidden">Loading...</span></div>
         <h5 id="global-progress-task" class="text-white mb-2">Connecting to FPL...</h5>
-        <div class="progress w-50 border border-secondary" style="height: 25px; max-width: 400px; background-color: #2c2c2c;">
-            <div id="global-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success text-center fw-bold" role="progressbar" style="width: 0%; line-height: 23px;">
-                <span id="global-progress-text">0%</span>
-            </div>
+        <div class="progress w-50 border border-secondary" style="height:25px;max-width:400px;background-color:#2c2c2c;">
+            <div id="global-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success text-center fw-bold" role="progressbar" style="width:0%;line-height:23px;"><span id="global-progress-text">0%</span></div>
         </div>
     </div>
-
-    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 border-bottom border-secondary">
         <div class="container-fluid">
             <a class="navbar-brand" href="../../index.html">Open FPL Insights</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="../../index.html">Team</a>
-                    </li>
-                    <li class="nav-item" id="nav-managers-tab" style="display: none;">
-                        <a class="nav-link" href="../managers/managers.html">Managers</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="../fdr/fdr.html">Fixture Ticker</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="../planner/planner.html">Planner</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="../tools/tools.html">Tools</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="../fixtures/fixtures.html">Fixtures</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="../leagues/leagues.html">Leagues</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="../stats/stats.html">Stats</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="../live/live.html">Live Gameweek</a>
-                    </li>
+                    <li class="nav-item"><a class="nav-link" href="../../index.html">Team</a></li>
+                    <li class="nav-item" id="nav-managers-tab" style="display:none;"><a class="nav-link" href="../managers/managers.html">Managers</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../fdr/fdr.html">Fixture Ticker</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../planner/planner.html">Planner</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../tools/tools.html">Tools</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="../fixtures/fixtures.html">Fixtures</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../leagues/leagues.html">Leagues</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../stats/stats.html">Stats</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../live/live.html">Live Gameweek</a></li>
                 </ul>
             </div>
         </div>
     </nav>
-
-    <!-- Fixtures Page Content -->
     <div class="container">
-        <div class="d-flex justify-content-between mb-3">
-            <button id="prevGW" class="btn btn-primary">
-                <i class="fas fa-arrow-left"></i> Previous
-            </button>
-            <h2 id="gameweek" class="text-center">Gameweek 1</h2>
-            <button id="nextGW" class="btn btn-primary">
-                Next <i class="fas fa-arrow-right"></i>
-            </button>            
+        <div class="d-flex justify-content-between align-items-center mb-3 gap-2">
+            <button id="prevGW" class="btn btn-primary"><i class="fas fa-arrow-left"></i> Previous</button>
+            <div class="text-center">
+                <h2 id="gameweek" class="mb-1">Gameweek 1</h2>
+                <button id="thisGW" class="btn btn-sm btn-outline-success">This GW</button>
+            </div>
+            <button id="nextGW" class="btn btn-primary">Next <i class="fas fa-arrow-right"></i></button>
         </div>
-
-        <div id="fixtures-content">
-            <!-- Fixtures will be dynamically added here -->
-        </div>
-
+        <div id="fixtures-content"></div>
         <div class="mt-5">
             <h3 class="mb-3">Premier League Table</h3>
             <div id="league-table-container" class="table-responsive">
-                <div class="text-center p-4">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading table...</span>
-                    </div>
-                </div>
+                <div class="text-center p-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading table...</span></div></div>
             </div>
         </div>
     </div>
-
-    <!-- Player Info Modal -->
-    <div class="modal fade" id="playerInfoModal" tabindex="-1" aria-labelledby="playerInfoModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+    <div class="modal fade" id="playerInfoModal" tabindex="-1" aria-labelledby="playerInfoModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-fullscreen-md-down">
             <div class="modal-content">
                 <div class="modal-header">
                     <h3 class="modal-title font-weight-bold" id="playerInfoModalLabel">Player Information</h3>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <!-- Player Info Content -->
                     <div id="player-info-content">
-                        <!-- Prediction Comparison Section -->
                         <div class="mb-4">
                             <h4>Points Prediction</h4>
                             <div class="d-flex justify-content-start align-items-center gap-3">
-                                <div class="card text-center shadow-sm" style="width: 150px;">
-                                    <div class="card-header bg-primary text-white py-1"><small>FPL Model (GW)</small></div>
-                                    <div class="card-body py-2"><h5 class="mb-0" id="modal-fpl-predicted">-</h5></div>
-                                </div>
-                                <div class="card text-center shadow-sm" style="width: 150px;">
-                                    <div class="card-header bg-success text-white py-1"><small>Our Algorithm (GW)</small></div>
-                                    <div class="card-body py-2"><h5 class="mb-0" id="modal-our-predicted">-</h5></div>
-                                </div>
+                                <div class="card text-center shadow-sm" style="width:150px;"><div class="card-header bg-primary text-white py-1"><small>FPL Model (GW)</small></div><div class="card-body py-2"><h5 class="mb-0" id="modal-fpl-predicted">-</h5></div></div>
+                                <div class="card text-center shadow-sm" style="width:150px;"><div class="card-header bg-success text-white py-1"><small>Our Algorithm (GW)</small></div><div class="card-body py-2"><h5 class="mb-0" id="modal-our-predicted">-</h5></div></div>
                             </div>
                         </div>
-
-                        <!-- Upcoming Fixtures Section -->
                         <div class="mb-4">
                             <h4>Upcoming Fixtures</h4>
-                            <div class="d-flex overflow-auto" id="upcoming-fixtures-list">
-                                <!-- Fixtures will be dynamically added here -->
-                            </div>
+                            <div class="d-flex overflow-auto" id="upcoming-fixtures-list"></div>
                         </div>
-
                         <div class="mb-4">
                             <h4>Recent Matches</h4>
                             <div class="table-responsive">
                                 <table class="table table-striped" id="recent-matches-table">
-                                    <thead class="thead-dark">
-                                        <tr>
-                                            <th>GW</th>
-                                            <th style="min-width: 120px;">Date</th>
-                                            <th>Opponent</th>
-                                            <th>Score</th>
-                                            <th>Result</th>
-                                            <th>Points</th>
-                                            <th>Bonus</th>
-                                            <th>Value</th>
-                                            <th>Minutes</th>
-                                            <th>Goals</th>
-                                            <th>Assists</th>
-                                            <th>Saves</th>
-                                            <th>Clean Sheets</th>
-                                            <th>Goals Conceded</th>
-                                            <th>Expected Goals</th>
-                                            <th>Expected Goal Involvements</th>
-                                            <th>Expected Assists</th>
-                                            <th>Expected Goals Conceded</th>
-                                            <th>Yellow Cards</th>
-                                            <th>Red Cards</th>
-                                            <th>Own Goals</th>
-                                            <th>Penalties Saved</th>
-                                            <th>Penalties Missed</th>
-                                            <th>BPS</th>
-                                            <th>Defcon</th>
-                                            <th>Influence</th>
-                                            <th>Creativity</th>
-                                            <th>Threat</th>
-                                            <th>ICT Index</th>
-                                            <th>Starts</th>
-                                            <th>Selected</th>
-                                            <th>Transfers In</th>
-                                            <th>Transfers Out</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <!-- Match data will be dynamically added here -->
-                                    </tbody>
+                                    <thead class="thead-dark"><tr><th>GW</th><th style="min-width:120px;">Date</th><th>Opponent</th><th>Score</th><th>Result</th><th>Points</th><th>Bonus</th><th>Value</th><th>Minutes</th><th>Goals</th><th>Assists</th><th>Saves</th><th>Clean Sheets</th><th>Goals Conceded</th><th>xG</th><th>xGI</th><th>xA</th><th>xGC</th><th>Yellow</th><th>Red</th><th>OG</th><th>Pen Saved</th><th>Pen Miss</th><th>BPS</th><th>Defcon</th><th>Influence</th><th>Creativity</th><th>Threat</th><th>ICT</th><th>Starts</th><th>Selected</th><th>In</th><th>Out</th></tr></thead>
+                                    <tbody></tbody>
                                 </table>
                             </div>
                         </div>
-
-                        <!-- Past Seasons Section -->
                         <div class="mb-4">
                             <h4>Past Seasons</h4>
                             <div class="table-responsive">
                                 <table class="table table-striped" id="past-seasons-table">
-                                    <thead class="thead-dark">
-                                        <tr>
-                                            <th>Season</th>
-                                            <th>Start Cost</th>
-                                            <th>End Cost</th>
-                                            <th>Points</th>
-                                            <th>Minutes</th>
-                                            <th>Goals</th>
-                                            <th>Assists</th>
-                                            <th>Clean Sheets</th>
-                                            <th>Goals Conceded</th>
-                                            <th>Own Goals</th>
-                                            <th>Penalties Saved</th>
-                                            <th>Penalties Missed</th>
-                                            <th>Yellow Cards</th>
-                                            <th>Red Cards</th>
-                                            <th>Saves</th>
-                                            <th>Bonus</th>
-                                            <th>BPS</th>
-                                            <th>Influence</th>
-                                            <th>Creativity</th>
-                                            <th>Threat</th>
-                                            <th>ICT Index</th>
-                                            <th>Expected Goals</th>
-                                            <th>Expected Assists</th>
-                                            <th>Expected Goal Involvements</th>
-                                            <th>Expected Goals Conceded</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <!-- Past season data will be dynamically added here -->
-                                    </tbody>
+                                    <thead class="thead-dark"><tr><th>Season</th><th>Start</th><th>End</th><th>Points</th><th>Mins</th><th>Goals</th><th>Assists</th><th>CS</th><th>GC</th><th>OG</th><th>Pen Saved</th><th>Pen Miss</th><th>Yellow</th><th>Red</th><th>Saves</th><th>Bonus</th><th>BPS</th><th>Influence</th><th>Creativity</th><th>Threat</th><th>ICT</th><th>xG</th><th>xA</th><th>xGI</th><th>xGC</th></tr></thead>
+                                    <tbody></tbody>
                                 </table>
                             </div>
                         </div>
-
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div>
             </div>
         </div>
     </div>
-
-    <!-- JavaScript Dependencies -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- Custom JS -->
     <script src="../../api/requests.js"></script>
     <script src="../../helpers/helpers.js"></script>
     <script src="../../algorithms/predictPoints.js"></script>

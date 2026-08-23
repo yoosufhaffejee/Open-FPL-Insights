@@ -38,8 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 let templateLoaded = false;
 function init() {
-    setupToolNavigation();
-    loadDefConTool(); // Default tool
+    // Tab switching is already handled by DOMContentLoaded listener above
     renderMarketTrends();
 }
 
@@ -74,27 +73,13 @@ const renderMarketTrends = () => {
     document.getElementById('price-fallers').innerHTML = fallers.map(formatFaller).join('');
 };
 
-// Add drop-shadow utility class if not present in css
-const style = document.createElement('style');
-style.textContent = `
-    .drop-shadow { filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); }
-`;
-document.head.appendChild(style);
-
-// We poll until 'allPlayers' is populated by data.js
-const initInterval = setInterval(() => {
-    if (allPlayers && allPlayers.length > 0) {
-        clearInterval(initInterval);
-        init();
-    }
-}, 100);
-
 let positionMap = { 1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD' };
 
 // Main entry point called by data.js
 async function Initialize() {
     if (!allPlayers || allPlayers.length === 0) return;
 
+    init(); // render market trends etc.
     renderDefCon();
     renderExpectedData();
     renderSetPieces();
@@ -399,3 +384,4 @@ function renderTemplatePitch(squad) {
         </div>
     `;
 }
+

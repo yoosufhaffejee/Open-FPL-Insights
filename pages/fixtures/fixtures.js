@@ -34,7 +34,14 @@ function renderFixtures() {
         }
 
         const fixtureRow = document.createElement('div');
-        fixtureRow.className = 'accordion-item';
+        // Status class drives the left-border color via CSS
+        let statusClass = '';
+        if (fixture.started && !fixture.finished && !fixture.finished_provisional) {
+            statusClass = 'fixture-live';
+        } else if (fixture.finished || fixture.finished_provisional) {
+            statusClass = 'fixture-finished';
+        }
+        fixtureRow.className = `accordion-item ${statusClass}`;
         fixtureRow.innerHTML = `
                 <h2 class="accordion-header" id="heading${fixture.code}">
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${fixture.code}" aria-expanded="true" aria-controls="collapse${fixture.code}">
@@ -111,7 +118,7 @@ function renderFixtures() {
                                             <td>${getStatDetails(fixture, 'bonus', 'a')}</td>
                                         </tr>
                                         <tr>
-                                            <td>Bonus Points System</td>
+                                            <td>BPS (Ranking)</td>
                                             <td>${getStatDetails(fixture, 'bps', 'h')}</td>
                                             <td>${getStatDetails(fixture, 'bps', 'a')}</td>
                                         </tr>
@@ -176,6 +183,25 @@ document.getElementById('prevGW').addEventListener('click', () => {
 
 document.getElementById('nextGW').addEventListener('click', () => {
     if (fixtures.some(f => f.event === currentGW + 1)) {
+        currentGW++;
+        updateGameweek();
+    }
+});
+
+// Quick win #15: Jump to current GW
+document.getElementById('thisGW').addEventListener('click', () => {
+    currentGW = selectedGW.id;
+    isGwSet = false; // allow re-init
+    updateGameweek();
+});
+
+// Quick win #15: Keyboard arrow navigation (only when no input is focused)
+document.addEventListener('keydown', (e) => {
+    if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+    if (e.key === 'ArrowLeft' && currentGW > 1) {
+        currentGW--;
+        updateGameweek();
+    } else if (e.key === 'ArrowRight' && fixtures.some(f => f.event === currentGW + 1)) {
         currentGW++;
         updateGameweek();
     }
