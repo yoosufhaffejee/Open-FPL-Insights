@@ -4,8 +4,7 @@
 
 // Inline onerror string for use in innerHTML – tries shirt then silhouette
 const playerOnerrorAttr = (teamCode, elementType) => {
-    let isGK = (elementType == 1) ? "_1" : "";
-    return `onerror="if(!this.dataset.triedShirt){this.dataset.triedShirt='1';this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}${isGK}-110.webp';}else{this.onerror=null;this.src='https://resources.premierleague.com/premierleague/photos/players/250x250/Photo-Missing.png';}"`;
+    return `onerror="playerImgOnerror(this, ${teamCode}, ${elementType})"`;
 };
 
 // --- Player Dashboard Logic ---
@@ -32,7 +31,7 @@ const renderDashboards = () => {
                     <div class="me-3 fs-5 text-muted fw-bold" style="width: 20px;">${index + 1}</div>
                     <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p${p.code}.png" 
                          style="width: 40px; height: 50px; object-fit: cover; border-radius: 5px; background-color: #f0f0f0;" 
-                         class="me-3 shadow-sm bg-light" ${playerOnerrorAttr(team.code)}>
+                         class="me-3 shadow-sm bg-light" ${playerOnerrorAttr(team.code, p.element_type)}>
                     <div class="flex-grow-1">
                         <div class="fw-bold text-light">${p.web_name}</div>
                         <div class="text-muted small">
@@ -154,7 +153,7 @@ const renderViewAllTable = () => {
                     <div class="d-flex align-items-center">
                         <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p${p.code}.png" 
                              style="width: 30px; height: 35px; object-fit: cover; border-radius: 5px;" 
-                             class="me-2 bg-light shadow-sm" ${playerOnerrorAttr(team.code)}>
+                             class="me-2 bg-light shadow-sm" ${playerOnerrorAttr(team.code, p.element_type)}>
                         ${p.web_name}
                     </div>
                 </td>
@@ -229,7 +228,7 @@ const updatePlayerCard = (cardId, player) => {
         <div class="card-body text-center p-4">
             <img src="https://resources.premierleague.com/premierleague/photos/players/250x250/p${player.code}.png" 
                  style="width: 100px; height: 120px; object-fit: cover; border-radius: 10px; background-color: #f0f0f0;" 
-                 class="mb-3 bg-light shadow" ${playerOnerrorAttr(team.code)}>
+                 class="mb-3 bg-light shadow" ${playerOnerrorAttr(team.code, player.element_type)}>
             <h4 class="mb-1 text-light">${player.web_name}</h4>
             <div class="text-muted mb-2">
                 <img src="https://resources.premierleague.com/premierleague/badges/50/t${team.code}.png" style="width: 20px;" class="me-1">

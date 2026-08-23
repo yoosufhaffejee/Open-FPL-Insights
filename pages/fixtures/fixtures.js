@@ -534,10 +534,9 @@ async function loadLineups(fplFixtureId) {
         return;
     }
 
-    // Render lineups
     container.innerHTML = `
         <div class="row text-start">
-            <div class="col-6 border-end">
+            <div class="col-12 col-md-6 border-md-end mb-4 mb-md-0">
                 <h5 class="text-center mb-3">
                     <img src="https://resources.premierleague.com/premierleague/badges/100/t${homeTeam.code}.png" style="width:30px;">
                     ${homeTeam.short_name}
@@ -547,7 +546,7 @@ async function loadLineups(fplFixtureId) {
                 <h6 class="text-muted border-bottom pb-1">Bench</h6>
                 <div id="home-bench-${fplFixtureId}"></div>
             </div>
-            <div class="col-6">
+            <div class="col-12 col-md-6">
                 <h5 class="text-center mb-3">
                     <img src="https://resources.premierleague.com/premierleague/badges/100/t${awayTeam.code}.png" style="width:30px;">
                     ${awayTeam.short_name}
