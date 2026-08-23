@@ -597,14 +597,18 @@ function renderTeamLineup(plPlayers, plSubstitutes, fplTeamId, startingContainer
 
         return `
             <div class="d-flex justify-content-between align-items-center mb-1">
-                <div class="text-truncate flex-grow-1 pe-2">
-                    <span class="badge bg-secondary me-2" style="width: 25px;">${shirtNum}</span>
-                    ${posPill}
-                    ${playerDisplay} 
-                    ${isCaptain ? '<span class="badge bg-warning text-dark ms-1">C</span>' : ''}
-                    ${statusIcon}
+                <div class="d-flex align-items-center flex-grow-1 pe-1" style="min-width: 0;">
+                    <span class="badge bg-secondary me-1 flex-shrink-0" style="width: 25px;">${shirtNum}</span>
+                    <span class="flex-shrink-0">${posPill}</span>
+                    <div class="text-truncate">
+                        ${playerDisplay}
+                    </div>
+                    <span class="flex-shrink-0">
+                        ${isCaptain ? '<span class="badge bg-warning text-dark ms-1">C</span>' : ''}
+                        ${statusIcon}
+                    </span>
                 </div>
-                <span class="fw-bold ${points > 0 ? 'text-success' : ''}">${points}</span>
+                <span class="fw-bold flex-shrink-0 ${points > 0 ? 'text-success' : ''}">${points}</span>
             </div>
         `;
     };
