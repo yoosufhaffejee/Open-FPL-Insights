@@ -1,16 +1,6 @@
 // --- Image helpers ---
 // 3-tier fallback: face photo → team shirt → Photo-Missing.png
-const playerImgOnerror = (el, teamCode) => {
-    // Already tried face photo, now try team shirt
-    if (!el.dataset.triedShirt) {
-        el.dataset.triedShirt = '1';
-        el.src = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}-110.webp`;
-    } else {
-        // Shirt also failed, use silhouette
-        el.onerror = null;
-        el.src = 'https://resources.premierleague.com/premierleague/photos/players/250x250/Photo-Missing.png';
-    }
-};
+
 
 // Inline onerror string for use in innerHTML – tries shirt then silhouette
 const playerOnerrorAttr = (teamCode) =>

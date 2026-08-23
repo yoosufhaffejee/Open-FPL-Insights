@@ -676,7 +676,7 @@ function populatePlayerModal(data, player) {
         
         let predictedPoints = player.predicted_points;
         if (predictedPoints === undefined) {
-            const upcomingGameweek = gameweeks.find(gw => gw.id >= selectedGameweek);
+            const upcomingGameweek = getUpcomingGameweek();
             if (upcomingGameweek) {
                 const fixture = getPlayerFixture(player, upcomingGameweek.id);
                 if (fixture) {

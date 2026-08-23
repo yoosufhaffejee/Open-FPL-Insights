@@ -189,7 +189,7 @@ function renderStatRow(fixture, identifier, label) {
     const h = getStatDetails(fixture, identifier, 'h');
     const a = getStatDetails(fixture, identifier, 'a');
     const hasData = h !== 'None' || a !== 'None';
-    const bgClass = hasData ? 'table-secondary' : '';
+    const bgClass = '';
     return `
         <tr class="${bgClass}">
             <td class="${hasData ? 'fw-bold' : ''}">${label}</td>
