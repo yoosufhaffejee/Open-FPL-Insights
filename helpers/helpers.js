@@ -158,9 +158,7 @@ function showOnboardingModal(assetPrefix, force = false) {
                                 <li>Copy the number that appears right after <code>/entry/</code> (e.g., if it says <code>.../entry/123456/...</code>, your ID is <strong>123456</strong>).</li>
                             </ol>
                             <img src="${assetPrefix}assets/How-To-Find-FPL-ID-Screenshot.png" class="img-fluid rounded border border-secondary mb-3" alt="How to find FPL ID" onerror="this.style.display='none'">
-                            <div class="ratio ratio-16x9">
-                                <iframe src="https://www.youtube.com/embed/t21mrr34vnk?start=4" title="YouTube video" allowfullscreen></iframe>
-                            </div>
+                            
                         </div>
                         
                         <div class="tab-pane fade" id="pills-friend-id" role="tabpanel">

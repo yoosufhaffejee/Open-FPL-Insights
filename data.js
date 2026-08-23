@@ -248,7 +248,7 @@ function showErrorLogsModal() {
                         <button type="button" class="btn-close btn-close-white" onclick="document.getElementById('errorLogsModal').remove()"></button>
                     </div>
                     <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
-                        <pre id="errorLogsContent" class="text-start" style="white-space: pre-wrap; font-size: 12px;"></pre>
+                        <pre id="errorLogsContent" class="text-start" style="white-space: pre-wrap; font-size: 12px; color: #fff;"></pre>
                     </div>
                     <div class="modal-footer border-danger">
                         <button type="button" class="btn btn-secondary" onclick="document.getElementById('errorLogsModal').remove()">Close</button>

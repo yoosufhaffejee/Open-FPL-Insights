@@ -279,7 +279,7 @@ function applyFilters() {
 }
 
 // Define a mapping of element types to position prefixes
-const positionMap = {
+const pitchPositionMap = {
     1: 'gk',  // Goalkeepers
     2: 'def', // Defenders
     3: 'mid', // Midfielders
@@ -312,7 +312,7 @@ const availableSlots = {
 
 // Function to check if a player can be added to a specific position
 function canAddPlayer(positionType) {
-    const positionPrefix = positionMap[positionType];
+    const positionPrefix = pitchPositionMap[positionType];
     // Ensure the number of filled slots for the position is less than the max slots allowed
     return positionPrefix && filledSlots[positionPrefix] < availableSlots[positionPrefix].length;
 }
@@ -325,7 +325,7 @@ function addPlayer(player) {
         return;
     }
 
-    const positionPrefix = positionMap[player.element_type];
+    const positionPrefix = pitchPositionMap[player.element_type];
 
     // Check if the player already exists in the team
     const playerExists = myPlayers.some(existingPlayer => existingPlayer.id === player.id);
@@ -365,7 +365,7 @@ function removePlayer(player) {
     // Check if the player exists in the array
     if (playerIndex !== -1) {
         // Get the player's assigned position prefix (gk, def, mid, fwd)
-        const positionPrefix = positionMap[player.element_type];
+        const positionPrefix = pitchPositionMap[player.element_type];
 
         // Remove the player from the array
         myPlayers.splice(playerIndex, 1);
@@ -487,7 +487,7 @@ function updateTeamUI() {
 
     // Iterate through each player and update the UI
     myPlayers.forEach(player => {
-        const positionPrefix = positionMap[player.element_type];
+        const positionPrefix = pitchPositionMap[player.element_type];
         filledPositions[positionPrefix]++;
         if (player.isSub) subs++;
 
@@ -576,7 +576,7 @@ async function calculateSeasonPoints() {
 
 // Function to assign the next available slot to the player
 function assignSlotId(player, availableSlotsCopy) {
-    const positionPrefix = positionMap[player.element_type];
+    const positionPrefix = pitchPositionMap[player.element_type];
     if (!player.slotId) {
         player.slotId = availableSlotsCopy[positionPrefix].shift(); // Assign next available slot and remove from list
     }
@@ -1305,7 +1305,7 @@ function loadPlayers(gameweek = selectedGameweek) {
                 player.isVice = isVice;
 
                 // Calculate filled slots
-                const positionPrefix = positionMap[player.element_type];
+                const positionPrefix = pitchPositionMap[player.element_type];
                 if (positionPrefix) {
                     filledSlots[positionPrefix]++;
                 }
@@ -1393,7 +1393,7 @@ function autoPickPlayers() {
         // First pass: mark already slotted players
         myPlayers.forEach(player => {
             if (player.slotId) {
-                const positionPrefix = positionMap[player.element_type];
+                const positionPrefix = pitchPositionMap[player.element_type];
                 filledSlots[positionPrefix]++;
             }
         });
@@ -1401,7 +1401,7 @@ function autoPickPlayers() {
         // Second pass: assign slots to new players
         myPlayers.forEach(player => {
             if (!player.slotId) {
-                const positionPrefix = positionMap[player.element_type];
+                const positionPrefix = pitchPositionMap[player.element_type];
                 // Find next available slot
                 for (let i = 0; i < availableSlots[positionPrefix].length; i++) {
                     const candidateSlot = availableSlots[positionPrefix][i];

@@ -38,7 +38,7 @@ function startLiveRefresh() {
     
     liveRefreshInterval = setInterval(async () => {
         try {
-            const data = await getBootstrapData();
+            const data = await getFixtures();
             fixtures = data.fixtures; // Update global
             
             // Only update DOM for live games

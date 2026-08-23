@@ -1,3 +1,4 @@
+const pitchPositionMap = { 1: 'gk', 2: 'def', 3: 'mid', 4: 'fwd' };
 let bankBalance = 100;
 let myPlayers = [];
 let filteredPlayers = [];
@@ -208,12 +209,7 @@ async function calculateSeasonPoints() {
 }
 
 // Define a mapping of element types to position prefixes
-const positionMap = {
-    1: 'gk',  // Goalkeepers
-    2: 'def', // Defenders
-    3: 'mid', // Midfielders
-    4: 'fwd'  // Forwards
-};
+
 
 // Global object to track the number of players per position
 const filledSlots = {
@@ -266,7 +262,7 @@ function updateTeamUI() {
 
     // Iterate through each player and update the UI
     myPlayers.forEach(player => {
-        const positionPrefix = positionMap[player.element_type];
+        const positionPrefix = pitchPositionMap[player.element_type];
         filledPositions[positionPrefix]++;
         if (player.isSub) subs++;
 
@@ -303,7 +299,7 @@ function updateTeamUI() {
 
 // Function to assign the next available slot to the player
 function assignSlotId(player, availableSlotsCopy) {
-    const positionPrefix = positionMap[player.element_type];
+    const positionPrefix = pitchPositionMap[player.element_type];
     if (!player.slotId) {
         player.slotId = availableSlotsCopy[positionPrefix].shift(); // Assign next available slot and remove from list
     }
