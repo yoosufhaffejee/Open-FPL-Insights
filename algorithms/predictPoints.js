@@ -167,7 +167,6 @@ function calculateExpectedPointsCore(player, fixture) {
 
 function getLastFive(player, fixture) {
     const playerName = player.first_name + " " + player.second_name;
-    const opponentTeam = getOpponentTeam(player.team, fixture);
     
     if (!db) return { averagePoints: 0, count: 0 };
 
@@ -189,6 +188,17 @@ function getLastFive(player, fixture) {
     }
     overallStmt.free();
 
+    let averagePoints = 0;
+    if (overallCount > 0) {
+        averagePoints = overallPoints / overallCount;
+    }
+
+    if (!fixture) {
+        return { averagePoints, count: overallCount };
+    }
+
+    const opponentTeam = getOpponentTeam(player.team, fixture);
+
     const fixtureQuery = `
         SELECT total_points 
         FROM fpl_data 
@@ -207,12 +217,10 @@ function getLastFive(player, fixture) {
     }
     fixtureStmt.free();
 
-    let averagePoints = 0;
     if (overallCount > 0 && fixtureCount > 0) {
         averagePoints = ((overallPoints / overallCount) * 0.7) + ((fixturePoints / fixtureCount) * 0.3);
-    } else if (overallCount > 0) {
-        averagePoints = overallPoints / overallCount;
     }
+    
     return { averagePoints, count: overallCount };
 }
 
