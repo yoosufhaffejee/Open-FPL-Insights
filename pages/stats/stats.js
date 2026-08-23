@@ -401,7 +401,7 @@ async function renderStandings() {
                     <th scope="col" class="text-center d-none d-md-table-cell">GF</th>
                     <th scope="col" class="text-center d-none d-md-table-cell">GA</th>
                     <th scope="col" class="text-center">GD</th>
-                    <th scope="col" class="text-center fw-bold text-info">Pts</th>
+                    <th scope="col" class="text-center fw-bold text-info" style="position: sticky; right: 0; background-color: #212529; z-index: 2;">Pts</th>
                 </tr>
             </thead>
             <tbody>

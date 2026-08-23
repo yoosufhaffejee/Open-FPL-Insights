@@ -116,7 +116,7 @@ function renderDefCon() {
     defconGridOptions = {
         rowData: defenders,
         columnDefs: columnDefs,
-        defaultColDef: { sortable: true, filter: true, resizable: true }
+        defaultColDef: { sortable: true, filter: true, resizable: true, wrapHeaderText: true, autoHeaderHeight: true, minWidth: 100 }
     };
     defconGridApi = agGrid.createGrid(document.getElementById('defconGrid'), defconGridOptions);
 }
@@ -142,7 +142,7 @@ function renderExpectedData() {
     expectedGridOptions = {
         rowData: players,
         columnDefs: columnDefs,
-        defaultColDef: { sortable: true, filter: true, resizable: true }
+        defaultColDef: { sortable: true, filter: true, resizable: true, wrapHeaderText: true, autoHeaderHeight: true, minWidth: 100 }
     };
     expectedGridApi = agGrid.createGrid(document.getElementById('expectedGrid'), expectedGridOptions);
 }
@@ -219,9 +219,9 @@ function renderTopTransfers() {
     ];
 
     transfersInGridOptions = {
- rowData: sortedIn, columnDefs: inDefs, defaultColDef: { sortable: true, filter: true, resizable: true } };
+ rowData: sortedIn, columnDefs: inDefs, defaultColDef: { sortable: true, filter: true, resizable: true, wrapHeaderText: true, autoHeaderHeight: true, minWidth: 100 } };
     transfersOutGridOptions = {
- rowData: sortedOut, columnDefs: outDefs, defaultColDef: { sortable: true, filter: true, resizable: true } };
+ rowData: sortedOut, columnDefs: outDefs, defaultColDef: { sortable: true, filter: true, resizable: true, wrapHeaderText: true, autoHeaderHeight: true, minWidth: 100 } };
     
     transfersInGridApi = agGrid.createGrid(document.getElementById('transfersInGrid'), transfersInGridOptions);
     transfersOutGridApi = agGrid.createGrid(document.getElementById('transfersOutGrid'), transfersOutGridOptions);
@@ -310,13 +310,19 @@ async function loadTemplateTeam() {
 function selectTemplateSquad(rankedPlayers) {
     const required = { GK: 2, DEF: 5, MID: 5, FWD: 3 };
     const counts = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
+    const teamCounts = {};
     const squad = [];
     
     for (const player of rankedPlayers) {
         const pos = positionMap[player.element_type];
+        
+        teamCounts[player.team] = teamCounts[player.team] || 0;
+        if (teamCounts[player.team] >= 3) continue;
+
         if (counts[pos] < required[pos]) {
             squad.push(player);
             counts[pos]++;
+            teamCounts[player.team]++;
         }
         if (squad.length === 15) break;
     }
@@ -346,6 +352,9 @@ function renderTemplatePitch(squad) {
         });
         if (!isStarting) posGroups['SUBS'].push(p);
     });
+    
+    // Sort bench by position (GK first)
+    posGroups.SUBS.sort((a, b) => a.element_type - b.element_type);
 
     // Helper to generate row HTML
     const getRowHtml = (players, className) => {

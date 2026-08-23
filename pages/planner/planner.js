@@ -565,7 +565,7 @@ function renderPlannerPlayers() {
         item.className = 'player-list-item transfer-in-candidate py-2 border-bottom border-secondary';
         
         item.innerHTML = `
-            <div class="d-flex align-items-center w-100">
+            <div class="d-flex align-items-center w-100" style="min-width: 340px;">
                 <div class="me-2" style="width: 15px; text-align: center;">${statusIcon}</div>
                 <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${player.team_code}-110.webp" class="shirt me-2 cursor-pointer" onclick="showPlayerInfoById(${player.id})" style="width: 25px;" onerror="this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-110.webp'">
                 <div class="flex-grow-1" style="min-width: 0;">

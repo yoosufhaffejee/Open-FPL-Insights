@@ -597,7 +597,7 @@ function renderTeamLineup(plPlayers, plSubstitutes, fplTeamId, startingContainer
 
         return `
             <div class="d-flex justify-content-between align-items-center mb-1">
-                <div>
+                <div class="text-truncate flex-grow-1 pe-2">
                     <span class="badge bg-secondary me-2" style="width: 25px;">${shirtNum}</span>
                     ${posPill}
                     ${playerDisplay} 

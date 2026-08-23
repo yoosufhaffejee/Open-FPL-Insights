@@ -166,7 +166,8 @@ function calculateExpectedPointsCore(player, fixture) {
     // Regress to mean for small sample sizes (less than 3 full games played) to prevent early-season anomalies
     if (player.minutes !== undefined && player.minutes < 270) {
         let weight = player.minutes / 270;
-        let baseline = 2.0; // Assume 2 points (appearance) baseline
+        let baseline = parseFloat(player.ep_next);
+        if (isNaN(baseline)) baseline = (player.minutes > 0 ? 1.0 : 0.0);
         expectedPoints = (expectedPoints * weight) + (baseline * (1 - weight));
     }
     
