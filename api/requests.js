@@ -1,3 +1,6 @@
+window.globalFplLoadedBytes = 0;
+window.globalFplTotalBytes = 1753300;
+
 const baseURL = 'https://fantasy.premierleague.com/api/';
 
 const reqType = {
@@ -29,30 +32,55 @@ const doCORSRequest = async (url) => {
             const response = await fetch(proxies[i] + endpointUrl);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             
-            // Try to track progress if headers exist and it's a large payload
             const contentLength = response.headers.get('content-length');
-            if (contentLength && url === reqType.overview) {
-                const total = parseInt(contentLength, 10);
+            const actualTotal = parseInt(contentLength, 10);
+            
+            // Adjust estimated total if actual is known for the 3 main requests
+            if (['bootstrap-static/', 'fixtures/', 'events/'].includes(url)) {
+                let estimatedTotal = url === 'bootstrap-static/' ? 1594800 : (url === 'fixtures/' ? 131500 : 27000);
+                if (!isNaN(actualTotal) && actualTotal > 0) {
+                    if (window.globalFplTotalBytes) {
+                        window.globalFplTotalBytes += (actualTotal - estimatedTotal);
+                    }
+                }
+            }
+
+            // If it's one of the main init requests, we stream it to track progress across all 3
+            if (['bootstrap-static/', 'fixtures/', 'events/'].includes(url)) {
                 let loaded = 0;
                 const reader = response.body.getReader();
                 const chunks = [];
-                const progressEl = document.getElementById('global-progress-text');
 
                 while (true) {
                     const {done, value} = await reader.read();
                     if (done) break;
                     chunks.push(value);
                     loaded += value.length;
-                    if (progressEl) {
-                        progressEl.textContent = Math.round((loaded / total) * 100) + '%';
+                    
+                    if (window.globalFplLoadedBytes !== undefined) {
+                        window.globalFplLoadedBytes += value.length;
+                        let percent = Math.min(Math.round((window.globalFplLoadedBytes / window.globalFplTotalBytes) * 100), 100);
+                        
+                        const progressEl = document.getElementById('global-progress-bar');
+                        const progressTextEl = document.getElementById('global-progress-text');
+                        const progressTaskEl = document.getElementById('global-progress-task');
+                        
+                        if (progressEl) progressEl.style.width = percent + '%';
+                        if (progressTextEl) progressTextEl.textContent = percent + '%';
+                        if (progressTaskEl) {
+                            let taskName = url === 'bootstrap-static/' ? 'Players & Teams' : (url === 'fixtures/' ? 'Fixtures' : 'Gameweeks');
+                            progressTaskEl.textContent = `Loading ${taskName}...`;
+                        }
                     }
                 }
-
+                
                 let position = 0;
-                let chunksAll = new Uint8Array(loaded);
-                for(let chunk of chunks) {
-                    chunksAll.set(chunk, position);
-                    position += chunk.length;
+                let chunksAll = new Uint8Array(loaded || 1); // fallback to 1 to avoid empty array error
+                if (loaded > 0) {
+                    for(let chunk of chunks) {
+                        chunksAll.set(chunk, position);
+                        position += chunk.length;
+                    }
                 }
                 const result = new TextDecoder("utf-8").decode(chunksAll);
                 const myJson = JSON.parse(result);
@@ -60,6 +88,7 @@ const doCORSRequest = async (url) => {
                 return myJson;
             }
 
+            // For other small requests, just use standard json()
             const myJson = await response.json();
             currentProxyIndex = i; // Save successful proxy index
             return myJson;
