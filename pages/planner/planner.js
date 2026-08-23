@@ -274,7 +274,7 @@ function renderPlannerGrid() {
         let infoHTML = `
             <td style="text-align: left;">
                 <div class="d-flex align-items-center">
-                    <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${gw0Player.team_code}${gw0Player.element_type == 1 ? '_1' : ''}-110.webp" class="shirt cursor-pointer" onclick="selectTransferOut(${slotId}, 0)" onerror="playerImgOnerror(this, ${player.team_code}, ${player.element_type})">
+                    <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${gw0Player.team_code}${gw0Player.element_type == 1 ? '_1' : ''}-110.webp" class="shirt cursor-pointer" onclick="selectTransferOut(${slotId}, 0)" onerror="playerImgOnerror(this, ${gw0Player.team_code}, ${gw0Player.element_type})">
                     <div>
                         <div class="fw-bold cursor-pointer" onclick="selectTransferOut(${slotId}, 0)">${gw0Player.web_name}${subBadge}</div>
                         <div class="small text-white-50">${teamName} - £${(gw0Player.now_cost/10).toFixed(1)}m</div>
