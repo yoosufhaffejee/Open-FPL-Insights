@@ -1,26 +1,18 @@
 let historicStatsCache = {};
 
 async function loadHistoricStats() {
-    // Check if db is loaded
-    if (!db) {
-        // Trigger calculateAllPredictions which loads DB, or we can load it silently here
-        alert("Please run 'Recalculate Predictions' first to load the FPL database.");
-        return;
-    }
-
     const container = document.getElementById("historic-stats-content");
-    container.innerHTML = "<h5 class='text-center'>Loading historic stats...</h5>";
 
     // 1. Identify upcoming gameweek
     const upcomingGameweek = gameweeks.find(gw => !gw.finished && !gw.is_current);
     if (!upcomingGameweek) {
-        container.innerHTML = "<h5 class='text-center'>No upcoming gameweeks found.</h5>";
+        container.innerHTML = "<h5 class='text-center mt-3'>No upcoming gameweeks found.</h5>";
         return;
     }
 
     document.getElementById("historic-gw-indicator").textContent = `Gameweek ${upcomingGameweek.id} Historic Performance`;
 
-    // Try cache
+    // Try cache first
     loadHistoricCache();
     if (historicStatsCache[upcomingGameweek.id]) {
         let cachedData = historicStatsCache[upcomingGameweek.id];
@@ -30,6 +22,64 @@ async function loadHistoricStats() {
         }
         renderHistoricStats(cachedData);
         return;
+    }
+
+    // Check if db is loaded
+    if (!db) {
+        container.innerHTML = `
+            <div class="text-center mt-4 mb-4">
+                <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+                <h5 class="mt-3" id="historic-dl-status">Downloading Database (37MB)... 0%</h5>
+            </div>
+        `;
+        try {
+            const sqlPromise = initSqlJs({
+                locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
+            });
+
+            const response = await fetch(getBasePath() + "fpl_data.sqlite");
+            const reader = response.body.getReader();
+            const contentLength = +response.headers.get("Content-Length") || 37015552;
+            let receivedLength = 0;
+            let chunks = [];
+
+            const statusText = document.getElementById("historic-dl-status");
+
+            while (true) {
+                const {done, value} = await reader.read();
+                if (done) break;
+                chunks.push(value);
+                receivedLength += value.length;
+                let percent = Math.round((receivedLength / contentLength) * 100);
+                if (statusText) statusText.textContent = `Downloading Database (37MB)... ${percent}%`;
+            }
+
+            if (statusText) statusText.textContent = "Loading Database into Memory...";
+            
+            // Allow UI to update
+            await new Promise(r => setTimeout(r, 50));
+            
+            let buf = new Uint8Array(receivedLength);
+            let position = 0;
+            for(let chunk of chunks) {
+                buf.set(chunk, position);
+                position += chunk.length;
+            }
+
+            const [SQL] = await Promise.all([sqlPromise]);
+            db = new SQL.Database(buf);
+            
+            if (statusText) statusText.textContent = "Calculating Historic Stats...";
+            await new Promise(r => setTimeout(r, 50));
+            
+        } catch (e) {
+            console.error("Failed to load DB for historic stats", e);
+            container.innerHTML = "<h5 class='text-center text-danger mt-3'>Failed to load database.</h5>";
+            return;
+        }
+    } else {
+        container.innerHTML = "<h5 class='text-center mt-3'>Calculating historic stats...</h5>";
+        await new Promise(r => setTimeout(r, 50));
     }
 
     // Calculate historic stats
