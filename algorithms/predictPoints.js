@@ -12,13 +12,58 @@ const redCardPointsDeduction = 3;
 const ownGoalPointsDeduction = 2;
 const penaltyMissPointsDeduction = 2;
 const twoGoalsConcededPointsDeduction = 2;
+const startingPoints = 1;
+const goalPointsGK = 10;
+const goalPointsDEF = 6;
+const goalPointsMID = 5;
+const goalPointsFWD = 4;
+const assistPoints = 3;
+const cleanSheetPoints = 4;
+const cleanSheetPointsMID = 1;
+const sixtyMinutesPlayedPoints = 1;
+const yellowCardPointsDeduction = 1;
+const redCardPointsDeduction = 3;
+const ownGoalPointsDeduction = 2;
+const penaltyMissPointsDeduction = 2;
+const twoGoalsConcededPointsDeduction = 2;
 const threeShotsSavedPoints = 1;
 const penaltySavedPoints = 5;
 const bonusPoints1 = 1;
 const bonusPoints2 = 2;
 const bonusPoints3 = 3;
 
-function getExpectedPoints (player, fixture) {
+let predictionCache = null;
+
+function loadPredictionCache() {
+    if (predictionCache === null) {
+        const stored = localStorage.getItem('fpl_predictions');
+        if (stored) {
+            try {
+                predictionCache = JSON.parse(stored);
+            } catch (e) {
+                predictionCache = {};
+            }
+        } else {
+            predictionCache = {};
+        }
+    }
+}
+
+function clearPredictionCache() {
+    predictionCache = null;
+    localStorage.removeItem('fpl_predictions');
+}
+
+function getExpectedPoints(player, fixture) {
+    loadPredictionCache();
+    const cacheKey = `${player.id}_${fixture ? fixture.id : 'no_fixture'}`;
+    if (predictionCache[cacheKey] !== undefined) {
+        return predictionCache[cacheKey];
+    }
+    return '?';
+}
+
+function calculateExpectedPointsCore(player, fixture) {
     let expectedPoints = 0;
     expectedPoints += startingPoints;
 
@@ -138,7 +183,7 @@ function getLastFive(player, fixture) {
     const playerName = player.first_name + " " + player.second_name;
     const opponentTeam = getOpponentTeam(player.team, fixture);
     
-    if (!db) return 0;
+    if (!db) return { averagePoints: 0, count: 0 };
 
     const overallQuery = `
         SELECT total_points 
@@ -183,7 +228,31 @@ function getLastFive(player, fixture) {
         averagePoints = overallPoints / overallCount;
     }
     return { averagePoints, count: overallCount };
+        return;
+    }
+
+    // Step 1: Filter out players belonging to the same team as the input player
+    const teamPlayers = allPlayers.filter(p => p.team === player.team);
+
+    // Step 2: Filter players with non-null, non-zero, and non-empty string penalties_order
+    const playersWithPenalties = teamPlayers.filter(p => 
+        p.penalties_order !== null && 
+        p.penalties_order !== 0 && 
+        p.penalties_order !== ""
+    );
+
+    // Step 3: Sort players by their penalties_order
+    playersWithPenalties.sort((a, b) => a.penalties_order - b.penalties_order);
+
+    // Step 4: Correct the penalties order
+    playersWithPenalties.forEach((p, index) => {
+        p.penalties_order = index + 1; // Reassign penalties_order starting from 1
+    });
+
+    // Update pen order
+    player.penalties_order = playersWithPenalties.find(_ => _.id === player.id).penalties_order;
 }
+
 
 function correctPenaltiesOrder(player, allPlayers) {
 

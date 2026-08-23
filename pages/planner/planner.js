@@ -104,7 +104,7 @@ function renderPlanner() {
     state.squad.forEach(player => {
         // Calculate points
         let fixture = getPlayerFixture(player, currentGW.id);
-        let predictedPoints = 0;
+        let predictedPoints = "?";
         
         if (fixture) {
             let isHome = fixture.team_h === player.team;
@@ -115,19 +115,21 @@ function renderPlanner() {
             // Re-use logic
             predictedPoints = getExpectedPoints(player, fixture);
             
-            if (opponentTeam) {
-                if (opponentTeam.strength == 2 && predictedPoints <= 10) predictedPoints += (predictedPoints * 0.1);
-                if (opponentTeam.strength == 4) predictedPoints -= (predictedPoints * 0.1);
-                if (opponentTeam.strength == 5) predictedPoints -= (predictedPoints * 0.2);
+            if (predictedPoints !== "?") {
+                if (opponentTeam) {
+                    if (opponentTeam.strength == 2 && predictedPoints <= 10) predictedPoints += (predictedPoints * 0.1);
+                    if (opponentTeam.strength == 4) predictedPoints -= (predictedPoints * 0.1);
+                    if (opponentTeam.strength == 5) predictedPoints -= (predictedPoints * 0.2);
+                }
+                if (!isHome && predictedPoints >= 2.5) predictedPoints -= (predictedPoints * 0.1);
+                
+                predictedPoints = Math.round(predictedPoints * 10) / 10;
+                
+                if (player.isCaptain) predictedPoints *= 2;
             }
-            if (!isHome && predictedPoints >= 2.5) predictedPoints -= (predictedPoints * 0.1);
-            
-            predictedPoints = Math.round(predictedPoints * 10) / 10;
-            
-            if (player.isCaptain) predictedPoints *= 2;
         }
         
-        if (!player.isSub) {
+        if (!player.isSub && predictedPoints !== "?") {
             totalPoints += predictedPoints;
         }
 
@@ -144,7 +146,7 @@ function renderPlanner() {
             <div class="player-info">
                 <h5>${player.web_name} ${player.isCaptain ? '(C)' : ''}</h5>
                 <div class="fixture-info">
-                    <span class="predicted-points">${predictedPoints.toFixed(1)}</span>
+                    <span class="predicted-points">${predictedPoints === "?" ? "?" : predictedPoints.toFixed(1)}</span>
                     <span class="fixture-detail">${oppText}</span>
                 </div>
             </div>

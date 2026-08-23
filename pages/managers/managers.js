@@ -390,12 +390,12 @@ function updatePlayerFixturesAndPoints(playerElement, player, predictedPoints) {
                     fixtureElement.querySelector('.predicted-points').textContent = actualPoints;
                     fixtureElement.querySelector('.predicted-points').style.fontWeight = 'bold'; // Emphasize it's actual
                 } else {
-                    fixtureElement.querySelector('.predicted-points').textContent = playerPredictedPoints.toFixed(1);
+                    fixtureElement.querySelector('.predicted-points').textContent = playerPredictedPoints === '?' ? '?' : playerPredictedPoints.toFixed(1);
                     fixtureElement.querySelector('.predicted-points').style.fontWeight = 'normal';
                 }
 
                 if (fixtureIndex === 0 && !player.isSub) {
-                    predictedPoints += playerPredictedPoints;
+                    if (playerPredictedPoints !== '?') predictedPoints += playerPredictedPoints;
                 }
             }
         }
@@ -419,6 +419,8 @@ function calculatePlayerPredictedPoints(player, fixture, upcomingGameweek) {
     );
 
     let playerPredictedPoints = getExpectedPoints(player, fixture);
+
+    if (playerPredictedPoints === '?') return '?';
 
     if (getUpcomingGameweek() == upcomingGameweek) {
         player.fpl_ep_next = parseFloat(player.ep_next) || 0;

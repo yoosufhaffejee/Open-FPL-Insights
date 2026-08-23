@@ -356,6 +356,8 @@ function calculatePlayerPredictedPoints(player, fixture, upcomingGameweek) {
 
     let playerPredictedPoints = getExpectedPoints(player, fixture);
 
+    if (playerPredictedPoints === '?') return '?';
+
     if (getUpcomingGameweek() == upcomingGameweek) {
         player.fpl_ep_next = parseFloat(player.ep_next) || 0;
     }
