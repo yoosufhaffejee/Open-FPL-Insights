@@ -269,3 +269,39 @@ window.onunhandledrejection = function (event) {
     logError(msg, window.location.href, 0, 0, event.reason);
 };
 
+
+
+window.addEventListener("DOMContentLoaded", () => {
+    // Check if we should show the Managers tab
+    let showManagers = false;
+    
+    // 1. Is URL managers.html?
+    if (window.location.pathname.includes("managers.html")) {
+        showManagers = true;
+    }
+    
+    // 2. Is there an entry in URL?
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has("entry")) {
+        showManagers = true;
+    }
+    
+    // 3. Is managerId set in cookies?
+    if (document.cookie.includes("managerId=")) {
+        const cookieVal = document.cookie.split("; ").find(row => row.startsWith("managerId="));
+        if (cookieVal) {
+            const val = cookieVal.split("=")[1];
+            if (val && val !== "0" && val !== "") {
+                showManagers = true;
+            }
+        }
+    }
+    
+    if (showManagers) {
+        const tab = document.getElementById("nav-managers-tab");
+        if (tab) {
+            tab.style.display = "";
+        }
+    }
+});
+
