@@ -2,6 +2,7 @@ let teams = [];
 let gameweeks = [];
 let fixtures = [];
 let allPlayers = [];
+let gameSettings = null;
 let selectedGW = 1;
 
 let db;
@@ -13,6 +14,7 @@ const fetchOverview = async () => {
         const data = await getOverview();
         teams = data.teams;
         allPlayers = data.elements;
+        gameSettings = data.game_settings;
         //console.log('Teams and players data loaded.');
     } catch (error) {
         console.error('Error fetching overview data:', error);

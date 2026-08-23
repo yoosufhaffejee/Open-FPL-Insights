@@ -64,7 +64,14 @@
                 <!-- Planner Grid Area -->
                 <div class="bg-dark p-3 rounded border border-secondary mb-3">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="text-white fw-bold mb-0">Transfer Planner</h5>
+                        <div class="d-flex align-items-center gap-3">
+                            <h5 class="text-white fw-bold mb-0">Transfer Planner</h5>
+                            <div class="input-group input-group-sm" style="width: 150px;">
+                                <span class="input-group-text bg-secondary text-white border-secondary">Start FTs</span>
+                                <input type="number" id="startFts" class="form-control bg-dark text-white border-secondary text-center" value="1" min="1" max="5">
+                            </div>
+                        </div>
+                        <button class="btn btn-outline-light btn-sm" id="resetPlanBtn"><i class="fas fa-undo"></i> Reset</button>
                     </div>
                     
                     <div class="table-responsive">
@@ -85,43 +92,63 @@
                     </div>
                 </div>
 
-                <!-- Chip Strategy -->
-                <div class="bg-dark p-3 rounded border border-secondary mt-3 mb-5">
-                    <h6 class="text-white fw-bold mb-3">Your chip strategy <i class="fas fa-lock text-muted small"></i></h6>
-                    <div class="d-flex justify-content-between gap-2 text-center">
-                        <div class="chip-card flex-fill p-3 rounded bg-secondary text-white" style="opacity: 0.5;">
-                            <i class="fas fa-chair fs-4 mb-2"></i>
-                            <div class="fw-bold small">Bench Boost</div>
-                            <div class="small text-white-50">Not set</div>
-                        </div>
-                        <div class="chip-card flex-fill p-3 rounded bg-secondary text-white" style="opacity: 0.5;">
-                            <i class="fas fa-sync-alt fs-4 mb-2"></i>
-                            <div class="fw-bold small">Free Hit</div>
-                            <div class="small text-white-50">Not set</div>
-                        </div>
-                        <div class="chip-card flex-fill p-3 rounded bg-secondary text-white" style="opacity: 0.5;">
-                            <i class="fas fa-star fs-4 mb-2"></i>
-                            <div class="fw-bold small">Wildcard</div>
-                            <div class="small text-white-50">Not set</div>
-                        </div>
-                        <div class="chip-card flex-fill p-3 rounded bg-secondary text-white" style="opacity: 0.5;">
-                            <i class="fas fa-copyright fs-4 mb-2"></i>
-                            <div class="fw-bold small">Triple Captain</div>
-                            <div class="small text-white-50">Not set</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
+            </div>
+            
             <div class="col-lg-3">
                 <!-- Players Sidebar -->
-                <div class="bg-dark p-3 rounded border border-secondary text-white h-100">
-                    <h5 class="fw-bold mb-3">Players</h5>
-                    <div class="input-group mb-3">
-                        <input type="text" class="form-control bg-dark text-white border-secondary" placeholder="Search player..." id="plannerSearch">
+                <div class="bg-dark p-3 rounded border border-secondary text-white h-100 d-flex flex-column">
+                    <h5 class="fw-bold mb-3">Player Selection</h5>
+                    
+                    <div class="mb-2">
+                        <div class="input-group input-group-sm mb-2">
+                            <span class="input-group-text bg-secondary text-white border-secondary"><i class="fas fa-search"></i></span>
+                            <input type="text" class="form-control bg-dark text-white border-secondary" placeholder="Search by name" id="plannerSearch">
+                        </div>
+                        
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <select class="form-select form-select-sm bg-dark text-white border-secondary" id="plannerViewFilter">
+                                    <option value="all">All players</option>
+                                    <optgroup label="Position">
+                                        <option value="pos_1">Goalkeepers</option>
+                                        <option value="pos_2">Defenders</option>
+                                        <option value="pos_3">Midfielders</option>
+                                        <option value="pos_4">Forwards</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <select class="form-select form-select-sm bg-dark text-white border-secondary" id="plannerSortBy">
+                                    <option value="total_points">Total points</option>
+                                    <option value="event_points">Gameweek points</option>
+                                    <option value="now_cost">Price</option>
+                                    <option value="form">Form</option>
+                                    <option value="selected_by_percent">Selected by %</option>
+                                    <option value="expected_goal_involvements">xGI</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-2 pb-2 border-bottom border-secondary">
+                            <div class="col-6">
+                                <select class="form-select form-select-sm bg-dark text-white border-secondary" id="plannerMaxPrice">
+                                    <option value="999">Max Price: Any</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <button class="btn btn-sm btn-outline-secondary w-100 text-white" id="plannerResetFilters"><i class="fas fa-undo"></i> Reset</button>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div id="plannerPlayersList" class="overflow-auto" style="max-height: 700px;">
+                    <div class="d-flex text-white-50 small fw-bold px-2 mb-1 mt-2">
+                        <div style="flex: 1;">Player</div>
+                        <div style="width: 40px; text-align: center;">Price</div>
+                        <div style="width: 40px; text-align: center;" id="plannerSortLabel">Pts</div>
+                        <div style="width: 50px;"></div>
+                    </div>
+
+                    <div id="plannerPlayersList" class="overflow-auto flex-grow-1" style="max-height: 600px;">
                         <!-- Player list injected here -->
                         <div class="text-center text-white-50 mt-5">
                             <i class="fas fa-spinner fa-spin fs-2"></i>
