@@ -210,13 +210,14 @@ function saveHistoricCache() {
 }
 
 let historicGridOptions = null;
+let historicGridApi = null;
 
 function renderHistoricStats(results) {
     const container = document.getElementById("historic-stats-content");
     
     if (results.length === 0) {
-        if (historicGridOptions && historicGridOptions.api) {
-            historicGridOptions.api.destroy();
+        if (historicGridOptions && historicGridApi) {
+            historicGridApi.destroy();
             historicGridOptions = null;
         }
         container.className = "";
@@ -247,8 +248,8 @@ function renderHistoricStats(results) {
         };
     });
 
-    if (historicGridOptions && historicGridOptions.api) {
-        historicGridOptions.api.setGridOption('rowData', rowData);
+    if (historicGridOptions && historicGridApi) {
+        historicGridApi.setGridOption('rowData', rowData);
         return;
     }
 
@@ -302,14 +303,14 @@ function renderHistoricStats(results) {
     ];
 
     historicGridOptions = {
-        theme: 'legacy',
+        
         rowData: rowData,
         columnDefs: columnDefs,
         defaultColDef: { sortable: true, filter: true, resizable: true },
         rowHeight: 35
     };
 
-    agGrid.createGrid(container, historicGridOptions);
+    historicGridApi = agGrid.createGrid(container, historicGridOptions);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -329,3 +330,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 });
+
+
+

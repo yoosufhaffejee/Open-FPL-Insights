@@ -2,7 +2,7 @@ var gridOptions;
 function setupGridOptions(filteredPlayers) {
     // Grid Options: Contains all of the Data Grid configurations
     gridOptions = {
-        theme: 'legacy',
+        
         rowData: filteredPlayers,
         defaultColDef: {
             sortable: true,

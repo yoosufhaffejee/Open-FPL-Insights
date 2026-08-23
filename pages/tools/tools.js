@@ -73,7 +73,6 @@ const renderMarketTrends = () => {
     document.getElementById('price-fallers').innerHTML = fallers.map(formatFaller).join('');
 };
 
-let positionMap = { 1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD' };
 
 // Main entry point called by data.js
 async function Initialize() {
@@ -387,6 +386,7 @@ function renderTemplatePitch(squad) {
         </div>
     `;
 }
+
 
 
 

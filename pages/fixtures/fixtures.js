@@ -189,7 +189,7 @@ function renderStatRow(fixture, identifier, label) {
     const h = getStatDetails(fixture, identifier, 'h');
     const a = getStatDetails(fixture, identifier, 'a');
     const hasData = h !== 'None' || a !== 'None';
-    const bgClass = hasData ? 'bg-light text-dark' : '';
+    const bgClass = hasData ? 'table-secondary' : '';
     return `
         <tr class="${bgClass}">
             <td class="${hasData ? 'fw-bold' : ''}">${label}</td>
@@ -774,6 +774,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // We can delay it slightly to let fixtures load first
     setTimeout(renderStandings, 1000);
 });
+
 
 
 
