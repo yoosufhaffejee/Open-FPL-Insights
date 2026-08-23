@@ -105,9 +105,6 @@ function _getCookieVal(name) {
     return null;
 }
 
-
-}
-
 function showOnboardingModal(assetPrefix = './', forceShow = false) {
     if (!forceShow && localStorage.getItem('fpl_onboarding_seen')) {
         return;
