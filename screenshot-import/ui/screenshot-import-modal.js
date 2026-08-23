@@ -78,6 +78,11 @@ function resetModalState() {
 }
 
 function startImport() {
+    if (typeof allPlayers === 'undefined' || allPlayers.length === 0) {
+        alert("FPL player data hasn't loaded! Your network might be blocking our API proxy (this is common on mobile data). Please try switching to Wi-Fi or refreshing the page.");
+        return;
+    }
+
     const fileInput = document.getElementById('screenshot-upload-input');
     if (!fileInput.files || fileInput.files.length === 0) {
         alert("Please select a screenshot file first.");

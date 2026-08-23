@@ -52,7 +52,13 @@ function initPlanner() {
     document.getElementById('prevPlanGw').addEventListener('click', () => changeGw(-1));
     document.getElementById('nextPlanGw').addEventListener('click', () => changeGw(1));
 
+    const searchInput = document.getElementById('plannerSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', renderPlannerPlayers);
+    }
+
     renderPlanner();
+    renderPlannerPlayers();
 }
 
 function changeGw(dir) {
@@ -190,4 +196,67 @@ function getCookie(name) {
         }
     }
     return null;
+}
+
+function renderPlannerPlayers() {
+    const listContainer = document.getElementById('plannerPlayersList');
+    if (!listContainer) return;
+
+    const searchInput = document.getElementById('plannerSearch');
+    let query = searchInput ? searchInput.value.toLowerCase() : '';
+
+    // Filter players based on search query
+    let filtered = allPlayers;
+    if (query) {
+        filtered = allPlayers.filter(p => 
+            (p.web_name && p.web_name.toLowerCase().includes(query)) || 
+            (p.first_name && p.first_name.toLowerCase().includes(query)) || 
+            (p.second_name && p.second_name.toLowerCase().includes(query))
+        );
+    }
+
+    // Sort by total points
+    filtered = filtered.sort((a, b) => b.total_points - a.total_points);
+
+    // Limit to 50 players for performance
+    const maxResults = 50;
+    const toRender = filtered.slice(0, maxResults);
+
+    listContainer.innerHTML = '';
+
+    if (toRender.length === 0) {
+        listContainer.innerHTML = '<div class="text-center text-white-50 mt-5"><p>No players found.</p></div>';
+        return;
+    }
+
+    toRender.forEach(player => {
+        const teamObj = teams.find(t => t.id === player.team);
+        const teamName = teamObj ? teamObj.short_name : 'UNK';
+        
+        const price = (player.now_cost / 10).toFixed(1);
+        const pts = player.total_points;
+        
+        const item = document.createElement('div');
+        item.className = 'player-list-item';
+        
+        item.innerHTML = `
+            <div class="d-flex align-items-center">
+                <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${player.team_code}-110.webp" class="shirt" onerror="this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-110.webp'">
+                <div>
+                    <div class="fw-bold text-white">${player.web_name}</div>
+                    <div class="small text-white-50">${teamName} - £${price}m</div>
+                </div>
+            </div>
+            <div class="text-end">
+                <div class="small text-white-50">${pts} pts</div>
+                <button class="btn-transfer mt-1" onclick="planTransfer(${player.id})">In <i class="fas fa-exchange-alt ms-1"></i></button>
+            </div>
+        `;
+        listContainer.appendChild(item);
+    });
+}
+
+function planTransfer(playerId) {
+    console.log("Transfer player clicked: " + playerId);
+    // TODO: Implement transfer logic for planner
 }
