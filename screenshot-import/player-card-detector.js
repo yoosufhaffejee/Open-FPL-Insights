@@ -77,8 +77,10 @@ class PlayerCardDetector {
                 const r = imgData[i];
                 const g = imgData[i+1];
                 const b = imgData[i+2];
-                // FPL Name Plates are white (use >220 for compression artifacts)
-                if (r > 220 && g > 220 && b > 220) {
+                // FPL Name Plates are white/grey. Mobile browsers (like iOS Safari) can apply 
+                // Display P3 color profiles or JPEG compression that darkens white pixels to ~180-200.
+                // We use a lenient > 170 threshold. The pitch is dark green (R=0) so it won't trigger this.
+                if (r > 170 && g > 170 && b > 170) {
                     whiteRows[y]++;
                 }
             }

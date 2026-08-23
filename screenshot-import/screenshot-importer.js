@@ -50,6 +50,11 @@ class ScreenshotImporter {
                 }
             };
             
+            // Catch synchronous worker errors (e.g. OffscreenCanvas not defined on iOS < 16.4)
+            this.worker.onerror = (error) => {
+                if (this.onError) this.onError(new Error("Worker failed to start. Your browser might not support OffscreenCanvas."));
+            };
+            
             // Transfer imageBitmap to worker
             this.worker.postMessage({
                 type: 'process',
