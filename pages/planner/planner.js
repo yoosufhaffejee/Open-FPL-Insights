@@ -14,7 +14,12 @@ let baseSquadCache = [];
 let initialBankCache = 0;
 
 async function initPlanner() {
-    upcomingGWs = gameweeks.filter(gw => !gw.finished).slice(0, 5); 
+    let currentGW = getUpcomingGameweek();
+    if (currentGW && currentGW.id <= 19) {
+        upcomingGWs = gameweeks.slice(0, 19);
+    } else {
+        upcomingGWs = gameweeks.slice(19, 38);
+    } 
     if (upcomingGWs.length === 0) return;
 
     let baseSquad = [];
@@ -45,9 +50,24 @@ async function initPlanner() {
     }
     
     if (baseSquad.length === 0) {
-        const savedPlayers = getCookie('myPlayers');
-        if (savedPlayers) {
-            const players = JSON.parse(savedPlayers);
+        let myPlayersCookie = null;
+        const currentId = getUpcomingGameweek() ? getUpcomingGameweek().id : 1;
+        for (let i = currentId; i >= 1; i--) {
+            myPlayersCookie = getCookie('myPlayersGW' + i);
+            if (myPlayersCookie) break;
+        }
+        if (!myPlayersCookie) {
+            for (let i = currentId + 1; i <= 38; i++) {
+                myPlayersCookie = getCookie('myPlayersGW' + i);
+                if (myPlayersCookie) break;
+            }
+        }
+        if (!myPlayersCookie) myPlayersCookie = getCookie('myPlayers'); // absolute fallback
+
+        if (myPlayersCookie) {
+            const parsed = JSON.parse(myPlayersCookie);
+            const players = parsed.players ? parsed.players : parsed;
+
             baseSquad = players.map(({ id, slotId, isSub, isCaptain, isVice }) => {
                 const player = allPlayers.find(p => p.id === id);
                 if (player) {
@@ -226,7 +246,7 @@ function renderPlannerGrid() {
     body.innerHTML = '';
     
     if(plannerState[0].squad.length === 0) {
-        body.innerHTML = '<tr><td colspan="6" class="text-center p-5">No squad found. Please select your team on the main page.</td></tr>';
+        body.innerHTML = '<tr><td colspan="6" class="text-center p-5">No squad found. Please select a team via the managers page. leagues > managers, see help and setup for more info.</td></tr>';
         return;
     }
 

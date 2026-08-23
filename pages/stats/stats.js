@@ -3,8 +3,10 @@
 
 
 // Inline onerror string for use in innerHTML – tries shirt then silhouette
-const playerOnerrorAttr = (teamCode) =>
-    `onerror="if(!this.dataset.triedShirt){this.dataset.triedShirt='1';this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}-110.webp';}else{this.onerror=null;this.src='https://resources.premierleague.com/premierleague/photos/players/250x250/Photo-Missing.png';}"`;
+const playerOnerrorAttr = (teamCode, elementType) => {
+    let isGK = (elementType == 1) ? "_1" : "";
+    return `onerror="if(!this.dataset.triedShirt){this.dataset.triedShirt='1';this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}${isGK}-110.webp';}else{this.onerror=null;this.src='https://resources.premierleague.com/premierleague/photos/players/250x250/Photo-Missing.png';}"`;
+};
 
 // --- Player Dashboard Logic ---
 const renderDashboards = () => {

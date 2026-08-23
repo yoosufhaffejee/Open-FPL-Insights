@@ -418,7 +418,8 @@ function calculatePlayerPredictedPoints(player, fixture, upcomingGameweek) {
 
     if (playerPredictedPoints === '?') return '?';
 
-    if (getUpcomingGameweek() == upcomingGameweek) {
+    let upcomingId = typeof upcomingGameweek === 'object' ? upcomingGameweek.id : upcomingGameweek;
+    if (getUpcomingGameweek() && getUpcomingGameweek().id == upcomingId) {
         player.fpl_ep_next = parseFloat(player.ep_next) || 0;
     }
 
