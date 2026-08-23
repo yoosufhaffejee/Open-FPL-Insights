@@ -148,7 +148,7 @@ function renderFixtures() {
                         </ul>
                         <div class="tab-content mt-3" id="myTabContent${fixture.code}">
                             <div class="tab-pane fade show active" id="stats-${fixture.code}" role="tabpanel" aria-labelledby="stats-tab-${fixture.code}">
-                                <table class="table table-bordered">
+                                <table class="table table-dark table-bordered">
                                     <thead>
                                         <tr>
                                             <th>Stat</th>
