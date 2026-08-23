@@ -28,6 +28,38 @@ const doCORSRequest = async (url) => {
         try {
             const response = await fetch(proxies[i] + endpointUrl);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            
+            // Try to track progress if headers exist and it's a large payload
+            const contentLength = response.headers.get('content-length');
+            if (contentLength && url === reqType.overview) {
+                const total = parseInt(contentLength, 10);
+                let loaded = 0;
+                const reader = response.body.getReader();
+                const chunks = [];
+                const progressEl = document.getElementById('global-progress-text');
+
+                while (true) {
+                    const {done, value} = await reader.read();
+                    if (done) break;
+                    chunks.push(value);
+                    loaded += value.length;
+                    if (progressEl) {
+                        progressEl.textContent = Math.round((loaded / total) * 100) + '%';
+                    }
+                }
+
+                let position = 0;
+                let chunksAll = new Uint8Array(loaded);
+                for(let chunk of chunks) {
+                    chunksAll.set(chunk, position);
+                    position += chunk.length;
+                }
+                const result = new TextDecoder("utf-8").decode(chunksAll);
+                const myJson = JSON.parse(result);
+                currentProxyIndex = i;
+                return myJson;
+            }
+
             const myJson = await response.json();
             currentProxyIndex = i; // Save successful proxy index
             return myJson;

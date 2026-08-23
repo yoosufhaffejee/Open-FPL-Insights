@@ -12,20 +12,6 @@ const redCardPointsDeduction = 3;
 const ownGoalPointsDeduction = 2;
 const penaltyMissPointsDeduction = 2;
 const twoGoalsConcededPointsDeduction = 2;
-const startingPoints = 1;
-const goalPointsGK = 10;
-const goalPointsDEF = 6;
-const goalPointsMID = 5;
-const goalPointsFWD = 4;
-const assistPoints = 3;
-const cleanSheetPoints = 4;
-const cleanSheetPointsMID = 1;
-const sixtyMinutesPlayedPoints = 1;
-const yellowCardPointsDeduction = 1;
-const redCardPointsDeduction = 3;
-const ownGoalPointsDeduction = 2;
-const penaltyMissPointsDeduction = 2;
-const twoGoalsConcededPointsDeduction = 2;
 const threeShotsSavedPoints = 1;
 const penaltySavedPoints = 5;
 const bonusPoints1 = 1;
@@ -228,31 +214,7 @@ function getLastFive(player, fixture) {
         averagePoints = overallPoints / overallCount;
     }
     return { averagePoints, count: overallCount };
-        return;
-    }
-
-    // Step 1: Filter out players belonging to the same team as the input player
-    const teamPlayers = allPlayers.filter(p => p.team === player.team);
-
-    // Step 2: Filter players with non-null, non-zero, and non-empty string penalties_order
-    const playersWithPenalties = teamPlayers.filter(p => 
-        p.penalties_order !== null && 
-        p.penalties_order !== 0 && 
-        p.penalties_order !== ""
-    );
-
-    // Step 3: Sort players by their penalties_order
-    playersWithPenalties.sort((a, b) => a.penalties_order - b.penalties_order);
-
-    // Step 4: Correct the penalties order
-    playersWithPenalties.forEach((p, index) => {
-        p.penalties_order = index + 1; // Reassign penalties_order starting from 1
-    });
-
-    // Update pen order
-    player.penalties_order = playersWithPenalties.find(_ => _.id === player.id).penalties_order;
 }
-
 
 function correctPenaltiesOrder(player, allPlayers) {
 
