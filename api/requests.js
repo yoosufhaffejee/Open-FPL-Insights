@@ -17,6 +17,7 @@ const reqType = {
 }
 
 const proxies = [
+    'https://fpl-proxy.pages.dev/?',
     'https://gh-pages-cors.haffejeeyoosuf1.workers.dev/?',
     'https://corsproxy.io/?'
 ];
