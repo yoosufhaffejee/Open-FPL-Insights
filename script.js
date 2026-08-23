@@ -590,7 +590,7 @@ function renderPlayerElement(player) {
 
     const isGK = player.element_type === 1;
     const shirtUrl = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${player.team_code}${isGK ? '_1' : ''}-110.webp`;
-    const image = `<img src="${shirtUrl}" alt="${player.web_name}" onerror="this.onerror=null; this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-110.webp';">`;
+    const image = `<img src="${shirtUrl}" alt="${player.web_name}" onerror="if(!this.dataset.triedShirt){this.dataset.triedShirt='1';this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-110.webp';}else{this.onerror=null;this.src='https://resources.premierleague.com/premierleague/photos/players/250x250/Photo-Missing.png';}">`;
 
     playerElement.innerHTML = `
         ${image}
@@ -1045,7 +1045,7 @@ function showPlayerInfo(player) {
 function populatePlayerModal(data, player) {
     // Set the player name in the modal title
     document.getElementById('playerInfoModalLabel').innerHTML = `
-    <img src="https://resources.premierleague.com/premierleague/photos/players/250x250/p${player.code}.png" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;" onerror="this.onerror=null; this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-110.webp';">
+    <img src="https://resources.premierleague.com/premierleague/photos/players/250x250/p${player.code}.png" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;" onerror="if(!this.dataset.triedShirt){this.dataset.triedShirt='1';this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-110.webp';}else{this.onerror=null;this.src='https://resources.premierleague.com/premierleague/photos/players/250x250/Photo-Missing.png';}">
     ${player.first_name} ${player.second_name}`;
 
     // Clear previous data
@@ -1474,3 +1474,4 @@ async function Initialize() {
     // Initial display of all filteredPlayers
     displayPlayers(filteredPlayers); 
 }
+

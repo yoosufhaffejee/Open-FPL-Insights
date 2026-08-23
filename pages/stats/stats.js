@@ -1,3 +1,21 @@
+// --- Image helpers ---
+// 3-tier fallback: face photo → team shirt → Photo-Missing.png
+const playerImgOnerror = (el, teamCode) => {
+    // Already tried face photo, now try team shirt
+    if (!el.dataset.triedShirt) {
+        el.dataset.triedShirt = '1';
+        el.src = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}-110.webp`;
+    } else {
+        // Shirt also failed, use silhouette
+        el.onerror = null;
+        el.src = 'https://resources.premierleague.com/premierleague/photos/players/250x250/Photo-Missing.png';
+    }
+};
+
+// Inline onerror string for use in innerHTML – tries shirt then silhouette
+const playerOnerrorAttr = (teamCode) =>
+    `onerror="if(!this.dataset.triedShirt){this.dataset.triedShirt='1';this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}-110.webp';}else{this.onerror=null;this.src='https://resources.premierleague.com/premierleague/photos/players/250x250/Photo-Missing.png';}"`;
+
 // --- Player Dashboard Logic ---
 const renderDashboards = () => {
     const dashboards = [
@@ -22,7 +40,7 @@ const renderDashboards = () => {
                     <div class="me-3 fs-5 text-muted fw-bold" style="width: 20px;">${index + 1}</div>
                     <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p${p.code}.png" 
                          style="width: 40px; height: 50px; object-fit: cover; border-radius: 5px; background-color: #f0f0f0;" 
-                         class="me-3 shadow-sm bg-light" onerror="this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-110.webp';">
+                         class="me-3 shadow-sm bg-light" ${playerOnerrorAttr(team.code)}>
                     <div class="flex-grow-1">
                         <div class="fw-bold text-light">${p.web_name}</div>
                         <div class="text-muted small">
@@ -38,7 +56,10 @@ const renderDashboards = () => {
         const colHtml = `
             <div class="col">
                 <div class="card h-100 bg-dark border-secondary">
-                    <div class="card-header border-secondary fw-bold fs-5">${dash.title} <i class="fas fa-chevron-right float-end mt-1 text-muted" style="font-size: 0.8rem;"></i></div>
+                    <div class="card-header border-secondary fw-bold fs-5 d-flex justify-content-between align-items-center">
+                        ${dash.title}
+                        <button class="btn btn-sm btn-outline-info" onclick="openViewAll('${dash.key}', '${dash.title}')">View All</button>
+                    </div>
                     <div class="card-body">
                         ${listHtml}
                     </div>
@@ -48,6 +69,119 @@ const renderDashboards = () => {
         container.innerHTML += colHtml;
     });
 };
+
+// --- View All Logic ---
+let currentViewAllKey = '';
+let currentViewAllData = [];
+let sortCol = 'stat';
+let sortAsc = false;
+
+const openViewAll = (key, title) => {
+    currentViewAllKey = key;
+    document.getElementById('viewAllModalLabel').textContent = `All Players - ${title}`;
+    document.getElementById('viewAllStatHeader').innerHTML = `${title} <i class="fas fa-sort text-muted ms-1"></i>`;
+    
+    // Populate team filter
+    const teamFilter = document.getElementById('viewAllTeamFilter');
+    if (teamFilter.options.length === 1) {
+        teams.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t.id;
+            opt.textContent = t.name;
+            teamFilter.appendChild(opt);
+        });
+    }
+    
+    // Reset filters
+    document.getElementById('viewAllSearch').value = '';
+    document.getElementById('viewAllTeamFilter').value = '';
+    document.getElementById('viewAllPositionFilter').value = '';
+    sortCol = 'stat';
+    sortAsc = false;
+
+    applyViewAllFilters();
+    
+    const viewAllModal = new bootstrap.Modal(document.getElementById('viewAllModal'));
+    viewAllModal.show();
+};
+
+const applyViewAllFilters = () => {
+    const search = document.getElementById('viewAllSearch').value.toLowerCase();
+    const teamId = document.getElementById('viewAllTeamFilter').value;
+    const posId = document.getElementById('viewAllPositionFilter').value;
+
+    currentViewAllData = allPlayers.filter(p => {
+        const matchSearch = p.web_name.toLowerCase().includes(search) || `${p.first_name} ${p.second_name}`.toLowerCase().includes(search);
+        const matchTeam = teamId ? p.team == teamId : true;
+        const matchPos = posId ? p.element_type == posId : true;
+        return matchSearch && matchTeam && matchPos;
+    });
+
+    renderViewAllTable();
+};
+
+const sortViewAll = (col) => {
+    if (sortCol === col) {
+        sortAsc = !sortAsc;
+    } else {
+        sortCol = col;
+        sortAsc = false;
+    }
+    renderViewAllTable();
+};
+
+const renderViewAllTable = () => {
+    // Sort
+    currentViewAllData.sort((a, b) => {
+        let valA = a[sortCol];
+        let valB = b[sortCol];
+
+        if (sortCol === 'stat') {
+            valA = parseFloat(a[currentViewAllKey]) || 0;
+            valB = parseFloat(b[currentViewAllKey]) || 0;
+        }
+
+        if (valA < valB) return sortAsc ? -1 : 1;
+        if (valA > valB) return sortAsc ? 1 : -1;
+        return 0;
+    });
+
+    const body = document.getElementById('viewAllBody');
+    body.innerHTML = '';
+
+    // Render up to 100 to prevent lag, or implement simple pagination
+    const toRender = currentViewAllData.slice(0, 200);
+
+    toRender.forEach(p => {
+        const team = teams.find(t => t.id === p.team);
+        const statVal = p[currentViewAllKey];
+        
+        body.innerHTML += `
+            <tr>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p${p.code}.png" 
+                             style="width: 30px; height: 35px; object-fit: cover; border-radius: 5px;" 
+                             class="me-2 bg-light shadow-sm" ${playerOnerrorAttr(team.code)}>
+                        ${p.web_name}
+                    </div>
+                </td>
+                <td>
+                    <img src="https://resources.premierleague.com/premierleague/badges/50/t${team.code}.png" style="width: 20px;" class="me-1">
+                    ${team.name}
+                </td>
+                <td>${getPosName(p.element_type)}</td>
+                <td class="fw-bold fs-5 text-info">${statVal}</td>
+            </tr>
+        `;
+    });
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('viewAllSearch')?.addEventListener('input', applyViewAllFilters);
+    document.getElementById('viewAllTeamFilter')?.addEventListener('change', applyViewAllFilters);
+    document.getElementById('viewAllPositionFilter')?.addEventListener('change', applyViewAllFilters);
+});
 
 // --- Player Comparison Logic ---
 let player1 = null;
@@ -103,7 +237,7 @@ const updatePlayerCard = (cardId, player) => {
         <div class="card-body text-center p-4">
             <img src="https://resources.premierleague.com/premierleague/photos/players/250x250/p${player.code}.png" 
                  style="width: 100px; height: 120px; object-fit: cover; border-radius: 10px; background-color: #f0f0f0;" 
-                 class="mb-3 bg-light shadow" onerror="this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-110.webp';">
+                 class="mb-3 bg-light shadow" ${playerOnerrorAttr(team.code)}>
             <h4 class="mb-1 text-light">${player.web_name}</h4>
             <div class="text-muted mb-2">
                 <img src="https://resources.premierleague.com/premierleague/badges/50/t${team.code}.png" style="width: 20px;" class="me-1">
@@ -119,12 +253,21 @@ const getPosName = (type) => {
     return pos[type] || 'Unknown';
 }
 
-const comparePlayers = () => {
+let isFormMode = false;
+
+const toggleComparisonForm = (isForm) => {
+    isFormMode = isForm;
+    comparePlayers();
+};
+
+const comparePlayers = async () => {
     if (!player1 || !player2) return;
 
     document.getElementById('comparison-results').classList.remove('d-none');
     document.getElementById('comp-p1-name').textContent = player1.web_name;
     document.getElementById('comp-p2-name').textContent = player2.web_name;
+    document.getElementById('past-p1-name').textContent = player1.web_name;
+    document.getElementById('past-p2-name').textContent = player2.web_name;
 
     const statsToCompare = [
         { label: 'Total Points', key: 'total_points' },
@@ -141,24 +284,104 @@ const comparePlayers = () => {
     ];
 
     const body = document.getElementById('comparison-body');
-    body.innerHTML = '';
+    body.innerHTML = '<tr><td colspan="3"><div class="spinner-border text-primary my-4"></div></td></tr>';
 
-    statsToCompare.forEach(stat => {
-        const val1 = parseFloat(player1[stat.key]) || 0;
-        const val2 = parseFloat(player2[stat.key]) || 0;
+    try {
+        const [p1Data, p2Data] = await Promise.all([
+            getPlayer(player1.id),
+            getPlayer(player2.id)
+        ]);
+
+        body.innerHTML = '';
         
-        let c1 = '', c2 = '';
-        if (val1 > val2) c1 = 'text-success fw-bold';
-        else if (val2 > val1) c2 = 'text-success fw-bold';
+        let p1History = p1Data.history || [];
+        let p2History = p2Data.history || [];
+        
+        // If form mode, slice the last 4 matches
+        if (isFormMode) {
+            p1History = p1History.slice(-4);
+            p2History = p2History.slice(-4);
+        }
 
-        body.innerHTML += `
-            <tr class="fs-5">
-                <td class="${c1}">${val1}</td>
-                <td class="text-muted small text-uppercase" style="font-size: 0.9rem;">${stat.label}</td>
-                <td class="${c2}">${val2}</td>
-            </tr>
-        `;
-    });
+        const calcTotal = (history, key) => {
+            return history.reduce((sum, match) => sum + (parseFloat(match[key]) || 0), 0);
+        };
+
+        statsToCompare.forEach(stat => {
+            let val1 = 0, val2 = 0;
+            
+            if (isFormMode) {
+                val1 = calcTotal(p1History, stat.key);
+                val2 = calcTotal(p2History, stat.key);
+                
+                // Format float for expected stats
+                if (stat.key.includes('expected') || stat.key === 'ict_index') {
+                    val1 = parseFloat(val1.toFixed(2));
+                    val2 = parseFloat(val2.toFixed(2));
+                }
+            } else {
+                val1 = parseFloat(player1[stat.key]) || 0;
+                val2 = parseFloat(player2[stat.key]) || 0;
+            }
+            
+            let c1 = '', c2 = '';
+            if (val1 > val2) c1 = 'text-success fw-bold';
+            else if (val2 > val1) c2 = 'text-success fw-bold';
+
+            body.innerHTML += `
+                <tr class="fs-5">
+                    <td class="${c1}">${val1}</td>
+                    <td class="text-muted small text-uppercase" style="font-size: 0.9rem;">${stat.label}</td>
+                    <td class="${c2}">${val2}</td>
+                </tr>
+            `;
+        });
+
+        // --- Render Past Seasons ---
+        const pastBody = document.getElementById('past-comparison-body');
+        pastBody.innerHTML = '';
+        
+        const p1HistoryPast = p1Data.history_past || [];
+        const p2HistoryPast = p2Data.history_past || [];
+
+        // Collect all seasons
+        const seasons = new Set();
+        p1HistoryPast.forEach(s => seasons.add(s.season_name));
+        p2HistoryPast.forEach(s => seasons.add(s.season_name));
+        
+        const sortedSeasons = Array.from(seasons).sort().reverse();
+
+        if (sortedSeasons.length === 0) {
+            pastBody.innerHTML = '<tr><td colspan="3" class="text-muted">No past season data available for these players.</td></tr>';
+        } else {
+            sortedSeasons.forEach(seasonName => {
+                const s1 = p1HistoryPast.find(s => s.season_name === seasonName);
+                const s2 = p2HistoryPast.find(s => s.season_name === seasonName);
+                
+                const pts1 = s1 ? s1.total_points : '-';
+                const pts2 = s2 ? s2.total_points : '-';
+
+                let c1 = '', c2 = '';
+                if (pts1 !== '-' && pts2 !== '-') {
+                    if (pts1 > pts2) c1 = 'text-success fw-bold';
+                    else if (pts2 > pts1) c2 = 'text-success fw-bold';
+                }
+
+                pastBody.innerHTML += `
+                    <tr class="fs-5">
+                        <td class="${c1}">${pts1} <span class="fs-6 text-muted ms-2">${s1 ? '(' + s1.minutes + ' mins)' : ''}</span></td>
+                        <td class="text-muted fw-bold">${seasonName}</td>
+                        <td class="${c2}">${pts2} <span class="fs-6 text-muted ms-2">${s2 ? '(' + s2.minutes + ' mins)' : ''}</span></td>
+                    </tr>
+                `;
+            });
+        }
+
+    } catch (e) {
+        console.error(e);
+        body.innerHTML = '<tr><td colspan="3" class="text-danger">Error loading comparison data.</td></tr>';
+        document.getElementById('past-comparison-body').innerHTML = '<tr><td colspan="3" class="text-danger">Error loading past seasons.</td></tr>';
+    }
 };
 
 // --- League Table Logic ---
@@ -231,6 +454,126 @@ async function renderStandings() {
     if(container) container.innerHTML = html;
 }
 
+// --- Advanced Visualizations Logic ---
+let scatterChart = null;
+
+const renderScatterChart = () => {
+    const ctx = document.getElementById('xgScatterChart').getContext('2d');
+    
+    // Filter to only forwards and midfielders who have played significant minutes
+    const dataPoints = allPlayers.filter(p => (p.element_type === 3 || p.element_type === 4) && p.minutes > 90)
+        .map(p => ({
+            x: parseFloat(p.expected_goals) || 0,
+            y: parseFloat(p.goals_scored) || 0,
+            player: p
+        }));
+
+    if (scatterChart) {
+        scatterChart.destroy();
+    }
+
+    scatterChart = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Goals vs xG',
+                data: dataPoints,
+                backgroundColor: 'rgba(13, 202, 240, 0.6)',
+                borderColor: '#0dcaf0',
+                pointRadius: 5,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const p = context.raw.player;
+                            return `${p.web_name} | Goals: ${context.raw.y}, xG: ${context.raw.x.toFixed(2)}`;
+                        }
+                    }
+                },
+                legend: { display: false }
+            },
+            scales: {
+                x: {
+                    title: { display: true, text: 'Expected Goals (xG)', color: '#fff' },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    ticks: { color: '#adb5bd' }
+                },
+                y: {
+                    title: { display: true, text: 'Actual Goals', color: '#fff' },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    ticks: { color: '#adb5bd' }
+                }
+            }
+        },
+        plugins: [{
+            id: 'diagonalLine',
+            beforeDraw: chart => {
+                const { ctx, chartArea: { top, right, bottom, left }, scales: { x, y } } = chart;
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(x.getPixelForValue(0), y.getPixelForValue(0));
+                // Draw a 1:1 diagonal line indicating performing exactly to xG
+                const maxVal = Math.min(x.max, y.max);
+                ctx.lineTo(x.getPixelForValue(maxVal), y.getPixelForValue(maxVal));
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.restore();
+            }
+        }]
+    });
+};
+
+const renderTeamDefense = () => {
+    const teamStats = teams.map(team => {
+        // Find all goalkeepers for this team
+        const gks = allPlayers.filter(p => p.team === team.id && p.element_type === 1);
+        // Team xGC is approx the sum of xGC of all their GKs (since exactly 1 GK plays at a time)
+        const teamXGC = gks.reduce((sum, gk) => sum + (parseFloat(gk.expected_goals_conceded) || 0), 0);
+        // Team Clean Sheets is sum of GK clean sheets
+        const teamCS = gks.reduce((sum, gk) => sum + (parseInt(gk.clean_sheets) || 0), 0);
+        
+        return {
+            team: team,
+            xGC: parseFloat(teamXGC.toFixed(2)),
+            cs: teamCS
+        };
+    });
+
+    // Sort by worst defense (highest xGC)
+    teamStats.sort((a, b) => b.xGC - a.xGC);
+
+    const body = document.getElementById('team-defense-body');
+    body.innerHTML = '';
+
+    teamStats.forEach((stat, index) => {
+        body.innerHTML += `
+            <tr>
+                <td class="fw-bold">${index + 1}</td>
+                <td>
+                    <img src="https://resources.premierleague.com/premierleague/badges/50/t${stat.team.code}.png" style="width: 25px;" class="me-2 drop-shadow">
+                    <span class="fw-bold">${stat.team.name}</span>
+                </td>
+                <td class="fs-5 text-warning fw-bold">${stat.xGC.toFixed(2)}</td>
+                <td class="fs-5">${stat.cs}</td>
+            </tr>
+        `;
+    });
+};
+
+// Add drop-shadow utility class if not present in css
+const style = document.createElement('style');
+style.textContent = `
+    .drop-shadow { filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); }
+`;
+document.head.appendChild(style);
+
 window.addEventListener('DOMContentLoaded', () => {
     // We poll until 'allPlayers' is populated by data.js
     const initInterval = setInterval(() => {
@@ -240,6 +583,8 @@ window.addEventListener('DOMContentLoaded', () => {
             setupSearch('player1-search', 'player1-results', true);
             setupSearch('player2-search', 'player2-results', false);
             renderStandings();
+            renderScatterChart();
+            renderTeamDefense();
         }
     }, 100);
 });

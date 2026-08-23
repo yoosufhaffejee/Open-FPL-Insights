@@ -197,10 +197,21 @@ const doRawCORSRequest = async (fullUrl) => {
 }
 
 const getPulseLiveFixtures = async () => {
+    const cacheKey = 'pulseLiveFixturesCache';
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+        const { timestamp, data } = JSON.parse(cached);
+        if (Date.now() - timestamp < 5 * 60 * 1000) {
+            return data;
+        }
+    }
+
     try {
         const latestData = await doRawCORSRequest('https://footballapi.pulselive.com/football/fixtures?comps=1&pageSize=1&page=0&sort=desc');
         const currentSeasonId = latestData.content[0].gameweek.compSeason.id;
         const allData = await doRawCORSRequest(`https://footballapi.pulselive.com/football/fixtures?comps=1&compSeasons=${currentSeasonId}&pageSize=400&page=0`);
+        
+        localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data: allData.content }));
         return allData.content;
     } catch (e) {
         console.error("Error fetching Pulse Live fixtures", e);
@@ -210,8 +221,27 @@ const getPulseLiveFixtures = async () => {
 
 const getPulseLiveLineup = async (matchId) => {
     try {
-        const data = await doRawCORSRequest(`https://sdp-prem-prod.premier-league-prod.pulselive.com/api/v3/matches/${matchId}/lineups`);
-        return data;
+        // Use the same footballapi domain as our fixture list – it uses the same IDs
+        // and the /football/fixtures/{id} endpoint already contains teamLists with full lineups.
+        const data = await doRawCORSRequest(`https://footballapi.pulselive.com/football/fixtures/${matchId}`);
+
+        // Normalise into the shape loadLineups expects
+        const teamLists = data.teamLists || [];
+        if (!teamLists.length) return null;
+
+        const homeList = teamLists[0] || {};
+        const awayList = teamLists[1] || {};
+
+        return {
+            home_team: {
+                players: homeList.lineup || [],
+                substitutes: homeList.substitutes || []
+            },
+            away_team: {
+                players: awayList.lineup || [],
+                substitutes: awayList.substitutes || []
+            }
+        };
     } catch (e) {
         console.error("Error fetching Pulse Live lineups for match", matchId, e);
         return null;
@@ -219,13 +249,62 @@ const getPulseLiveLineup = async (matchId) => {
 }
 
 const getPulseLiveStandings = async () => {
+    const cacheKey = 'pulseLiveStandingsCache';
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+        const { timestamp, data } = JSON.parse(cached);
+        if (Date.now() - timestamp < 5 * 60 * 1000) {
+            return data;
+        }
+    }
+
     try {
         const latestData = await doRawCORSRequest('https://footballapi.pulselive.com/football/fixtures?comps=1&pageSize=1&page=0&sort=desc');
         const currentSeasonId = latestData.content[0].gameweek.compSeason.id;
         const data = await doRawCORSRequest(`https://footballapi.pulselive.com/football/standings?compSeasons=${currentSeasonId}`);
+        
+        localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data: data }));
         return data;
     } catch (e) {
         console.error("Error fetching Pulse Live standings", e);
         return null;
     }
+}
+
+const getEntryEventPicks = async (entryId, eventId) => {
+    try {
+        const response = await fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/event/${eventId}/picks/`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return await response.json();
+    } catch (e) {
+        return getEntryEventPicksFallback(entryId, eventId);
+    }
+}
+
+const getEntryEventPicksFallback = async (entryId, eventId) => {
+    for (let i = currentProxyIndex; i < proxies.length; i++) {
+        try {
+            const response = await fetch(`${proxies[i]}https://fantasy.premierleague.com/api/entry/${entryId}/event/${eventId}/picks/`);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const myJson = await response.json();
+            currentProxyIndex = i;
+            return myJson;
+        } catch (e) {
+            lastError = e;
+            console.warn(`Proxy ${proxies[i]} failed. Try next...`);
+        }
+    }
+    for (let i = 0; i < currentProxyIndex; i++) {
+        try {
+            const response = await fetch(`${proxies[i]}https://fantasy.premierleague.com/api/entry/${entryId}/event/${eventId}/picks/`);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const myJson = await response.json();
+            currentProxyIndex = i;
+            return myJson;
+        } catch (e) {
+            lastError = e;
+            console.warn(`Proxy ${proxies[i]} failed. Try next...`);
+        }
+    }
+    throw new Error('All proxies failed.');
 }

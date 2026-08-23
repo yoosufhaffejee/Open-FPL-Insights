@@ -37,6 +37,58 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 let templateLoaded = false;
+function init() {
+    setupToolNavigation();
+    loadDefConTool(); // Default tool
+    renderMarketTrends();
+}
+
+const renderMarketTrends = () => {
+    // Risers (Highest net transfers in)
+    const risers = [...allPlayers].sort((a, b) => (b.transfers_in_event - b.transfers_out_event) - (a.transfers_in_event - a.transfers_out_event)).slice(0, 5);
+    
+    // Fallers (Highest net transfers out)
+    const fallers = [...allPlayers].sort((a, b) => (a.transfers_in_event - a.transfers_out_event) - (b.transfers_in_event - b.transfers_out_event)).slice(0, 5);
+
+    const formatRiser = (p) => `
+        <div class="list-group-item bg-dark text-white border-secondary d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${p.team_code}-110.webp" style="width: 25px;" class="me-2 drop-shadow" onerror="this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-110.webp';">
+                <span>${p.web_name}</span>
+            </div>
+            <span class="badge bg-success rounded-pill">+${(p.transfers_in_event - p.transfers_out_event).toLocaleString()} net</span>
+        </div>
+    `;
+
+    const formatFaller = (p) => `
+        <div class="list-group-item bg-dark text-white border-secondary d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${p.team_code}-110.webp" style="width: 25px;" class="me-2 drop-shadow" onerror="this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-110.webp';">
+                <span>${p.web_name}</span>
+            </div>
+            <span class="badge bg-danger rounded-pill">${(p.transfers_in_event - p.transfers_out_event).toLocaleString()} net</span>
+        </div>
+    `;
+
+    document.getElementById('price-risers').innerHTML = risers.map(formatRiser).join('');
+    document.getElementById('price-fallers').innerHTML = fallers.map(formatFaller).join('');
+};
+
+// Add drop-shadow utility class if not present in css
+const style = document.createElement('style');
+style.textContent = `
+    .drop-shadow { filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); }
+`;
+document.head.appendChild(style);
+
+// We poll until 'allPlayers' is populated by data.js
+const initInterval = setInterval(() => {
+    if (allPlayers && allPlayers.length > 0) {
+        clearInterval(initInterval);
+        init();
+    }
+}, 100);
+
 let positionMap = { 1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD' };
 
 // Main entry point called by data.js
@@ -63,13 +115,13 @@ function getTeamCode(teamId) {
 let defconGridOptions;
 function renderDefCon() {
     let defenders = allPlayers.filter(p => (p.element_type === 1 || p.element_type === 2) && parseFloat(p.defensive_contribution) > 0);
-    defenders.sort((a, b) => parseFloat(b.defensive_contribution_per_90) - parseFloat(a.defensive_contribution_per_90));
+    defenders.sort((a, b) => parseFloat(b.defensive_contribution) - parseFloat(a.defensive_contribution));
     defenders = defenders.slice(0, 50);
 
     const columnDefs = [
         { headerName: 'Player', field: 'web_name', filter: true, floatingFilter: true, cellRenderer: params => '<div class="player-name-cell"><img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_' + getTeamCode(params.data.team) + '-66.webp" alt="shirt" style="width:25px;margin-right:5px;">' + params.value + '</div>' },
         { headerName: 'Team', field: 'team', filter: true, floatingFilter: true, valueGetter: params => getTeamName(params.data.team) },
-        { headerName: 'Total Contribution', field: 'defensive_contribution', filter: true, floatingFilter: true, cellClass: 'text-success fw-bold' },
+        { headerName: 'Total Contribution', field: 'defensive_contribution', filter: true, floatingFilter: true, cellClass: 'text-success fw-bold', initialSort: 'desc' },
         { headerName: 'Per 90', field: 'defensive_contribution_per_90', filter: true, floatingFilter: true },
         { headerName: 'CBI', field: 'clearances_blocks_interceptions', filter: true, floatingFilter: true },
         { headerName: 'Recoveries', field: 'recoveries', filter: true, floatingFilter: true },

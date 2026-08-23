@@ -83,6 +83,16 @@
         <!-- Player Comparison -->
         <h2 class="mb-4">Player Comparison</h2>
         <div class="row mb-5">
+            <div class="col-12 d-flex justify-content-end mb-3">
+                <div class="btn-group" role="group">
+                    <input type="radio" class="btn-check" name="btnradio" id="btnradio-season" autocomplete="off" checked onclick="toggleComparisonForm(false)">
+                    <label class="btn btn-outline-info" for="btnradio-season">Full Season</label>
+
+                    <input type="radio" class="btn-check" name="btnradio" id="btnradio-form" autocomplete="off" onclick="toggleComparisonForm(true)">
+                    <label class="btn btn-outline-info" for="btnradio-form">Last 4 GWs (Form)</label>
+                </div>
+            </div>
+            
             <div class="col-md-5 position-relative">
                 <input type="text" class="form-control mb-3" id="player1-search" placeholder="Search Player 1..." autocomplete="off">
                 <div id="player1-results" class="list-group position-absolute w-100" style="z-index:100; max-height:200px; overflow-y:auto; top: 40px;"></div>
@@ -111,20 +121,49 @@
         </div>
 
         <div id="comparison-results" class="mb-5 d-none">
-            <h4 class="mb-3 text-center">Season Comparison</h4>
-            <div class="table-responsive">
-                <table class="table table-dark table-striped align-middle text-center" id="comparison-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 33%" id="comp-p1-name" class="fs-5 text-info">Player 1</th>
-                            <th style="width: 34%" class="text-muted text-uppercase small">Stat</th>
-                            <th style="width: 33%" id="comp-p2-name" class="fs-5 text-info">Player 2</th>
-                        </tr>
-                    </thead>
-                    <tbody id="comparison-body">
-                        <!-- Rendered via JS -->
-                    </tbody>
-                </table>
+            <ul class="nav nav-tabs mb-4 justify-content-center" id="compTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="season-tab" data-bs-toggle="tab" data-bs-target="#season" type="button" role="tab" aria-controls="season" aria-selected="true">Current Season</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="past-tab" data-bs-toggle="tab" data-bs-target="#past" type="button" role="tab" aria-controls="past" aria-selected="false">Past Seasons</button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="compTabContent">
+                <div class="tab-pane fade show active" id="season" role="tabpanel" aria-labelledby="season-tab">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped align-middle text-center" id="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 33%" id="comp-p1-name" class="fs-5 text-info">Player 1</th>
+                                    <th style="width: 34%" class="text-muted text-uppercase small">Stat</th>
+                                    <th style="width: 33%" id="comp-p2-name" class="fs-5 text-info">Player 2</th>
+                                </tr>
+                            </thead>
+                            <tbody id="comparison-body">
+                                <!-- Rendered via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="tab-pane fade" id="past" role="tabpanel" aria-labelledby="past-tab">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped align-middle text-center" id="past-comparison-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 33%" id="past-p1-name" class="fs-5 text-info">Player 1</th>
+                                    <th style="width: 34%" class="text-muted text-uppercase small">Season</th>
+                                    <th style="width: 33%" id="past-p2-name" class="fs-5 text-info">Player 2</th>
+                                </tr>
+                            </thead>
+                            <tbody id="past-comparison-body">
+                                <!-- Rendered via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -142,9 +181,88 @@
 
     </div>
 
+    <!-- Advanced Visualizations -->
+    <div class="container-fluid px-4 mb-5">
+        <hr class="border-secondary my-5">
+        <h2 class="mb-4">Advanced Analytics: Goals vs Expected Goals (xG)</h2>
+        <div class="card bg-dark border-secondary p-4 mb-5">
+            <canvas id="xgScatterChart" width="100%" height="40"></canvas>
+            <p class="text-muted text-center mt-3 small">Players in the top left are overperforming their xG. Players in the bottom right are underperforming (due for goals).</p>
+        </div>
+
+        <h2 class="mb-4">Team Defense Targets (Who to Captain)</h2>
+        <div class="card bg-dark border-secondary p-4">
+            <p class="text-muted mb-3">Ranked by Expected Goals Conceded (xGC). Target teams at the top when selecting your captain.</p>
+            <div class="table-responsive">
+                <table class="table table-dark table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th scope="col">Rank</th>
+                            <th scope="col">Team</th>
+                            <th scope="col" class="text-info">Expected Goals Conceded (xGC)</th>
+                            <th scope="col">Clean Sheets</th>
+                        </tr>
+                    </thead>
+                    <tbody id="team-defense-body">
+                        <!-- Rendered via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- View All Modal -->
+    <div class="modal fade" id="viewAllModal" tabindex="-1" aria-labelledby="viewAllModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content bg-dark text-white border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title" id="viewAllModalLabel">All Players</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <input type="text" class="form-control bg-dark text-white border-secondary" id="viewAllSearch" placeholder="Search player...">
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select bg-dark text-white border-secondary" id="viewAllTeamFilter">
+                                <option value="">All Teams</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select bg-dark text-white border-secondary" id="viewAllPositionFilter">
+                                <option value="">All Positions</option>
+                                <option value="1">Goalkeepers</option>
+                                <option value="2">Defenders</option>
+                                <option value="3">Midfielders</option>
+                                <option value="4">Forwards</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped table-hover align-middle" id="viewAllTable">
+                            <thead>
+                                <tr>
+                                    <th scope="col" style="cursor:pointer;" onclick="sortViewAll('web_name')">Player <i class="fas fa-sort text-muted ms-1"></i></th>
+                                    <th scope="col" style="cursor:pointer;" onclick="sortViewAll('team')">Team <i class="fas fa-sort text-muted ms-1"></i></th>
+                                    <th scope="col" style="cursor:pointer;" onclick="sortViewAll('element_type')">Position <i class="fas fa-sort text-muted ms-1"></i></th>
+                                    <th scope="col" style="cursor:pointer;" id="viewAllStatHeader" onclick="sortViewAll('stat')">Stat <i class="fas fa-sort text-muted ms-1"></i></th>
+                                </tr>
+                            </thead>
+                            <tbody id="viewAllBody">
+                                <!-- Rendered via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript Dependencies -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- Custom JS -->
     <script src="../../api/requests.js"></script>
@@ -155,3 +273,4 @@
     <script src="stats.js"></script>
 </body>
 </html>
+

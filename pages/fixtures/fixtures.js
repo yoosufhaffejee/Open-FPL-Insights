@@ -43,9 +43,20 @@ function renderFixtures() {
                                 <img src="https://resources.premierleague.com/premierleague/badges/100/t${homeTeam.code}.png" class="team-logo me-2" alt="${homeTeam.short_name}">
                                 <span>${homeTeam.short_name}</span>
                             </div>
-                            <div>${fixture.started ?
-                `${fixture.team_h_score !== null ? fixture.team_h_score : '0'} - ${fixture.team_a_score !== null ? fixture.team_a_score : '0'}` :
-                new Date(fixture.kickoff_time).toLocaleTimeString()}</div>
+                            <div class="text-center">
+                                <div class="fw-bold fs-5">
+                                    ${fixture.started ?
+                                        `${fixture.team_h_score !== null ? fixture.team_h_score : '0'} - ${fixture.team_a_score !== null ? fixture.team_a_score : '0'}` :
+                                        new Date(fixture.kickoff_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                </div>
+                                ${fixture.started && !fixture.finished ?
+                                    (!fixture.finished_provisional ?
+                                        `<span class="badge bg-success d-flex align-items-center justify-content-center gap-1" style="font-size:0.7rem;">
+                                            <span class="live-dot"></span> ${fixture.minutes}'
+                                        </span>` :
+                                        `<span class="badge bg-secondary" style="font-size:0.7rem;">FT</span>`) :
+                                    (fixture.finished ? `<span class="badge bg-secondary" style="font-size:0.7rem;">FT</span>` : '')}
+                            </div>
                             <div class="d-flex align-items-center">
                                 <img src="https://resources.premierleague.com/premierleague/badges/100/t${awayTeam.code}.png" class="team-logo me-2" alt="${awayTeam.short_name}">
                                 <span>${awayTeam.short_name}</span>
@@ -187,7 +198,7 @@ function showPlayerInfo(player) {
 function populatePlayerModal(data, player) {
     // Set the player name in the modal title
     document.getElementById('playerInfoModalLabel').innerHTML = `
-    <img src="https://resources.premierleague.com/premierleague/photos/players/250x250/p${player.code}.png" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;" onerror="this.onerror=null; this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-110.webp';">
+    <img src="https://resources.premierleague.com/premierleague/photos/players/250x250/p${player.code}.png" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;" onerror="if(!this.dataset.triedShirt){this.dataset.triedShirt='1';this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-110.webp';}else{this.onerror=null;this.src='https://resources.premierleague.com/premierleague/photos/players/250x250/Photo-Missing.png';}">
     ${player.first_name} ${player.second_name}`;
 
     // Clear previous data
@@ -479,72 +490,69 @@ async function loadLineups(fplFixtureId) {
         </div>
     `;
 
-    renderTeamLineup(lineupData.home_team.players, fplFixture.team_h, document.getElementById(`home-starting-${fplFixtureId}`), document.getElementById(`home-bench-${fplFixtureId}`));
-    renderTeamLineup(lineupData.away_team.players, fplFixture.team_a, document.getElementById(`away-starting-${fplFixtureId}`), document.getElementById(`away-bench-${fplFixtureId}`));
+    renderTeamLineup(lineupData.home_team.players, lineupData.home_team.substitutes, fplFixture.team_h, document.getElementById(`home-starting-${fplFixtureId}`), document.getElementById(`home-bench-${fplFixtureId}`));
+    renderTeamLineup(lineupData.away_team.players, lineupData.away_team.substitutes, fplFixture.team_a, document.getElementById(`away-starting-${fplFixtureId}`), document.getElementById(`away-bench-${fplFixtureId}`));
 }
 
-function renderTeamLineup(plPlayers, fplTeamId, startingContainer, benchContainer) {
+function renderTeamLineup(plPlayers, plSubstitutes, fplTeamId, startingContainer, benchContainer) {
     const teamPlayers = allPlayers.filter(p => p.team === fplTeamId);
-    
-    let startingHtml = '';
-    let benchHtml = '';
 
-    plPlayers.forEach(plPlayer => {
-        // Map to FPL player
+    const buildPlayerHtml = (plPlayer, isBench) => {
         const fplPlayer = matchPlayer(plPlayer, teamPlayers);
-        
-        let playerDisplay = plPlayer.knownName || plPlayer.lastName;
+
+        const displayName = plPlayer.name ? plPlayer.name.display : (plPlayer.knownName || plPlayer.lastName || '?');
+        const shirtNum = plPlayer.matchShirtNumber || plPlayer.shirtNum || '-';
+        const isCaptain = plPlayer.captain || plPlayer.isCaptain || false;
+
+        let playerDisplay = displayName;
         let points = '-';
         if (fplPlayer) {
             playerDisplay = `<a href="#" onclick='showPlayerInfo(${JSON.stringify(fplPlayer)})'>${fplPlayer.web_name}</a>`;
             points = fplPlayer.event_points !== undefined ? fplPlayer.event_points : 0;
         }
 
-        const html = `
+        return `
             <div class="d-flex justify-content-between align-items-center mb-1">
                 <div>
-                    <span class="badge bg-secondary me-2" style="width: 25px;">${plPlayer.shirtNum || '-'}</span>
-                    ${playerDisplay} ${plPlayer.isCaptain ? '<span class="badge bg-warning text-dark">C</span>' : ''}
+                    <span class="badge bg-secondary me-2" style="width: 25px;">${shirtNum}</span>
+                    ${playerDisplay} ${isCaptain ? '<span class="badge bg-warning text-dark">C</span>' : ''}
                 </div>
-                <span class="fw-bold">${points}</span>
+                <span class="fw-bold ${points > 0 ? 'text-success' : ''}">${points}</span>
             </div>
         `;
+    };
 
-        if (plPlayer.position === 'Substitute') {
-            benchHtml += html;
-        } else {
-            startingHtml += html;
-        }
-    });
-
-    startingContainer.innerHTML = startingHtml;
-    benchContainer.innerHTML = benchHtml;
+    startingContainer.innerHTML = (plPlayers || []).map(p => buildPlayerHtml(p, false)).join('');
+    benchContainer.innerHTML = (plSubstitutes || []).map(p => buildPlayerHtml(p, true)).join('');
 }
 
 function matchPlayer(plPlayer, teamPlayers) {
-    // Basic string matching using Levenshtein distance
+    // Extract names from new footballapi shape (name.display / name.last) or old shape
+    const plDisplayName = (plPlayer.name ? plPlayer.name.display : (plPlayer.knownName || '')) || '';
+    const plLastName = (plPlayer.name ? plPlayer.name.last : (plPlayer.lastName || '')) || '';
+
+    const normDisplay = plDisplayName.toLowerCase().replace(/[^a-z]/g, '');
+    const normLast = plLastName.toLowerCase().replace(/[^a-z]/g, '');
+
     let bestMatch = null;
     let bestScore = Infinity;
-
-    const plName = (plPlayer.knownName || `${plPlayer.firstName} ${plPlayer.lastName}`).toLowerCase().replace(/[^a-z]/g, '');
-    const plLastName = (plPlayer.lastName).toLowerCase().replace(/[^a-z]/g, '');
 
     teamPlayers.forEach(fplPlayer => {
         const fplName = `${fplPlayer.first_name} ${fplPlayer.second_name}`.toLowerCase().replace(/[^a-z]/g, '');
         const fplWebName = fplPlayer.web_name.toLowerCase().replace(/[^a-z]/g, '');
         
-        // Exact matches
-        if (fplWebName === plLastName || fplWebName === plName || fplName === plName) {
+        // Exact matches first (fast path)
+        if (fplWebName === normLast || fplWebName === normDisplay || fplName === normDisplay) {
             bestMatch = fplPlayer;
             bestScore = 0;
             return;
         }
 
-        const d1 = levenshtein(plName, fplName);
-        const d2 = levenshtein(plLastName, fplWebName);
+        const d1 = levenshtein(normDisplay, fplName);
+        const d2 = levenshtein(normLast, fplWebName);
         const score = Math.min(d1, d2);
         
-        if (score < bestScore && score < 5) { // threshold for fuzzy match
+        if (score < bestScore && score < 5) {
             bestScore = score;
             bestMatch = fplPlayer;
         }
@@ -646,3 +654,4 @@ window.addEventListener('DOMContentLoaded', () => {
     // We can delay it slightly to let fixtures load first
     setTimeout(renderStandings, 1000);
 });
+
