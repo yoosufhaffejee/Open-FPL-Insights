@@ -1,5 +1,70 @@
 let currentGW = 1;
 
+// Global countdown interval
+let countdownInterval;
+function startCountdowns() {
+    if (countdownInterval) clearInterval(countdownInterval);
+    countdownInterval = setInterval(() => {
+        const timers = document.querySelectorAll('.countdown-timer');
+        timers.forEach(timer => {
+            const kickoff = new Date(timer.getAttribute('data-kickoff')).getTime();
+            const now = new Date().getTime();
+            const distance = kickoff - now;
+            
+            if (distance < 0) {
+                timer.innerHTML = "Kickoff!";
+                return;
+            }
+            
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+            
+            let html = '';
+            if(days > 0) html += `${days}d `;
+            html += `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            timer.innerHTML = html;
+        });
+    }, 1000);
+}
+
+// Global live refresh interval
+let liveRefreshInterval;
+function startLiveRefresh() {
+    if (liveRefreshInterval) clearInterval(liveRefreshInterval);
+    const hasLiveGames = fixtures.some(f => f.started && !f.finished && !f.finished_provisional);
+    if (!hasLiveGames) return;
+    
+    liveRefreshInterval = setInterval(async () => {
+        try {
+            const data = await getBootstrapData();
+            fixtures = data.fixtures; // Update global
+            
+            // Only update DOM for live games
+            fixtures.forEach(fixture => {
+                if (fixture.started && !fixture.finished) {
+                    const scoreDiv = document.querySelector(`#score-${fixture.code}`);
+                    if (scoreDiv) {
+                        scoreDiv.innerHTML = `
+                            <div class="fw-bold fs-5">
+                                ${fixture.team_h_score !== null ? fixture.team_h_score : '0'} - ${fixture.team_a_score !== null ? fixture.team_a_score : '0'}
+                            </div>
+                            ${!fixture.finished_provisional ?
+                                `<span class="badge bg-success d-flex align-items-center justify-content-center gap-1 mx-auto mt-1" style="font-size:0.7rem; width:fit-content;">
+                                    <span class="live-dot"></span> ${fixture.minutes}'
+                                </span>` :
+                                `<span class="badge bg-secondary mt-1" style="font-size:0.7rem;">FT</span>`}
+                        `;
+                    }
+                }
+            });
+        } catch (e) {
+            console.error("Live refresh failed", e);
+        }
+    }, 60000); // 60 seconds
+}
+
 function renderFixtures() {
     const fixturesContent = document.getElementById('fixtures-content');
     const gameweekData = fixtures.filter(f => f.event == currentGW);
@@ -50,7 +115,7 @@ function renderFixtures() {
                                 <img src="https://resources.premierleague.com/premierleague/badges/100/t${homeTeam.code}.png" class="team-logo me-2" alt="${homeTeam.short_name}">
                                 <span>${homeTeam.short_name}</span>
                             </div>
-                            <div class="text-center">
+                                                        <div class="text-center" id="score-${fixture.code}">
                                 <div class="fw-bold fs-5">
                                     ${fixture.started ?
                                         `${fixture.team_h_score !== null ? fixture.team_h_score : '0'} - ${fixture.team_a_score !== null ? fixture.team_a_score : '0'}` :
@@ -58,11 +123,11 @@ function renderFixtures() {
                                 </div>
                                 ${fixture.started && !fixture.finished ?
                                     (!fixture.finished_provisional ?
-                                        `<span class="badge bg-success d-flex align-items-center justify-content-center gap-1" style="font-size:0.7rem;">
+                                        `<span class="badge bg-success d-flex align-items-center justify-content-center gap-1 mx-auto mt-1" style="font-size:0.7rem; width:fit-content;">
                                             <span class="live-dot"></span> ${fixture.minutes}'
                                         </span>` :
-                                        `<span class="badge bg-secondary" style="font-size:0.7rem;">FT</span>`) :
-                                    (fixture.finished ? `<span class="badge bg-secondary" style="font-size:0.7rem;">FT</span>` : '')}
+                                        `<span class="badge bg-secondary mt-1" style="font-size:0.7rem;">FT</span>`) :
+                                    (fixture.finished ? `<span class="badge bg-secondary mt-1" style="font-size:0.7rem;">FT</span>` : '')}
                             </div>
                             <div class="d-flex align-items-center">
                                 <img src="https://resources.premierleague.com/premierleague/badges/100/t${awayTeam.code}.png" class="team-logo me-2" alt="${awayTeam.short_name}">
@@ -91,42 +156,14 @@ function renderFixtures() {
                                             <th>${awayTeam.short_name}</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>Goals Scored</td>
-                                            <td>${getStatDetails(fixture, 'goals_scored', 'h')}</td>
-                                            <td>${getStatDetails(fixture, 'goals_scored', 'a')}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Assists</td>
-                                            <td>${getStatDetails(fixture, 'assists', 'h')}</td>
-                                            <td>${getStatDetails(fixture, 'assists', 'a')}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Yellow Cards</td>
-                                            <td>${getStatDetails(fixture, 'yellow_cards', 'h')}</td>
-                                            <td>${getStatDetails(fixture, 'yellow_cards', 'a')}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Saves</td>
-                                            <td>${getStatDetails(fixture, 'saves', 'h')}</td>
-                                            <td>${getStatDetails(fixture, 'saves', 'a')}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Bonus</td>
-                                            <td>${getStatDetails(fixture, 'bonus', 'h')}</td>
-                                            <td>${getStatDetails(fixture, 'bonus', 'a')}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>BPS (Ranking)</td>
-                                            <td>${getStatDetails(fixture, 'bps', 'h')}</td>
-                                            <td>${getStatDetails(fixture, 'bps', 'a')}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Defensive Contributions</td>
-                                            <td>${getStatDetails(fixture, 'defensive_contribution', 'h')}</td>
-                                            <td>${getStatDetails(fixture, 'defensive_contribution', 'a')}</td>
-                                        </tr>
+                                                                        <tbody>
+                                        ${renderStatRow(fixture, 'goals_scored', 'Goals Scored')}
+                                        ${renderStatRow(fixture, 'assists', 'Assists')}
+                                        ${renderStatRow(fixture, 'yellow_cards', 'Yellow Cards')}
+                                        ${renderStatRow(fixture, 'saves', 'Saves')}
+                                        ${renderStatRow(fixture, 'bonus', 'Bonus')}
+                                        ${renderStatRow(fixture, 'bps', 'BPS (Ranking)')}
+                                        ${renderStatRow(fixture, 'defensive_contribution', 'Defensive Contributions')}
                                     </tbody>
                                 </table>
                             </div>
@@ -144,6 +181,22 @@ function renderFixtures() {
             `;
         fixturesContent.appendChild(fixtureRow);
     });
+    startCountdowns();
+    startLiveRefresh();
+}
+
+function renderStatRow(fixture, identifier, label) {
+    const h = getStatDetails(fixture, identifier, 'h');
+    const a = getStatDetails(fixture, identifier, 'a');
+    const hasData = h !== 'None' || a !== 'None';
+    const bgClass = hasData ? 'bg-light text-dark' : '';
+    return `
+        <tr class="${bgClass}">
+            <td class="${hasData ? 'fw-bold' : ''}">${label}</td>
+            <td>${h}</td>
+            <td>${a}</td>
+        </tr>
+    `;
 }
 
 function getStatDetails(fixture, identifier, teamName) {
@@ -206,6 +259,52 @@ document.addEventListener('keydown', (e) => {
         updateGameweek();
     }
 });
+
+// Simple table sorting
+let currentSortColumn = -1;
+let sortAscending = true;
+function sortRecentMatches(columnIndex) {
+    const table = document.getElementById("recent-matches-table");
+    const tbody = table.querySelector("tbody");
+    const rows = Array.from(tbody.querySelectorAll("tr"));
+    
+    // Toggle sort direction if clicking the same column
+    if (currentSortColumn === columnIndex) {
+        sortAscending = !sortAscending;
+    } else {
+        sortAscending = false; // Default to desc for stats
+        currentSortColumn = columnIndex;
+    }
+    
+    // Update header classes
+    const headers = table.querySelectorAll("thead th");
+    headers.forEach((th, i) => {
+        th.innerHTML = th.innerHTML.replace(/ ?| ?/g, '');
+        if (i === columnIndex) {
+            th.innerHTML += sortAscending ? ' ?' : ' ?';
+        }
+    });
+
+    rows.sort((a, b) => {
+        let aVal = a.cells[columnIndex].textContent.trim();
+        let bVal = b.cells[columnIndex].textContent.trim();
+        
+        // Handle numeric sorting
+        const aNum = parseFloat(aVal);
+        const bNum = parseFloat(bVal);
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+            aVal = aNum;
+            bVal = bNum;
+        }
+        
+        if (aVal < bVal) return sortAscending ? -1 : 1;
+        if (aVal > bVal) return sortAscending ? 1 : -1;
+        return 0;
+    });
+    
+    tbody.innerHTML = '';
+    rows.forEach(row => tbody.appendChild(row));
+}
 
 // Function to fetch and show player info
 function showPlayerInfo(player) {
@@ -467,7 +566,7 @@ async function loadLineups(fplFixtureId) {
 function renderTeamLineup(plPlayers, plSubstitutes, fplTeamId, startingContainer, benchContainer) {
     const teamPlayers = allPlayers.filter(p => p.team === fplTeamId);
 
-    const buildPlayerHtml = (plPlayer, isBench) => {
+        const buildPlayerHtml = (plPlayer, isBench) => {
         const fplPlayer = matchPlayer(plPlayer, teamPlayers);
 
         const displayName = plPlayer.name ? plPlayer.name.display : (plPlayer.knownName || plPlayer.lastName || '?');
@@ -476,16 +575,33 @@ function renderTeamLineup(plPlayers, plSubstitutes, fplTeamId, startingContainer
 
         let playerDisplay = displayName;
         let points = '-';
+        let posPill = '';
+        let statusIcon = '';
+
         if (fplPlayer) {
             playerDisplay = `<a href="#" onclick='showPlayerInfo(${JSON.stringify(fplPlayer)})'>${fplPlayer.web_name}</a>`;
             points = fplPlayer.event_points !== undefined ? fplPlayer.event_points : 0;
+            
+            const posNames = {1:'GK', 2:'DEF', 3:'MID', 4:'FWD'};
+            const posColors = {1:'warning', 2:'primary', 3:'success', 4:'danger'};
+            const posName = posNames[fplPlayer.element_type] || 'UNK';
+            const posColor = posColors[fplPlayer.element_type] || 'secondary';
+            posPill = `<span class="badge bg-${posColor} me-1" style="font-size:0.6rem;">${posName}</span>`;
+
+            if (fplPlayer.status !== 'a') {
+                const color = fplPlayer.status === 'i' ? 'danger' : 'warning';
+                statusIcon = `<i class="fas fa-plus-square text-${color} ms-1" title="${fplPlayer.news}"></i>`;
+            }
         }
 
         return `
             <div class="d-flex justify-content-between align-items-center mb-1">
                 <div>
                     <span class="badge bg-secondary me-2" style="width: 25px;">${shirtNum}</span>
-                    ${playerDisplay} ${isCaptain ? '<span class="badge bg-warning text-dark">C</span>' : ''}
+                    ${posPill}
+                    ${playerDisplay} 
+                    ${isCaptain ? '<span class="badge bg-warning text-dark ms-1">C</span>' : ''}
+                    ${statusIcon}
                 </div>
                 <span class="fw-bold ${points > 0 ? 'text-success' : ''}">${points}</span>
             </div>
@@ -658,6 +774,11 @@ window.addEventListener('DOMContentLoaded', () => {
     // We can delay it slightly to let fixtures load first
     setTimeout(renderStandings, 1000);
 });
+
+
+
+
+
 
 
 
