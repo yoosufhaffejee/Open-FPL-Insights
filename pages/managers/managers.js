@@ -710,6 +710,19 @@ function updateTeamInfo(label, newValue) {
 }
 
 async function Initialize() {
+    if (!gameweeks || gameweeks.length === 0) {
+        document.body.innerHTML = `
+            <div class="container mt-5 text-center text-white p-5 border border-danger rounded bg-dark">
+                <h3 class="text-danger">Failed to load FPL Data</h3>
+                <p>Your network might be blocking the API requests.</p>
+                <p>Try switching from mobile data to Wi-Fi, or use a VPN.</p>
+                <button class="btn btn-primary mt-3" onclick="window.location.reload()">Retry</button>
+            </div>
+        `;
+        const loader = document.getElementById('global-loader');
+        if (loader) loader.style.display = 'none';
+        return;
+    }
     filteredPlayers = allPlayers;
 
     selectedGameweek = getLastGameweekId();

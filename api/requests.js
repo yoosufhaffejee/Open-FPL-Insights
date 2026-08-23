@@ -1,24 +1,56 @@
-const proxyURL = 'https://gh-pages-cors.haffejeeyoosuf1.workers.dev/?';
 const baseURL = 'https://fantasy.premierleague.com/api/';
 
 const reqType = {
-    overview: 'bootstrap-static/', //Overview
-    gameweeks: 'events/', // Get all gameweeks
-    gameweek: 'event',  //A selected gameweek
-    fixtures: 'fixtures/', //Get all fixtures
-    player: 'element-summary/', //Players (playderID)
-    manager: 'entry/', //Get manager data (Id)
-    transfers: 'entry/', //entry/id/transfers
-    picks: 'entry/', //entry/id/event/GW-ID/picks
-    history: 'entry/', //entry/id/history
-    league: 'leagues-classic/' //Get league standing at current gameweek.
+    overview: 'bootstrap-static/',
+    gameweeks: 'events/',
+    gameweek: 'event',
+    fixtures: 'fixtures/',
+    player: 'element-summary/',
+    manager: 'entry/',
+    transfers: 'entry/',
+    picks: 'entry/',
+    history: 'entry/',
+    league: 'leagues-classic/'
 }
+
+const proxies = [
+    'https://gh-pages-cors.haffejeeyoosuf1.workers.dev/?',
+    'https://corsproxy.io/?'
+];
+
+let currentProxyIndex = 0;
 
 const doCORSRequest = async (url) => {
     let endpointUrl = baseURL + url;
-    const response = await fetch(proxyURL + endpointUrl);
-    const myJson = await response.json();
-    return myJson
+    let lastError = null;
+
+    for (let i = currentProxyIndex; i < proxies.length; i++) {
+        try {
+            const response = await fetch(proxies[i] + endpointUrl);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const myJson = await response.json();
+            currentProxyIndex = i; // Save successful proxy index
+            return myJson;
+        } catch (e) {
+            lastError = e;
+            console.warn(`Proxy ${proxies[i]} failed. Try next...`);
+        }
+    }
+    
+    for (let i = 0; i < currentProxyIndex; i++) {
+        try {
+            const response = await fetch(proxies[i] + endpointUrl);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const myJson = await response.json();
+            currentProxyIndex = i;
+            return myJson;
+        } catch (e) {
+            lastError = e;
+            console.warn(`Proxy ${proxies[i]} failed. Try next...`);
+        }
+    }
+
+    throw new Error('All proxies failed. Network might be blocking requests.');
 }
 
 const getOverview = async () => {
