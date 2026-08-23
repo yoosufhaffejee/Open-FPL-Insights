@@ -93,9 +93,60 @@
                 </div>
 
 
-            </div>
             
-            <div class="col-lg-3">
+                <!-- Information Section -->
+                <div class="bg-dark p-3 rounded border border-secondary mb-5 mt-4">
+                    <h5 class="text-white fw-bold mb-3">Chip Strategy & Information</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <div class="p-2 border border-secondary rounded h-100">
+                                <h6 class="text-warning fw-bold"><i class="fas fa-star"></i> Wildcard</h6>
+                                <p class="small text-white-50 mb-0">Play to make unlimited free transfers. Your accumulated free transfers will not be reset.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-2 border border-secondary rounded h-100">
+                                <h6 class="text-primary fw-bold"><i class="fas fa-sync-alt"></i> Free Hit</h6>
+                                <p class="small text-white-50 mb-0">Make unlimited transfers for a single Gameweek. Your squad reverts back for the next deadline.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-2 border border-secondary rounded h-100">
+                                <h6 class="text-success fw-bold"><i class="fas fa-chair"></i> Bench Boost</h6>
+                                <p class="small text-white-50 mb-0">Points scored by your bench players are added to your Gameweek total.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-2 border border-secondary rounded h-100">
+                                <h6 class="text-danger fw-bold"><i class="fas fa-copyright"></i> Triple Captain</h6>
+                                <p class="small text-white-50 mb-0">Your captain's points are multiplied by three instead of two.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion accordion-flush" id="plannerHelpAccordion">
+                        <div class="accordion-item bg-transparent border-secondary">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed bg-transparent text-white shadow-none px-0 py-2" type="button" data-bs-toggle="collapse" data-bs-target="#plannerHelpCollapse">
+                                    <i class="fas fa-question-circle me-2"></i> How to use the Transfer Planner
+                                </button>
+                            </h2>
+                            <div id="plannerHelpCollapse" class="accordion-collapse collapse" data-bs-parent="#plannerHelpAccordion">
+                                <div class="accordion-body text-white-50 small px-0">
+                                    <ul class="mb-0 ps-3">
+                                        <li><strong>Starting FTs:</strong> Set how many Free Transfers you carry into the first displayed Gameweek (e.g., 0 before GW1 deadline, 1 or more during the season).</li>
+                                        <li><strong>Making Transfers:</strong> Click on a player's row in the grid for the Gameweek you want to make a transfer, then click the <code>+</code> button next to a player in the right sidebar.</li>
+                                        <li><strong>Captains:</strong> Click <code>[C]</code> or <code>[V]</code> under a player's name to set your Captain and Vice-Captain.</li>
+                                        <li><strong>Chips:</strong> Toggle chips in the Gameweek headers. The planner fully supports the 24/25 rules (chips do not reset accumulated FTs!).</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3">l-lg-3">
                 <!-- Players Sidebar -->
                 <div class="bg-dark p-3 rounded border border-secondary text-white h-100 d-flex flex-column">
                     <h5 class="fw-bold mb-3">Player Selection</h5>
@@ -127,6 +178,7 @@
                                     <option value="selected_by_percent">Selected by %</option>
                                     <option value="expected_goal_involvements">xGI</option>
                                     <option value="predicted_pts">Exp Pts (GW)</option>
+                                    <option value="predicted_pts">Exp Pts (GW)</option>
                                 </select>
                             </div>
                         </div>
@@ -144,12 +196,15 @@
                     
                     <div class="d-flex text-white-50 small fw-bold px-2 mb-1 mt-2 align-items-center">
                         <div style="flex: 1;">Player</div>
-                        <div style="width: 40px; text-align: center;">Price</div>
-                        <div style="width: 40px; text-align: center;" id="plannerSortLabel">Pts</div>
-                        <div style="width: 50px;"></div>
+                        <div style="width: 35px; text-align: center;">Form</div>
+                        <div style="width: 35px; text-align: center;" title="Total Points">Pts</div>
+                        <div style="width: 45px; text-align: center;">Price</div>
+                        <div style="width: 45px; text-align: center; color: #ffc107;" id="plannerSortLabel" title="Expected Points in selected Gameweek">Exp</div>
+                        <div style="width: 35px;"></div>
+                    </div>
                     </div>
 
-                    <div id="plannerPlayersList" class="overflow-auto flex-grow-1" style="max-height: 600px;">
+                    <div id="plannerPlayersList" class="overflow-auto flex-grow-1">
                         <!-- Player list injected here -->
                         <div class="text-center text-white-50 mt-5">
                             <i class="fas fa-spinner fa-spin fs-2"></i>
