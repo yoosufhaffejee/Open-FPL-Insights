@@ -1,0 +1,12 @@
+.list-group-item:hover {
+    background-color: #343a40 !important;
+    cursor: pointer;
+}
+
+#player1-card, #player2-card {
+    transition: all 0.3s ease;
+}
+
+#player1-card:hover, #player2-card:hover {
+    border-color: #0dcaf0 !important;
+}

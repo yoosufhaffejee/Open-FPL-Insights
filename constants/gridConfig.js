@@ -39,23 +39,58 @@ function setupGridOptions(filteredPlayers) {
             { headerName: 'ID', field: 'id', hide: true },
             { headerName: 'Code', field: 'code', hide: true },
             { headerName: 'Photo', field: 'photo', hide: true },
-            { headerName: 'Element Type', field: 'element_type', hide: true },
-            { headerName: 'Web Name', width: 150, field: 'web_name', floatingFilter: true, pinned: 'left' },
+            { 
+                headerName: 'Player', 
+                width: 180, 
+                field: 'web_name', 
+                floatingFilter: true, 
+                pinned: 'left',
+                cellRenderer: (params) => {
+                    if (!params.data) return '';
+                    let injuryIcon = '';
+                    let chance = params.data.chance_of_playing_next_round;
+                    if (chance != null && chance < 100) {
+                        let color = chance === 0 ? 'text-danger' : 'text-warning';
+                        injuryIcon = `<i class="fa-solid fa-triangle-exclamation ${color}" title="${params.data.news}"></i>`;
+                    }
+                    return `<div class="d-flex align-items-center" style="height: 100%;">
+                                <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${params.data.team_code}-66.webp" style="width: 20px; margin-right: 8px;">
+                                <span>${params.value}</span>
+                                ${injuryIcon ? `<span class="ms-2" style="font-size: 0.9em; cursor: help;">${injuryIcon}</span>` : ''}
+                            </div>`;
+                }
+            },
             { headerName: 'First Name', field: 'first_name', hide: true },
             { headerName: 'Second Name', field: 'second_name', hide: true },
+            { 
+                headerName: 'Pos', 
+                field: 'element_type', 
+                width: 80, 
+                valueGetter: (params) => {
+                    const posMap = { 1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD' };
+                    return posMap[params.data.element_type] || params.data.element_type;
+                }
+            },
             {
                 headerName: 'Price',
                 field: 'now_cost',
                 width: 100,
                 valueGetter: (params) => params.data.now_cost / 10,
-                cellRenderer: (params) => '<span style="color: #4caf50; font-weight: 500;">&pound;' + params.value + 'm</span>'
+                cellRenderer: (params) => {
+                    let change = params.data.cost_change_event;
+                    let icon = '';
+                    if (change > 0) icon = '<i class="fa-solid fa-caret-up text-success ms-1" title="Price rose this week"></i>';
+                    else if (change < 0) icon = '<i class="fa-solid fa-caret-down text-danger ms-1" title="Price fell this week"></i>';
+                    return `<span style="color: #4caf50; font-weight: 500;">&pound;${params.value.toFixed(1)}m</span>${icon}`;
+                }
             },
             { headerName: 'Total Points', width: 120, field: 'total_points' },
             {
                 headerName: 'Form',
                 field: 'form',
                 width: 100,
-                valueGetter: (params) => parseFloat(params.data.form)
+                valueGetter: (params) => parseFloat(params.data.form),
+                cellClass: params => params.value >= 5 ? 'text-success fw-bold' : (params.value >= 3 ? 'text-warning' : '')
             },
             {
                 headerName: 'Selected by %',
@@ -75,9 +110,10 @@ function setupGridOptions(filteredPlayers) {
                 valueFormatter: (params) => params.value == null ? "100" : params.value,
                 cellRenderer: (params) => {
                     let val = params.value;
+                    let news = params.data.news ? `title="${params.data.news}"` : '';
                     if (val === 'N/A' || val == 100 || val == null) return '<span class="badge bg-success">100%</span>';
-                    if (val == 0) return '<span class="badge bg-danger">0%</span>';
-                    return '<span class="badge bg-warning text-dark">' + val + '%</span>';
+                    if (val == 0) return `<span class="badge bg-danger" ${news} style="cursor: help;">0%</span>`;
+                    return `<span class="badge bg-warning text-dark" ${news} style="cursor: help;">${val}%</span>`;
                 }
             },
             {
@@ -90,13 +126,15 @@ function setupGridOptions(filteredPlayers) {
                 headerName: 'Predicted Points',
                 field: 'ep_this',
                 width: 150,
-                valueGetter: (params) => isNaN(parseFloat(params.data.ep_this)) ? 0 : parseFloat(params.data.ep_this)
+                valueGetter: (params) => isNaN(parseFloat(params.data.ep_this)) ? 0 : parseFloat(params.data.ep_this),
+                cellClass: params => params.value >= 6 ? 'text-success fw-bold' : (params.value >= 4 ? 'text-warning' : '')
             },
             {
                 headerName: 'Next Predicted Points',
                 field: 'ep_next',
                 width: 170,
-                valueGetter: (params) => isNaN(parseFloat(params.data.ep_next)) ? 0 : parseFloat(params.data.ep_next)
+                valueGetter: (params) => isNaN(parseFloat(params.data.ep_next)) ? 0 : parseFloat(params.data.ep_next),
+                cellClass: params => params.value >= 6 ? 'text-success fw-bold' : (params.value >= 4 ? 'text-warning' : '')
             },
             {
                 headerName: 'Value Season',

@@ -166,3 +166,66 @@ const getLeague = async (id, pageId = 1) => {
     const data = await doCORSRequest(url);
     return data;
 };
+
+const doRawCORSRequest = async (fullUrl) => {
+    let lastError = null;
+    for (let i = currentProxyIndex; i < proxies.length; i++) {
+        try {
+            const response = await fetch(proxies[i] + fullUrl);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const myJson = await response.json();
+            currentProxyIndex = i;
+            return myJson;
+        } catch (e) {
+            lastError = e;
+            console.warn(`Proxy ${proxies[i]} failed for raw url. Try next...`);
+        }
+    }
+    for (let i = 0; i < currentProxyIndex; i++) {
+        try {
+            const response = await fetch(proxies[i] + fullUrl);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const myJson = await response.json();
+            currentProxyIndex = i;
+            return myJson;
+        } catch (e) {
+            lastError = e;
+            console.warn(`Proxy ${proxies[i]} failed for raw url. Try next...`);
+        }
+    }
+    throw new Error('All proxies failed for raw request.');
+}
+
+const getPulseLiveFixtures = async () => {
+    try {
+        const latestData = await doRawCORSRequest('https://footballapi.pulselive.com/football/fixtures?comps=1&pageSize=1&page=0&sort=desc');
+        const currentSeasonId = latestData.content[0].gameweek.compSeason.id;
+        const allData = await doRawCORSRequest(`https://footballapi.pulselive.com/football/fixtures?comps=1&compSeasons=${currentSeasonId}&pageSize=400&page=0`);
+        return allData.content;
+    } catch (e) {
+        console.error("Error fetching Pulse Live fixtures", e);
+        return [];
+    }
+}
+
+const getPulseLiveLineup = async (matchId) => {
+    try {
+        const data = await doRawCORSRequest(`https://sdp-prem-prod.premier-league-prod.pulselive.com/api/v3/matches/${matchId}/lineups`);
+        return data;
+    } catch (e) {
+        console.error("Error fetching Pulse Live lineups for match", matchId, e);
+        return null;
+    }
+}
+
+const getPulseLiveStandings = async () => {
+    try {
+        const latestData = await doRawCORSRequest('https://footballapi.pulselive.com/football/fixtures?comps=1&pageSize=1&page=0&sort=desc');
+        const currentSeasonId = latestData.content[0].gameweek.compSeason.id;
+        const data = await doRawCORSRequest(`https://footballapi.pulselive.com/football/standings?compSeasons=${currentSeasonId}`);
+        return data;
+    } catch (e) {
+        console.error("Error fetching Pulse Live standings", e);
+        return null;
+    }
+}

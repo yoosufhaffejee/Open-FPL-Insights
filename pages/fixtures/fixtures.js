@@ -55,52 +55,72 @@ function renderFixtures() {
                 </h2>
                 <div id="collapse${fixture.code}" class="accordion-collapse collapse" aria-labelledby="heading${fixture.code}">
                     <div class="accordion-body">
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Stat</th>
-                                    <th>${homeTeam.short_name}</th>
-                                    <th>${awayTeam.short_name}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Goals Scored</td>
-                                    <td>${getStatDetails(fixture, 'goals_scored', 'h')}</td>
-                                    <td>${getStatDetails(fixture, 'goals_scored', 'a')}</td>
-                                </tr>
-                                <tr>
-                                    <td>Assists</td>
-                                    <td>${getStatDetails(fixture, 'assists', 'h')}</td>
-                                    <td>${getStatDetails(fixture, 'assists', 'a')}</td>
-                                </tr>
-                                <tr>
-                                    <td>Yellow Cards</td>
-                                    <td>${getStatDetails(fixture, 'yellow_cards', 'h')}</td>
-                                    <td>${getStatDetails(fixture, 'yellow_cards', 'a')}</td>
-                                </tr>
-                                <tr>
-                                    <td>Saves</td>
-                                    <td>${getStatDetails(fixture, 'saves', 'h')}</td>
-                                    <td>${getStatDetails(fixture, 'saves', 'a')}</td>
-                                </tr>
-                                <tr>
-                                    <td>Bonus</td>
-                                    <td>${getStatDetails(fixture, 'bonus', 'h')}</td>
-                                    <td>${getStatDetails(fixture, 'bonus', 'a')}</td>
-                                </tr>
-                                <tr>
-                                    <td>Bonus Points System</td>
-                                    <td>${getStatDetails(fixture, 'bps', 'h')}</td>
-                                    <td>${getStatDetails(fixture, 'bps', 'a')}</td>
-                                </tr>
-                                <tr>
-                                    <td>Defensive Contributions</td>
-                                    <td>${getStatDetails(fixture, 'defensive_contribution', 'h')}</td>
-                                    <td>${getStatDetails(fixture, 'defensive_contribution', 'a')}</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <ul class="nav nav-tabs" id="myTab${fixture.code}" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="stats-tab-${fixture.code}" data-bs-toggle="tab" data-bs-target="#stats-${fixture.code}" type="button" role="tab" aria-controls="stats-${fixture.code}" aria-selected="true">Player Stats</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="lineups-tab-${fixture.code}" data-bs-toggle="tab" data-bs-target="#lineups-${fixture.code}" type="button" role="tab" aria-controls="lineups-${fixture.code}" aria-selected="false" onclick="loadLineups(${fixture.id})">Lineups</button>
+                            </li>
+                        </ul>
+                        <div class="tab-content mt-3" id="myTabContent${fixture.code}">
+                            <div class="tab-pane fade show active" id="stats-${fixture.code}" role="tabpanel" aria-labelledby="stats-tab-${fixture.code}">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Stat</th>
+                                            <th>${homeTeam.short_name}</th>
+                                            <th>${awayTeam.short_name}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Goals Scored</td>
+                                            <td>${getStatDetails(fixture, 'goals_scored', 'h')}</td>
+                                            <td>${getStatDetails(fixture, 'goals_scored', 'a')}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Assists</td>
+                                            <td>${getStatDetails(fixture, 'assists', 'h')}</td>
+                                            <td>${getStatDetails(fixture, 'assists', 'a')}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Yellow Cards</td>
+                                            <td>${getStatDetails(fixture, 'yellow_cards', 'h')}</td>
+                                            <td>${getStatDetails(fixture, 'yellow_cards', 'a')}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Saves</td>
+                                            <td>${getStatDetails(fixture, 'saves', 'h')}</td>
+                                            <td>${getStatDetails(fixture, 'saves', 'a')}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Bonus</td>
+                                            <td>${getStatDetails(fixture, 'bonus', 'h')}</td>
+                                            <td>${getStatDetails(fixture, 'bonus', 'a')}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Bonus Points System</td>
+                                            <td>${getStatDetails(fixture, 'bps', 'h')}</td>
+                                            <td>${getStatDetails(fixture, 'bps', 'a')}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Defensive Contributions</td>
+                                            <td>${getStatDetails(fixture, 'defensive_contribution', 'h')}</td>
+                                            <td>${getStatDetails(fixture, 'defensive_contribution', 'a')}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="tab-pane fade" id="lineups-${fixture.code}" role="tabpanel" aria-labelledby="lineups-tab-${fixture.code}">
+                                <div id="lineups-container-${fixture.id}" class="text-center p-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading lineups...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted">Fetching live lineups...</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
@@ -395,3 +415,234 @@ function calculatePlayerPredictedPoints(player, fixture, upcomingGameweek) {
 
     return playerPredictedPoints;
 }
+
+window.pulseLiveFixturesData = null;
+
+async function loadLineups(fplFixtureId) {
+    const container = document.getElementById(`lineups-container-${fplFixtureId}`);
+    
+    // Find FPL fixture
+    const fplFixture = fixtures.find(f => f.id === fplFixtureId);
+    if (!fplFixture) return;
+
+    if (!window.pulseLiveFixturesData) {
+        window.pulseLiveFixturesData = await getPulseLiveFixtures();
+    }
+
+    const homeTeam = teams.find(t => t.id === fplFixture.team_h);
+    const awayTeam = teams.find(t => t.id === fplFixture.team_a);
+    const fplKickoff = new Date(fplFixture.kickoff_time).getTime();
+
+    // Find matching Pulse Live fixture
+    const plMatch = window.pulseLiveFixturesData.find(pl => {
+        // match by home team abbreviation and same day
+        const plHomeTeam = pl.teams[0].team.club ? pl.teams[0].team.club.abbr : pl.teams[0].team.abbr;
+        return plHomeTeam === homeTeam.short_name && Math.abs(pl.kickoff.millis - fplKickoff) < 86400000;
+    });
+
+    if (!plMatch) {
+        container.innerHTML = '<div class="alert alert-warning">Lineups not available for this match yet.</div>';
+        return;
+    }
+
+    const matchId = plMatch.id;
+    const lineupData = await getPulseLiveLineup(matchId);
+
+    if (!lineupData || !lineupData.home_team || !lineupData.away_team || !lineupData.home_team.players || lineupData.home_team.players.length === 0) {
+        container.innerHTML = '<div class="alert alert-info">Lineups have not been released yet (usually available 60 minutes before kickoff).</div>';
+        return;
+    }
+
+    // Render lineups
+    container.innerHTML = `
+        <div class="row text-start">
+            <div class="col-6 border-end">
+                <h5 class="text-center mb-3">
+                    <img src="https://resources.premierleague.com/premierleague/badges/100/t${homeTeam.code}.png" style="width:30px;">
+                    ${homeTeam.short_name}
+                </h5>
+                <h6 class="text-muted border-bottom pb-1">Starting XI</h6>
+                <div id="home-starting-${fplFixtureId}" class="mb-3"></div>
+                <h6 class="text-muted border-bottom pb-1">Bench</h6>
+                <div id="home-bench-${fplFixtureId}"></div>
+            </div>
+            <div class="col-6">
+                <h5 class="text-center mb-3">
+                    <img src="https://resources.premierleague.com/premierleague/badges/100/t${awayTeam.code}.png" style="width:30px;">
+                    ${awayTeam.short_name}
+                </h5>
+                <h6 class="text-muted border-bottom pb-1">Starting XI</h6>
+                <div id="away-starting-${fplFixtureId}" class="mb-3"></div>
+                <h6 class="text-muted border-bottom pb-1">Bench</h6>
+                <div id="away-bench-${fplFixtureId}"></div>
+            </div>
+        </div>
+    `;
+
+    renderTeamLineup(lineupData.home_team.players, fplFixture.team_h, document.getElementById(`home-starting-${fplFixtureId}`), document.getElementById(`home-bench-${fplFixtureId}`));
+    renderTeamLineup(lineupData.away_team.players, fplFixture.team_a, document.getElementById(`away-starting-${fplFixtureId}`), document.getElementById(`away-bench-${fplFixtureId}`));
+}
+
+function renderTeamLineup(plPlayers, fplTeamId, startingContainer, benchContainer) {
+    const teamPlayers = allPlayers.filter(p => p.team === fplTeamId);
+    
+    let startingHtml = '';
+    let benchHtml = '';
+
+    plPlayers.forEach(plPlayer => {
+        // Map to FPL player
+        const fplPlayer = matchPlayer(plPlayer, teamPlayers);
+        
+        let playerDisplay = plPlayer.knownName || plPlayer.lastName;
+        let points = '-';
+        if (fplPlayer) {
+            playerDisplay = `<a href="#" onclick='showPlayerInfo(${JSON.stringify(fplPlayer)})'>${fplPlayer.web_name}</a>`;
+            points = fplPlayer.event_points !== undefined ? fplPlayer.event_points : 0;
+        }
+
+        const html = `
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <div>
+                    <span class="badge bg-secondary me-2" style="width: 25px;">${plPlayer.shirtNum || '-'}</span>
+                    ${playerDisplay} ${plPlayer.isCaptain ? '<span class="badge bg-warning text-dark">C</span>' : ''}
+                </div>
+                <span class="fw-bold">${points}</span>
+            </div>
+        `;
+
+        if (plPlayer.position === 'Substitute') {
+            benchHtml += html;
+        } else {
+            startingHtml += html;
+        }
+    });
+
+    startingContainer.innerHTML = startingHtml;
+    benchContainer.innerHTML = benchHtml;
+}
+
+function matchPlayer(plPlayer, teamPlayers) {
+    // Basic string matching using Levenshtein distance
+    let bestMatch = null;
+    let bestScore = Infinity;
+
+    const plName = (plPlayer.knownName || `${plPlayer.firstName} ${plPlayer.lastName}`).toLowerCase().replace(/[^a-z]/g, '');
+    const plLastName = (plPlayer.lastName).toLowerCase().replace(/[^a-z]/g, '');
+
+    teamPlayers.forEach(fplPlayer => {
+        const fplName = `${fplPlayer.first_name} ${fplPlayer.second_name}`.toLowerCase().replace(/[^a-z]/g, '');
+        const fplWebName = fplPlayer.web_name.toLowerCase().replace(/[^a-z]/g, '');
+        
+        // Exact matches
+        if (fplWebName === plLastName || fplWebName === plName || fplName === plName) {
+            bestMatch = fplPlayer;
+            bestScore = 0;
+            return;
+        }
+
+        const d1 = levenshtein(plName, fplName);
+        const d2 = levenshtein(plLastName, fplWebName);
+        const score = Math.min(d1, d2);
+        
+        if (score < bestScore && score < 5) { // threshold for fuzzy match
+            bestScore = score;
+            bestMatch = fplPlayer;
+        }
+    });
+
+    return bestMatch;
+}
+
+function levenshtein(a, b) {
+    if (a.length === 0) return b.length;
+    if (b.length === 0) return a.length;
+    let matrix = [];
+    for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+    for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+    for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+            if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                matrix[i][j] = matrix[i - 1][j - 1];
+            } else {
+                matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1));
+            }
+        }
+    }
+    return matrix[b.length][a.length];
+}
+
+async function renderStandings() {
+    const container = document.getElementById('league-table-container');
+    const standingsData = await getPulseLiveStandings();
+    
+    if (!standingsData || !standingsData.tables || !standingsData.tables[0]) {
+        if(container) container.innerHTML = '<div class="alert alert-warning">Could not load the league table.</div>';
+        return;
+    }
+
+    const entries = standingsData.tables[0].entries;
+    
+    let html = `
+        <table class="table table-dark table-striped table-hover align-middle">
+            <thead>
+                <tr>
+                    <th scope="col" class="text-center">Pos</th>
+                    <th scope="col">Club</th>
+                    <th scope="col" class="text-center">Pl</th>
+                    <th scope="col" class="text-center">W</th>
+                    <th scope="col" class="text-center">D</th>
+                    <th scope="col" class="text-center">L</th>
+                    <th scope="col" class="text-center d-none d-md-table-cell">GF</th>
+                    <th scope="col" class="text-center d-none d-md-table-cell">GA</th>
+                    <th scope="col" class="text-center">GD</th>
+                    <th scope="col" class="text-center fw-bold">Pts</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    entries.forEach(entry => {
+        // Try to match the FPL team for the badge code
+        const fplTeam = teams.find(t => t.name === entry.team.name || t.short_name === entry.team.club.abbr);
+        const badgeUrl = fplTeam ? `https://resources.premierleague.com/premierleague/badges/50/t${fplTeam.code}.png` : '';
+        
+        let rowClass = '';
+        if (entry.position <= 4) rowClass = 'border-primary border-start border-4'; // Champions League
+        else if (entry.position === 5) rowClass = 'border-warning border-start border-4'; // Europa
+        else if (entry.position >= 18) rowClass = 'border-danger border-start border-4'; // Relegation
+
+        html += `
+            <tr>
+                <td class="text-center ${rowClass}">${entry.position}</td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <img src="${badgeUrl}" alt="${entry.team.name}" style="width: 25px; height: 25px;" class="me-2">
+                        <span class="d-none d-sm-inline">${entry.team.name}</span>
+                        <span class="d-inline d-sm-none">${entry.team.shortName}</span>
+                    </div>
+                </td>
+                <td class="text-center">${entry.overall.played}</td>
+                <td class="text-center">${entry.overall.won}</td>
+                <td class="text-center">${entry.overall.drawn}</td>
+                <td class="text-center">${entry.overall.lost}</td>
+                <td class="text-center d-none d-md-table-cell">${entry.overall.goalsFor}</td>
+                <td class="text-center d-none d-md-table-cell">${entry.overall.goalsAgainst}</td>
+                <td class="text-center">${entry.overall.goalsDifference > 0 ? '+' + entry.overall.goalsDifference : entry.overall.goalsDifference}</td>
+                <td class="text-center fw-bold">${entry.overall.points}</td>
+            </tr>
+        `;
+    });
+
+    html += `
+            </tbody>
+        </table>
+    `;
+
+    if(container) container.innerHTML = html;
+}
+
+// Call renderStandings when the page finishes loading data
+window.addEventListener('DOMContentLoaded', () => {
+    // We can delay it slightly to let fixtures load first
+    setTimeout(renderStandings, 1000);
+});
