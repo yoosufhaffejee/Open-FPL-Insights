@@ -16,7 +16,7 @@ function setupGridOptions(filteredPlayers) {
         columnDefs: [
             {
                 headerName: 'Actions',
-                width: 85,
+                width: 65,
                 pinned: 'left',
                 filter: false,
                 cellRenderer: (params) => {

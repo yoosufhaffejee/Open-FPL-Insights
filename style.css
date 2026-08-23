@@ -325,6 +325,7 @@ h1, h2, h3, h4, h5, h6 {
     display: flex;
     justify-content: center;
     gap: 15px;
+    flex-wrap: wrap;
 }
 
 .button-container .btn, .save-container .btn {
@@ -471,4 +472,15 @@ h1, h2, h3, h4, h5, h6 {
     background-color: #2a2a2a;
     border-color: #444;
     color: #e0e0e0;
+}
+@media (max-width: 600px) {
+    .ag-paging-panel {
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        height: auto !important;
+        padding: 10px 0 !important;
+    }
+    .ag-paging-panel > * {
+        margin: 5px !important;
+    }
 }

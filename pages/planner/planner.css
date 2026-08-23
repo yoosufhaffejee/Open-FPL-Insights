@@ -119,3 +119,54 @@ body.planner-page {
 .btn-transfer:hover {
     background-color: #00cc6a;
 }
+
+/* Planner Grid Styles */
+.planner-table th, .planner-table td {
+    vertical-align: middle;
+    border-color: #444;
+}
+
+.planner-table .shirt {
+    width: 30px;
+    height: auto;
+    margin-right: 8px;
+}
+
+.gw-cell {
+    padding: 4px;
+    font-size: 0.8rem;
+    position: relative;
+    border-radius: 4px;
+    margin: 2px;
+}
+
+.gw-cell .opp {
+    font-weight: bold;
+    display: block;
+}
+
+.gw-cell .pts {
+    font-size: 0.75rem;
+    opacity: 0.9;
+}
+
+/* FDR Colors */
+.fdr-1 { background-color: #008000; color: #fff; } /* Very Easy */
+.fdr-2 { background-color: #00ff85; color: #111; } /* Easy */
+.fdr-3 { background-color: #ebebe4; color: #111; } /* Medium */
+.fdr-4 { background-color: #ff005a; color: #fff; } /* Hard */
+.fdr-5 { background-color: #800000; color: #fff; } /* Very Hard */
+
+/* Transfer highlight */
+.transfer-out-selected {
+    outline: 2px solid #ff005a;
+    background-color: rgba(255, 0, 90, 0.2) !important;
+}
+
+.transfer-out-row td {
+    opacity: 0.6;
+}
+
+.transfer-in-candidate:hover {
+    outline: 2px solid #00ff85;
+}
