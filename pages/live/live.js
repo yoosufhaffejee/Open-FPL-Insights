@@ -70,9 +70,9 @@ function renderLivePitch(picks) {
         const playerCard = `
             <div class="text-center" style="width: 80px;">
                 <div class="position-relative d-inline-block">
-                    <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${player.team_code}-110.webp" 
+                    <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${player.team_code}${player.element_type == 1 ? '_1' : ''}-110.webp" 
                          style="width: 50px;" class="drop-shadow" 
-                         onerror="this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-110.webp';">
+                         onerror="playerImgOnerror(this, ${player.team_code}, ${player.element_type})">
                     ${isCaptain ? '<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark border border-dark">C</span>' : ''}
                     ${isVice ? '<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-light text-dark border border-dark">V</span>' : ''}
                 </div>

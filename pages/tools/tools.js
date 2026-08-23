@@ -53,7 +53,7 @@ const renderMarketTrends = () => {
     const formatRiser = (p) => `
         <div class="list-group-item bg-dark text-white border-secondary d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
-                <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${p.team_code}-110.webp" style="width: 25px;" class="me-2 drop-shadow" onerror="this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-110.webp';">
+                <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${p.team_code}${p.element_type == 1 ? '_1' : ''}-110.webp" style="width: 25px;" class="me-2 drop-shadow" onerror="playerImgOnerror(this, ${p.team_code}, ${p.element_type})">
                 <span>${p.web_name}</span>
             </div>
             <span class="badge bg-success rounded-pill">+${(p.transfers_in_event - p.transfers_out_event).toLocaleString()} net</span>
@@ -63,7 +63,7 @@ const renderMarketTrends = () => {
     const formatFaller = (p) => `
         <div class="list-group-item bg-dark text-white border-secondary d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
-                <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${p.team_code}-110.webp" style="width: 25px;" class="me-2 drop-shadow" onerror="this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-110.webp';">
+                <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${p.team_code}${p.element_type == 1 ? '_1' : ''}-110.webp" style="width: 25px;" class="me-2 drop-shadow" onerror="playerImgOnerror(this, ${p.team_code}, ${p.element_type})">
                 <span>${p.web_name}</span>
             </div>
             <span class="badge bg-danger rounded-pill">${(p.transfers_in_event - p.transfers_out_event).toLocaleString()} net</span>

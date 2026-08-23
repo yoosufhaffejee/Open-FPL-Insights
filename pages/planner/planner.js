@@ -274,7 +274,7 @@ function renderPlannerGrid() {
         let infoHTML = `
             <td style="text-align: left;">
                 <div class="d-flex align-items-center">
-                    <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${gw0Player.team_code}-110.webp" class="shirt cursor-pointer" onclick="selectTransferOut(${slotId}, 0)" onerror="this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-110.webp'">
+                    <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${gw0Player.team_code}${gw0Player.element_type == 1 ? '_1' : ''}-110.webp" class="shirt cursor-pointer" onclick="selectTransferOut(${slotId}, 0)" onerror="playerImgOnerror(this, ${gw0Player.team_code}, ${gw0Player.element_type})">
                     <div>
                         <div class="fw-bold cursor-pointer" onclick="selectTransferOut(${slotId}, 0)">${gw0Player.web_name}${subBadge}</div>
                         <div class="small text-white-50">${teamName} - £${(gw0Player.now_cost/10).toFixed(1)}m</div>
@@ -567,7 +567,7 @@ function renderPlannerPlayers() {
         item.innerHTML = `
             <div class="d-flex align-items-center w-100" style="min-width: 340px;">
                 <div class="me-2" style="width: 15px; text-align: center;">${statusIcon}</div>
-                <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${player.team_code}-110.webp" class="shirt me-2 cursor-pointer" onclick="showPlayerInfoById(${player.id})" style="width: 25px;" onerror="this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-110.webp'">
+                <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${player.team_code}${player.element_type == 1 ? '_1' : ''}-110.webp" class="shirt me-2 cursor-pointer" onclick="showPlayerInfoById(${player.id})" style="width: 25px;" onerror="playerImgOnerror(this, ${gw0Player.team_code}, ${gw0Player.element_type})">
                 <div class="flex-grow-1" style="min-width: 0;">
                     <div class="fw-bold text-white text-truncate cursor-pointer" onclick="showPlayerInfoById(${player.id})" style="font-size: 0.85rem;">${player.web_name}</div>
                     <div class="small text-white-50" style="font-size: 0.7rem;">${teamName} <span class="ms-1">${posText}</span></div>
@@ -674,7 +674,7 @@ function showPlayerInfo(player) {
 function populatePlayerModal(data, player) {
     // Set the player name in the modal title
     document.getElementById('playerInfoModalLabel').innerHTML = `
-    <img src="https://resources.premierleague.com/premierleague/photos/players/250x250/p${player.code}.png" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;" onerror="if(!this.dataset.triedShirt){this.dataset.triedShirt='1';this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-110.webp';}else{this.onerror=null;this.src='https://resources.premierleague.com/premierleague/photos/players/250x250/Photo-Missing.png';}">
+    <img src="https://resources.premierleague.com/premierleague/photos/players/250x250/p${player.code}.png" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;" onerror="playerImgOnerror(this, ${player.team_code}, ${player.element_type})">
     ${player.first_name} ${player.second_name}`;
 
     // Clear previous data
