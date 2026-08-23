@@ -166,20 +166,32 @@ function calculateExpectedPointsCore(player, fixture) {
     // Regress to mean for small sample sizes (less than 3 full games played) to prevent early-season anomalies
     if (player.minutes !== undefined && player.minutes < 270) {
         let weight = player.minutes / 270;
-        let baseline = parseFloat(player.ep_next);
-        if (isNaN(baseline)) baseline = (player.minutes > 0 ? 1.0 : 0.0);
+        
+        // Use price as a proxy for expected performance baseline early in the season
+        let cost = player.now_cost / 10;
+        let baseline = cost * 0.65; // e.g., 10.0m -> 6.5 pts, 5.0m -> 3.25 pts, 4.0m -> 2.6 pts
+        
+        // If FPL model explicitly predicts this player will blank (e.g., bench warmer, injured), trust it
+        let fplPred = parseFloat(player.ep_next);
+        if (!isNaN(fplPred) && fplPred < 1.0) {
+            baseline = fplPred;
+        } else if (!isNaN(fplPred) && player.minutes === 0) {
+            // For brand new players who haven't played a minute, blend price baseline with FPL prediction
+            baseline = (baseline * 0.5) + (fplPred * 0.5);
+        }
+        
         expectedPoints = (expectedPoints * weight) + (baseline * (1 - weight));
     }
     
-    // Add small bump to overall team expected points to reach ~60 average (algorithm naturally outputs ~45)
-    expectedPoints = expectedPoints * 1.15;
-    
-    // Blend with FPL's ep_next at 25% weight to smooth outliers
-    // (FPL's model is conservative but catches edge cases we might miss)
+    // Blend with FPL's ep_next at 15% weight to smooth outliers without dragging down our aggressive model too much
     const fplPred = parseFloat(player.ep_next);
     if (!isNaN(fplPred) && fplPred > 0) {
-        expectedPoints = (expectedPoints * 0.75) + (fplPred * 0.25);
+        expectedPoints = (expectedPoints * 0.85) + (fplPred * 0.15);
     }
+    
+    // Add bump to overall team expected points to reach ~60 average
+    // Apply this AFTER the FPL blend so the conservative FPL score doesn't undo the bump
+    expectedPoints = expectedPoints * 1.25;
     
     return expectedPoints;
 }
