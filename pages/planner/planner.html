@@ -149,56 +149,52 @@
                             <input type="text" class="form-control bg-dark text-white border-secondary" placeholder="Search by name" id="plannerSearch">
                         </div>
                         
-                        <div class="row g-2 mb-2">
-                            <div class="col-6">
-                                <select class="form-select form-select-sm bg-dark text-white border-secondary" id="plannerViewFilter">
-                                    <option value="all">All players</option>
-                                    <optgroup label="Position">
-                                        <option value="pos_1">Goalkeepers</option>
-                                        <option value="pos_2">Defenders</option>
-                                        <option value="pos_3">Midfielders</option>
-                                        <option value="pos_4">Forwards</option>
-                                    </optgroup>
-                                </select>
-                            </div>
-                            <div class="col-6">
-                                <select class="form-select form-select-sm bg-dark text-white border-secondary" id="plannerSortBy">
-                                    <option value="total_points">Total points</option>
-                                    <option value="event_points">Gameweek points</option>
-                                    <option value="now_cost">Price</option>
-                                    <option value="form">Form</option>
-                                    <option value="selected_by_percent">Selected by %</option>
-                                    <option value="expected_goal_involvements">xGI</option>
-                                    <option value="predicted_pts" selected>Exp Pts (GW)</option>
-                                </select>
-                            </div>
+                        <div class="d-flex gap-2 mb-2">
+                            <select class="form-select form-select-sm bg-dark text-white border-secondary w-50" id="plannerViewFilter">
+                                <option value="all">All players</option>
+                                <optgroup label="Position">
+                                    <option value="pos_1">Goalkeepers</option>
+                                    <option value="pos_2">Defenders</option>
+                                    <option value="pos_3">Midfielders</option>
+                                    <option value="pos_4">Forwards</option>
+                                </optgroup>
+                            </select>
+                            <select class="form-select form-select-sm bg-dark text-white border-secondary w-50" id="plannerSortBy">
+                                <option value="total_points">Total points</option>
+                                <option value="event_points">Gameweek points</option>
+                                <option value="now_cost">Price</option>
+                                <option value="form">Form</option>
+                                <option value="selected_by_percent">Selected by %</option>
+                                <option value="expected_goal_involvements">xGI</option>
+                                <option value="predicted_pts" selected>Exp Pts (GW)</option>
+                            </select>
                         </div>
-                        <div class="row g-2 pb-2 border-bottom border-secondary">
-                            <div class="col-6">
-                                <select class="form-select form-select-sm bg-dark text-white border-secondary" id="plannerMaxPrice">
-                                    <option value="999">Max Price: Any</option>
-                                </select>
-                            </div>
-                            <div class="col-6">
-                                <button class="btn btn-sm btn-outline-secondary w-100 text-white" id="plannerResetFilters"><i class="fas fa-undo"></i> Reset</button>
-                            </div>
+                        <div class="d-flex gap-2 pb-2 border-bottom border-secondary">
+                            <select class="form-select form-select-sm bg-dark text-white border-secondary w-50" id="plannerMaxPrice">
+                                <option value="999">Max Price: Any</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-secondary w-50 text-white" id="plannerResetFilters"><i class="fas fa-undo"></i> Reset</button>
                         </div>
                     </div>
                     
-                    <div class="d-flex text-white-50 small fw-bold px-2 mb-1 mt-2 align-items-center">
-                        <div style="flex: 1;">Player</div>
-                        <div style="width: 35px; text-align: center;">Form</div>
-                        <div style="width: 35px; text-align: center;" title="Total Points">Pts</div>
-                        <div style="width: 45px; text-align: center;">Price</div>
-                        <div style="width: 45px; text-align: center; color: #ffc107;" id="plannerSortLabel" title="Expected Points in selected Gameweek">Exp</div>
-                        <div style="width: 35px;"></div>
-                    </div>
-
-                    <div id="plannerPlayersList" class="overflow-auto flex-grow-1">
-                        <!-- Player list injected here -->
-                        <div class="text-center text-white-50 mt-5">
-                            <i class="fas fa-spinner fa-spin fs-2"></i>
-                            <p class="mt-2">Loading players...</p>
+                    <div class="overflow-auto flex-grow-1" style="min-width: 0;">
+                        <div style="min-width: 340px;">
+                            <div class="d-flex text-white-50 small fw-bold px-2 mb-1 mt-2 align-items-center">
+                                <div style="flex: 1;">Player</div>
+                                <div style="width: 35px; text-align: center;">Form</div>
+                                <div style="width: 35px; text-align: center;" title="Total Points">Pts</div>
+                                <div style="width: 45px; text-align: center;">Price</div>
+                                <div style="width: 45px; text-align: center; color: #ffc107;" id="plannerSortLabel" title="Expected Points in selected Gameweek">Exp</div>
+                                <div style="width: 35px;"></div>
+                            </div>
+                            
+                            <div id="plannerPlayersList">
+                                <!-- Player list injected here -->
+                                <div class="text-center text-white-50 mt-5">
+                                    <i class="fas fa-spinner fa-spin fs-2"></i>
+                                    <p class="mt-2">Loading players...</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
