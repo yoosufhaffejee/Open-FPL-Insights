@@ -120,7 +120,7 @@ function getPlayerHistoricStatsAgainst(player, oppTeamName) {
     const playerName = player.first_name + " " + player.second_name;
     
     const query = `
-        SELECT kickoff_time, total_points, minutes, goals_scored, assists, clean_sheets, goals_conceded
+        SELECT kickoff_time, total_points, minutes, goals_scored, assists, clean_sheets, goals_conceded, expected_goals, expected_assists, bps, bonus
         FROM fpl_data 
         WHERE name = $name AND opp_team_name = $opp 
         ORDER BY kickoff_time DESC 
@@ -131,6 +131,14 @@ function getPlayerHistoricStatsAgainst(player, oppTeamName) {
     
     let matches = [];
     let totalPoints = 0;
+    let totalMins = 0;
+    let totalXg = 0;
+    let totalXa = 0;
+    let totalBps = 0;
+    let totalBonus = 0;
+    let totalGoals = 0;
+    let totalAssists = 0;
+
     while(stmt.step()) {
         const row = stmt.get();
         matches.push({
@@ -140,16 +148,35 @@ function getPlayerHistoricStatsAgainst(player, oppTeamName) {
             goals: row[3],
             assists: row[4],
             clean_sheets: row[5],
-            goals_conceded: row[6]
+            goals_conceded: row[6],
+            xg: row[7],
+            xa: row[8],
+            bps: row[9],
+            bonus: row[10]
         });
-        totalPoints += parseFloat(row[1]);
+        totalPoints += parseFloat(row[1] || 0);
+        totalMins += parseInt(row[2] || 0);
+        totalGoals += parseInt(row[3] || 0);
+        totalAssists += parseInt(row[4] || 0);
+        totalXg += parseFloat(row[7] || 0);
+        totalXa += parseFloat(row[8] || 0);
+        totalBps += parseInt(row[9] || 0);
+        totalBonus += parseInt(row[10] || 0);
     }
     stmt.free();
 
+    const matchesCount = matches.length;
     return {
         matches: matches,
-        avgPoints: matches.length > 0 ? totalPoints / matches.length : 0,
-        totalPoints: totalPoints
+        avgPoints: matchesCount > 0 ? totalPoints / matchesCount : 0,
+        totalPoints: totalPoints,
+        avgMins: matchesCount > 0 ? totalMins / matchesCount : 0,
+        totalGoals: totalGoals,
+        totalAssists: totalAssists,
+        totalXg: totalXg,
+        totalXa: totalXa,
+        avgBps: matchesCount > 0 ? totalBps / matchesCount : 0,
+        totalBonus: totalBonus
     };
 }
 
@@ -182,56 +209,107 @@ function saveHistoricCache() {
     localStorage.setItem('historic_stats_cache', JSON.stringify(historicStatsCache));
 }
 
+let historicGridOptions = null;
+
 function renderHistoricStats(results) {
     const container = document.getElementById("historic-stats-content");
     
     if (results.length === 0) {
+        if (historicGridOptions && historicGridOptions.api) {
+            historicGridOptions.api.destroy();
+            historicGridOptions = null;
+        }
+        container.className = "";
+        container.style.height = "auto";
         container.innerHTML = "<h5 class='text-center mt-3'>No historic data found for this gameweek's fixtures.</h5>";
         return;
     }
 
-    let html = `
-        <div class="table-responsive mt-3">
-            <table class="table table-dark table-striped table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th>Player</th>
-                        <th>Pos</th>
-                        <th>Opponent</th>
-                        <th>Avg Pts (Last 5)</th>
-                        <th>Matches Found</th>
-                        <th>Details (Latest -> Oldest)</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
-
-    results.forEach(res => {
+    const rowData = results.map(res => {
         let posStr = res.player.element_type === 1 ? 'GK' : res.player.element_type === 2 ? 'DEF' : res.player.element_type === 3 ? 'MID' : 'FWD';
-        let detailsHtml = res.stats.matches.map(m => `<span class="badge bg-secondary me-1" title="Mins: ${m.minutes}, G: ${m.goals}, A: ${m.assists}, CS: ${m.clean_sheets}">${m.points} pts</span>`).join("");
-        
-        html += `
-            <tr>
-                <td>
-                    <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${res.player.team_code}-66.webp" style="width: 25px; height: 33px; margin-right: 10px;">
-                    <strong>${res.player.web_name}</strong>
-                </td>
-                <td>${posStr}</td>
-                <td>${res.opponent.name}</td>
-                <td><strong class="text-success">${res.stats.avgPoints.toFixed(1)}</strong></td>
-                <td>${res.stats.matches.length}</td>
-                <td>${detailsHtml}</td>
-            </tr>
-        `;
+        return {
+            player: res.player,
+            web_name: res.player.web_name,
+            team_code: res.player.team_code,
+            pos: posStr,
+            opponent: res.opponent.name,
+            price: res.player.now_cost / 10,
+            form: parseFloat(res.player.form),
+            tsb: parseFloat(res.player.selected_by_percent),
+            avgPts: res.stats.avgPoints,
+            matches: res.stats.matches.length,
+            avgMins: res.stats.avgMins,
+            g_a: res.stats.totalGoals + ' / ' + res.stats.totalAssists,
+            xg_xa: res.stats.totalXg.toFixed(2) + ' / ' + res.stats.totalXa.toFixed(2),
+            avgBps: res.stats.avgBps,
+            bonus: res.stats.totalBonus,
+            history: res.stats.matches
+        };
     });
 
-    html += `
-                </tbody>
-            </table>
-        </div>
-    `;
+    if (historicGridOptions && historicGridOptions.api) {
+        historicGridOptions.api.setGridOption('rowData', rowData);
+        return;
+    }
 
-    container.innerHTML = html;
+    container.innerHTML = "";
+    container.className = "ag-theme-alpine-dark mt-3";
+    container.style.height = "500px";
+
+    const columnDefs = [
+        { 
+            headerName: 'Player', 
+            field: 'web_name', 
+            pinned: 'left',
+            minWidth: 150,
+            cellRenderer: params => {
+                return `<div class="d-flex align-items-center mt-1">
+                            <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${params.data.team_code}-66.webp" style="width: 20px; margin-right: 8px;">
+                            <strong>${params.value}</strong>
+                        </div>`;
+            }
+        },
+        { headerName: 'Pos', field: 'pos', width: 80 },
+        { headerName: 'Opponent', field: 'opponent', width: 120 },
+        { headerName: 'Price (£)', field: 'price', width: 100 },
+        { headerName: 'Form', field: 'form', width: 90, cellClass: params => params.value >= 5 ? 'text-success fw-bold' : (params.value >= 3 ? 'text-warning' : '') },
+        { headerName: 'TSB %', field: 'tsb', width: 100 },
+        { 
+            headerName: 'Avg Pts', 
+            field: 'avgPts', 
+            width: 100, 
+            sort: 'desc',
+            valueFormatter: params => params.value.toFixed(1),
+            cellClass: params => params.value >= 6 ? 'text-success fw-bold' : (params.value >= 4 ? 'text-warning' : '')
+        },
+        { headerName: 'Matches', field: 'matches', width: 100 },
+        { headerName: 'Avg Mins', field: 'avgMins', width: 100, valueFormatter: params => Math.round(params.value) },
+        { headerName: 'G / A', field: 'g_a', width: 100 },
+        { headerName: 'xG / xA', field: 'xg_xa', width: 120 },
+        { headerName: 'Avg BPS', field: 'avgBps', width: 100, valueFormatter: params => params.value.toFixed(1) },
+        { headerName: 'Bonus', field: 'bonus', width: 90 },
+        {
+            headerName: 'History (Latest -> Oldest)',
+            field: 'history',
+            minWidth: 250,
+            flex: 1,
+            sortable: false,
+            filter: false,
+            cellRenderer: params => {
+                return '<div class="mt-1">' + params.value.map(m => `<span class="badge bg-secondary me-1" title="Mins: ${m.minutes}, G: ${m.goals}, A: ${m.assists}, CS: ${m.clean_sheets}, xG: ${m.xg}, xA: ${m.xa}, BPS: ${m.bps}">${m.points} pts</span>`).join("") + '</div>';
+            }
+        }
+    ];
+
+    historicGridOptions = {
+        theme: 'legacy',
+        rowData: rowData,
+        columnDefs: columnDefs,
+        defaultColDef: { sortable: true, filter: true, resizable: true },
+        rowHeight: 35
+    };
+
+    agGrid.createGrid(container, historicGridOptions);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -247,8 +325,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     data = data.filter(d => myPlayerIds.includes(d.player.id));
                 }
                 renderHistoricStats(data);
-            } else if (db) {
-                loadHistoricStats();
             }
         });
     }
