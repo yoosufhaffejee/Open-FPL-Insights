@@ -341,7 +341,6 @@ function getLastFive(player, fixture) {
     }
     
     return { averagePoints, count: overallCount };
-}
 
 function correctPenaltiesOrder(player, allPlayers) {
 
