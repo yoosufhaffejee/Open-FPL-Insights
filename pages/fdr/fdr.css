@@ -73,4 +73,27 @@ body.fdr-page {
     align-items: center;
     padding: 10px 15px !important;
     background-color: #1a1a1a;
+    min-width: 180px;
+}
+
+/* Enable sticky first column */
+.fdr-table th:first-child,
+.fdr-table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background-color: #1a1a1a !important;
+    border-right: 2px solid #333 !important;
+    min-width: 180px;
+}
+
+.fdr-table th:first-child {
+    z-index: 3;
+}
+
+/* Ensure gameweek columns don't squish too much */
+.fdr-table th:not(:first-child),
+.fdr-table td:not(:first-child) {
+    min-width: 120px;
+    width: 120px;
 }

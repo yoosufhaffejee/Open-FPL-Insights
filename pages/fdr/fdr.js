@@ -101,16 +101,6 @@ function renderFDR() {
                 // Poisson distribution for 0 goals (e^-lambda)
                 let csChance = Math.round(Math.exp(-oppXG) * 100);
                 
-                // If FPL populates the data later in the season, calculate the dynamic difficulty
-                if (useGoals && !useCS && oppDef > 0) {
-                    difficulty = Math.round((oppDef - 1000) / 75) + 1;
-                } else if (useCS && !useGoals && oppAtt > 0) {
-                    difficulty = Math.round((oppAtt - 1000) / 75) + 1;
-                } else if (useCS && useGoals && oppAtt > 0 && oppDef > 0) {
-                    let avgStrength = (oppAtt + oppDef) / 2;
-                    difficulty = Math.round((avgStrength - 1000) / 75) + 1;
-                }
-                
                 // Fallback bounds 1-5
                 difficulty = Math.max(1, Math.min(5, difficulty));
                 
