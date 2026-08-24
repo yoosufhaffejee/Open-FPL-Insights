@@ -727,7 +727,7 @@ async function renderStandings() {
                     <th scope="col" class="text-center d-none d-md-table-cell">GF</th>
                     <th scope="col" class="text-center d-none d-md-table-cell">GA</th>
                     <th scope="col" class="text-center">GD</th>
-                    <th scope="col" class="text-center fw-bold">Pts</th>
+                    <th scope="col" class="text-center fw-bold text-info" style="position: sticky; right: 0; background-color: #212529; z-index: 2;">Pts</th>
                 </tr>
             </thead>
             <tbody>
@@ -760,7 +760,7 @@ async function renderStandings() {
                 <td class="text-center d-none d-md-table-cell">${entry.overall.goalsFor}</td>
                 <td class="text-center d-none d-md-table-cell">${entry.overall.goalsAgainst}</td>
                 <td class="text-center">${entry.overall.goalsDifference > 0 ? '+' + entry.overall.goalsDifference : entry.overall.goalsDifference}</td>
-                <td class="text-center fw-bold">${entry.overall.points}</td>
+                <td class="text-center fw-bold text-info fs-5" style="position: sticky; right: 0; background-color: #212529; z-index: 1;">${entry.overall.points}</td>
             </tr>
         `;
     });
