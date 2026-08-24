@@ -179,18 +179,25 @@ function getPlayerHistoricStatsAgainst(player, oppTeamName) {
 }
 
 function loadHistoricCache() {
-    const stored = localStorage.getItem('historic_stats_cache_v3');
+    const stored = localStorage.getItem('historic_stats_cache_v4');
     if (stored) {
         try {
-            historicStatsCache = JSON.parse(stored);
+            const rawCache = JSON.parse(stored);
             // enforce 3 gameweek limit
-            const keys = Object.keys(historicStatsCache);
+            const keys = Object.keys(rawCache);
             if (keys.length > 3) {
-                // sort numeric keys
                 keys.sort((a, b) => parseInt(a) - parseInt(b));
-                // remove oldest
-                delete historicStatsCache[keys[0]];
-                localStorage.setItem('historic_stats_cache_v3', JSON.stringify(historicStatsCache));
+                delete rawCache[keys[0]];
+                localStorage.setItem('historic_stats_cache_v4', JSON.stringify(rawCache));
+            }
+            
+            historicStatsCache = {};
+            for (const key of Object.keys(rawCache)) {
+                historicStatsCache[key] = rawCache[key].map(d => ({
+                    player: allPlayers.find(p => p.id === d.player_id),
+                    opponent: teams.find(t => t.id === d.opponent_id),
+                    stats: d.stats
+                })).filter(d => d.player && d.opponent);
             }
         } catch (e) {
             historicStatsCache = {};
@@ -204,7 +211,20 @@ function saveHistoricCache() {
         keys.sort((a, b) => parseInt(a) - parseInt(b));
         delete historicStatsCache[keys[0]];
     }
-    localStorage.setItem('historic_stats_cache_v3', JSON.stringify(historicStatsCache));
+    
+    const rawCache = {};
+    for (const key of Object.keys(historicStatsCache)) {
+        rawCache[key] = historicStatsCache[key].map(d => ({
+            player_id: d.player.id,
+            opponent_id: d.opponent.id,
+            stats: d.stats
+        }));
+    }
+    try {
+        localStorage.setItem('historic_stats_cache_v4', JSON.stringify(rawCache));
+    } catch(e) {
+        console.warn("Failed to save historic stats to cache", e);
+    }
 }
 
 let historicGridOptions = null;
@@ -296,7 +316,9 @@ function renderHistoricStats(results) {
             flex: 1,
             sortable: false,
             filter: false,
+            valueFormatter: () => '',
             cellRenderer: params => {
+                if (!params.value || params.value.length === 0) return '';
                 return '<div class="mt-1">' + params.value.map(m => `<span class="badge bg-secondary me-1" title="Mins: ${m.minutes}, G: ${m.goals}, A: ${m.assists}, CS: ${m.clean_sheets}, xG: ${m.xg}, xA: ${m.xa}, BPS: ${m.bps}">${m.points} pts</span>`).join("") + '</div>';
             }
         }
@@ -306,7 +328,7 @@ function renderHistoricStats(results) {
         
         rowData: rowData,
         columnDefs: columnDefs,
-        defaultColDef: { sortable: true, filter: true, resizable: true },
+        defaultColDef: { sortable: true, filter: true, resizable: true, floatingFilter: true },
         rowHeight: 35
     };
 
