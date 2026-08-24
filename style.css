@@ -145,66 +145,77 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .player-info-card {
-    background-color: rgba(30, 30, 30, 0.85); /* dark gray translucent */
-    border-radius: 6px;
-    padding: 4px;
+    background-color: #ffffff;
+    color: #1a1a1a;
+    border-radius: 4px;
+    padding: 3px 4px;
     width: 100%;
-    margin-top: -5px; /* overlap shirt slightly */
+    margin-top: -6px; /* overlap shirt slightly more for compact look */
     z-index: 2;
     position: relative;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+    border: none;
+    line-height: 1.1;
 }
 
-.player-info-card h5 {
-    font-size: 0.75rem;
-    font-weight: bold;
+.player-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eaeaea;
+    padding-bottom: 2px;
+    margin-bottom: 2px;
+}
+
+.player-name {
+    font-size: 0.65rem;
+    font-weight: 700;
     margin: 0;
-    color: #fff;
+    color: #1a1a1a;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .player-price {
-    font-size: 0.7rem;
-    color: #00ff85; /* nice green for price */
-    font-weight: bold;
-    background: rgba(0,0,0,0.4);
-    border-radius: 4px;
-    padding: 1px 4px;
-    display: inline-block;
-    margin-top: 2px;
+    font-size: 0.6rem;
+    color: #555;
+    font-weight: 600;
+    margin: 0 0 0 2px;
+    background: transparent;
+    padding: 0;
 }
 
 .fixtures {
     display: flex;
-    justify-content: center;
-    gap: 2px;
-    margin-top: 4px;
-    background: rgba(0,0,0,0.3);
-    border-radius: 4px;
-    padding: 2px;
+    justify-content: space-between;
+    gap: 1px;
+    margin-top: 1px;
+    background: transparent;
+    padding: 0;
 }
 
 .fixture {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 2px 4px;
-    border-radius: 3px;
-    background: rgba(40,40,40,0.7); /* small contrast */
+    padding: 1px 0;
+    border-radius: 2px;
+    background: #f0f0f0;
+    flex: 1;
+    border: 1px solid #e0e0e0;
 }
 
 .predicted-points {
-    font-size: 0.75rem;
-    color: #00ff85;
-    font-weight: bold;
+    font-size: 0.65rem;
+    color: #008736;
+    font-weight: 700;
 }
 
 .fixture-detail {
-    font-size: 0.55rem;
-    color: #ccc;
+    font-size: 0.5rem;
+    color: #666;
+    text-transform: uppercase;
     text-shadow: none;
 }
 
@@ -294,7 +305,7 @@ h1, h2, h3, h4, h5, h6 {
     .pitch-container {
         width: 100%;
         max-width: none;
-        padding: 15px 5px;
+        padding: 10px 2px;
     }
 
     .icon-button {
@@ -303,39 +314,58 @@ h1, h2, h3, h4, h5, h6 {
         font-size: 0.7em;
         color: #fff;
         cursor: pointer;
-        margin: 0 3px;
+        margin: 0 2px;
         pointer-events: auto;
     }
 
-    .fixture-detail { font-size: 0.55em; }
-    .predicted-points { font-size: 0.6em; }
+    /* Reduce font sizes inside the new card */
+    .player-info-card {
+        padding: 2px;
+        margin-top: -6px;
+    }
+    .player-name {
+        font-size: 0.55rem;
+    }
+    .player-price {
+        font-size: 0.5rem;
+    }
+    .predicted-points { 
+        font-size: 0.55rem; 
+    }
+    .fixture-detail { 
+        font-size: 0.45rem; 
+    }
+    .fixture {
+        padding: 0;
+    }
 
     .row {
         flex-direction: row;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         justify-content: space-around;
-        gap: 2px;
+        gap: 1px;
     }
 
     .player {
-        flex: 1 0 18%;
+        flex: 1 1 18%;
         margin-bottom: 5px;
-        max-width: 70px;
+        max-width: 75px;
+        padding: 1px;
     }
 
     .player img.shirt {
-        max-width: 45px;
+        max-width: 40px;
     }
 
-    .player-info h5, .actionButton {
+    .actionButton {
         font-size: 0.6em;
     }
 
     .subs-container { padding: 5px; }
-    .subs { flex-wrap: nowrap; overflow-x: hidden; }
+    .subs { flex-wrap: nowrap; overflow-x: hidden; gap: 2px; }
     .subs .player {
-        flex: 1 0 auto;
-        max-width: 20%;
+        flex: 1 1 18%;
+        max-width: 75px;
         margin: 0;
     }
 }

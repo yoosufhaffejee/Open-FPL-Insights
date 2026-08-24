@@ -595,8 +595,10 @@ function renderPlayerElement(player) {
     playerElement.innerHTML = `
         ${image}
         <div class="player-info-card">
-            <h5>${player.web_name} ${player.isCaptain ? '(C)' : player.isVice ? '(V)' : ''}</h5>
-            <div class="player-price">${(player.now_cost / 10).toFixed(1)}m</div>
+            <div class="player-header">
+                <span class="player-name">${player.web_name} ${player.isCaptain ? '(C)' : player.isVice ? '(V)' : ''}</span>
+                <span class="player-price">£${(player.now_cost / 10).toFixed(1)}</span>
+            </div>
             <div class="fixtures">
                 ${Array.from({ length: 3 }, (_, i) => `
                     <div class="fixture">

@@ -365,8 +365,10 @@ function renderTemplatePitch(squad) {
                     <div class="player">
                         <img class="shirt" src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${getTeamCode(p.team)}${p.element_type===1?'_1':''}-110.webp" alt="shirt">
                         <div class="player-info-card">
-                            <h5>${p.web_name}</h5>
-                            <div class="ownership-badge">${p.eo_percent}%</div>
+                            <div class="player-header">
+                                <span class="player-name">${p.web_name}</span>
+                                <span class="player-price">${p.eo_percent}%</span>
+                            </div>
                         </div>
                     </div>
                 `).join('')}
@@ -387,8 +389,10 @@ function renderTemplatePitch(squad) {
                     <div class="player">
                         <img class="shirt" src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${getTeamCode(p.team)}${p.element_type===1?'_1':''}-110.webp" alt="shirt">
                         <div class="player-info-card">
-                            <h5>${p.web_name}</h5>
-                            <div class="ownership-badge" style="background:#555;color:#fff;">${p.eo_percent}%</div>
+                            <div class="player-header">
+                                <span class="player-name">${p.web_name}</span>
+                                <span class="player-price">${p.eo_percent}%</span>
+                            </div>
                         </div>
                     </div>
                 `).join('')}

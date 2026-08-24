@@ -77,8 +77,10 @@ function renderLivePitch(picks) {
                     ${isVice ? '<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-light text-dark border border-dark" style="z-index: 3;">V</span>' : ''}
                 </div>
                 <div class="player-info-card">
-                    <h5>${player.web_name}</h5>
-                    <div style="font-size: 0.8rem; font-weight: bold; margin-top: 2px; padding: 2px; border-radius: 4px; text-align: center; color: #fff; background: ${pick.multiplier > 0 ? '#198754' : '#6c757d'};">${points}</div>
+                    <div class="player-header" style="justify-content: center; border-bottom: none;">
+                        <span class="player-name">${player.web_name}</span>
+                    </div>
+                    <div style="font-size: 0.75rem; font-weight: bold; margin-top: 1px; padding: 1px 0; border-radius: 2px; text-align: center; color: #fff; background: ${pick.multiplier > 0 ? '#008736' : '#6c757d'};">${points}</div>
                 </div>
             </div>
         `;
