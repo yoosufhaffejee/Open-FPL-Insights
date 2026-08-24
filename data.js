@@ -224,8 +224,7 @@ window.calculateAllPredictions = async () => {
 
 
 function checkPredictionsCache() {
-    const stored = localStorage.getItem("fpl_predictions_v5");
-    if (!stored || Object.keys(JSON.parse(stored)).length === 0) {
+    if (!hasValidPredictionCache()) {
         const banner = document.createElement("div");
         banner.className = "alert alert-warning alert-dismissible fade show text-center";
         banner.style.margin = "10px";

@@ -549,7 +549,29 @@ function populatePlayerModal(data, player) {
         recentMatchesTable.insertAdjacentHTML('beforeend', matchRow);
     });
 
-    // We've hidden past seasons or updated it similarly in HTML...
+    // 5. Past Seasons
+    const pastSeasonsTable = document.querySelector('#past-seasons-table tbody');
+    if (pastSeasonsTable) {
+        pastSeasonsTable.innerHTML = '';
+        if (data.history_past) {
+            data.history_past.forEach(season => {
+                const pastSeasonRow = `
+                    <tr>
+                        <td>${season.season_name}</td>
+                        <td>${(season.start_cost/10).toFixed(1)}m</td>
+                        <td>${(season.end_cost/10).toFixed(1)}m</td>
+                        <td>${season.total_points}</td>
+                        <td>${season.minutes}</td>
+                        <td>${season.goals_scored}</td>
+                        <td>${season.assists}</td>
+                        <td>${season.clean_sheets}</td>
+                        <td>${season.bonus}</td>
+                    </tr>
+                `;
+                pastSeasonsTable.insertAdjacentHTML('beforeend', pastSeasonRow);
+            });
+        }
+    }
 }
 function getPlayerFixture(player, gameweekId) {
     return fixtures.find(fixture => fixture.event === gameweekId &&

@@ -92,13 +92,11 @@ async function loadHistoricStats() {
             const oppTeam = teams.find(t => t.id === (fixture.team_a === player.team ? fixture.team_h : fixture.team_a));
             
             const stats = getPlayerHistoricStatsAgainst(player, oppTeam.name);
-            if (stats.matches.length > 0) {
-                results.push({
-                    player: player,
-                    opponent: oppTeam,
-                    stats: stats
-                });
-            }
+            results.push({
+                player: player,
+                opponent: oppTeam,
+                stats: stats
+            });
         }
     }
 
