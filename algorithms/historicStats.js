@@ -179,7 +179,7 @@ function getPlayerHistoricStatsAgainst(player, oppTeamName) {
 }
 
 function loadHistoricCache() {
-    const stored = localStorage.getItem('historic_stats_cache_v2');
+    const stored = localStorage.getItem('historic_stats_cache_v3');
     if (stored) {
         try {
             historicStatsCache = JSON.parse(stored);
@@ -190,7 +190,7 @@ function loadHistoricCache() {
                 keys.sort((a, b) => parseInt(a) - parseInt(b));
                 // remove oldest
                 delete historicStatsCache[keys[0]];
-                localStorage.setItem('historic_stats_cache_v2', JSON.stringify(historicStatsCache));
+                localStorage.setItem('historic_stats_cache_v3', JSON.stringify(historicStatsCache));
             }
         } catch (e) {
             historicStatsCache = {};
@@ -204,7 +204,7 @@ function saveHistoricCache() {
         keys.sort((a, b) => parseInt(a) - parseInt(b));
         delete historicStatsCache[keys[0]];
     }
-    localStorage.setItem('historic_stats_cache_v2', JSON.stringify(historicStatsCache));
+    localStorage.setItem('historic_stats_cache_v3', JSON.stringify(historicStatsCache));
 }
 
 let historicGridOptions = null;
