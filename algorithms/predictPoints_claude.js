@@ -1,22 +1,61 @@
-const startingPoints = 1;
-const goalPointsGK = 10;
-const goalPointsDEF = 6;
-const goalPointsMID = 5;
-const goalPointsFWD = 4;
-const assistPoints = 3;
-const cleanSheetPoints = 4;
-const cleanSheetPointsMID = 1;
-const sixtyMinutesPlayedPoints = 1;
-const yellowCardPointsDeduction = 1;
-const redCardPointsDeduction = 3;
-const ownGoalPointsDeduction = 2;
-const penaltyMissPointsDeduction = 2;
-const twoGoalsConcededPointsDeduction = 2;
-const threeShotsSavedPoints = 1;
-const penaltySavedPoints = 5;
-const bonusPoints1 = 1;
-const bonusPoints2 = 2;
-const bonusPoints3 = 3;
+// predictPoints_claude.js
+// Entrypoint for the Claude model of Expected Points
+
+// Fallback scoring config (Part 3)
+const SCORING = {
+    appearance: {
+        bucket1_59: 1,
+        bucket60plus: 2
+    },
+    goals: {
+        GK: 10,
+        DEF: 6,
+        MID: 5,
+        FWD: 4
+    },
+    assists: 3,
+    clean_sheets: {
+        GK: 4,
+        DEF: 4,
+        MID: 1,
+        FWD: 0
+    },
+    saves: {
+        per_count: 3,
+        points: 1
+    },
+    penalties_saved: 5,
+    penalties_missed: -2,
+    goals_conceded: {
+        per_count: 2,
+        points: -1,
+        positions: [1, 2] // GK, DEF
+    },
+    cards: {
+        yellow: -1,
+        red: -3
+    },
+    own_goals: -2,
+    defcon: {
+        points: 2,
+        threshold_def: 10,
+        threshold_mid_fwd: 12
+    },
+    bonus: [3, 2, 1]
+};
+
+// Config for Shrinkage & Credibility (Part 4.2)
+// These k-values should be tuned by backtest
+const CONFIG = {
+    k_start: 3.0,
+    k_minutes_sub: 5.0,
+    k_goals: 15.0, // Rare, needs more evidence
+    k_assists: 15.0,
+    k_saves: 8.0,
+    k_defcon: 5.0, // High volume
+    k_cards: 25.0, // Very rare
+    k_bonus: 20.0
+};
 
 let predictionCache_claude = null;
 
@@ -44,303 +83,250 @@ function getExpectedPoints_claude(player, fixture) {
     loadPredictionCache_claude();
     const cacheKey = `${player.id}_${fixture ? fixture.id : 'no_fixture'}`;
     if (predictionCache_claude[cacheKey] !== undefined) {
-        return predictionCache_claude[cacheKey];
+        return predictionCache_claude[cacheKey].xPoints;
     }
     return '?';
 }
 
-function calculateExpectedPointsCore_claude(player, fixture) {
-    let expectedPoints = 0;
-    expectedPoints += startingPoints;
-
-    let minutes_per_90 = player.starts == 0 ? 0 : player.minutes / player.starts;
-    if (minutes_per_90 >= 60) {
-        expectedPoints += sixtyMinutesPlayedPoints;
-    }
-
-    let own_goals_per_90 = player.own_goals == 0 ? 0 : player.own_goals / (player.minutes / 90);
-    expectedPoints -= (ownGoalPointsDeduction * own_goals_per_90);
-
-    let yellow_cards_per_90 = player.yellow_cards == 0 ? 0 : player.yellow_cards / (player.minutes / 90);
-    expectedPoints -= (yellowCardPointsDeduction * yellow_cards_per_90);
-
-    let red_cards_per_90 = player.red_cards == 0 ? 0 : player.red_cards / (player.minutes / 90);
-    expectedPoints -= (redCardPointsDeduction * red_cards_per_90);
-
-    let bonus_per_90 = player.bonus == 0 ? 0 : player.bonus / (player.minutes / 90);
-    expectedPoints += bonus_per_90;
-
-    let penalties = player.penalties_saved == 0 ? 0 : player.penalties_saved + player.penalties_missed;
-    let penaltiesPer90 = penalties / (player.minutes / 90);
-
-    let assistsPer90 = player.expected_assists_per_90 !== undefined && player.expected_assists_per_90 !== 0 ? parseFloat(player.expected_assists_per_90) : 0;
-    expectedPoints += assistsPer90 * assistPoints;
-
-    // Defensive Contribution Points (DEF and MID only)
-    if (player.element_type === 2 || player.element_type === 3) {
-        let defConPer90 = parseFloat(player.defensive_contribution_per_90);
-        if (!isNaN(defConPer90) && defConPer90 > 0) {
-            // Defenders need 10 actions, Mid need 12 actions
-            let threshold = (player.element_type === 2) ? 10 : 12;
-            // Approximate the probability of hitting the threshold in a single match
-            let prob = Math.pow(defConPer90 / threshold, 2) * 0.5;
-            if (prob > 0.95) prob = 0.95; // Cap at 95% certainty (1.9 points)
-            expectedPoints += (prob * 2); // 2 points awarded
-        }
-    }
-
-    if (player.element_type === 1) {
-        // Goalkeeper
-        let cleanSheetPointsPer90 = player.clean_sheets_per_90 !== undefined && player.clean_sheets_per_90 !== 0 ? player.clean_sheets_per_90 * cleanSheetPoints : 0;
-        expectedPoints += cleanSheetPointsPer90;
-    
-        let savePointsPer90 = player.saves_per_90 !== undefined && player.saves_per_90 !== 0 ? player.saves_per_90 * (threeShotsSavedPoints / 3) : 0;
-        expectedPoints += savePointsPer90;
-    
-        let goalsConcededPointsPer90 = player.expected_goals_conceded_per_90 !== undefined && player.expected_goals_conceded_per_90 !== 0 ? parseFloat(player.expected_goals_conceded_per_90) / 2 : 0;
-        expectedPoints -= goalsConcededPointsPer90;
-    
-        let penaltiesSavedPer90 = player.penalties_saved !== undefined && player.minutes !== undefined && player.minutes !== 0 ? player.penalties_saved / (player.minutes / 90) : 0;
-        let penaltySavePointsPer90 = penaltiesSavedPer90 * penaltySavedPoints;
-        expectedPoints += penaltySavePointsPer90;
-    
-        let goalPointsPer90 = player.expected_goals_per_90 !== undefined && player.expected_goals_per_90 !== 0 ? parseFloat(player.expected_goals_per_90) * goalPointsGK : 0;
-        expectedPoints += goalPointsPer90;
+function calculateExpectedPointsCore_claude(player, fixture, allPlayers, teams, pulseStandings) {
+    // 1. Availability Model
+    const availability = getExpectedMinutes(player);
+    if (availability.expected_minutes === 0) {
+        return buildExplainability(player, 0, availability, {}, {}, 0);
     }
     
-    if (player.element_type === 2) {
-        // Defender
-        let goalPointsPer90 = player.expected_goals_per_90 !== undefined && player.expected_goals_per_90 !== 0 ? parseFloat(player.expected_goals_per_90) * goalPointsDEF : 0;
-        expectedPoints += goalPointsPer90;
+    // 2. Team & Opponent Strength
+    // (mocking this out for now until we have real data sources hooked up)
+    const teamContext = { attack: 1.0, defense: 1.0 };
+    const oppContext = { attack: 1.0, defense: 1.0, possession: 0.5 };
     
-        let cleanSheetPointsPer90 = player.clean_sheets_per_90 !== undefined && player.clean_sheets_per_90 !== 0 ? player.clean_sheets_per_90 * cleanSheetPoints : 0;
-        expectedPoints += cleanSheetPointsPer90;
+    // 3. Expected Events
+    const breakdown = {
+        appearance: calculateAppearance(availability),
+        goals: calculateGoals(player, availability, teamContext, oppContext),
+        assists: calculateAssists(player, availability, teamContext, oppContext),
+        clean_sheet: calculateCleanSheet(player, availability, teamContext, oppContext),
+        defcon: calculateDefCon(player, availability, oppContext),
+        saves: calculateSaves(player, availability, teamContext, oppContext),
+        bonus: calculateBonus(player, availability, teamContext, oppContext),
+        cards: calculateCards(player, availability),
+        goals_conceded: calculateGoalsConceded(player, availability, oppContext),
+        pen_miss: calculatePenaltyMiss(player, availability)
+    };
     
-        let goalsConcededPointsPer90 = player.expected_goals_conceded_per_90 !== undefined && player.expected_goals_conceded_per_90 !== 0 ? parseFloat(player.expected_goals_conceded_per_90) / 2 : 0;
-        expectedPoints -= goalsConcededPointsPer90;
+    let xPoints = 0;
+    for (const key in breakdown) {
+        xPoints += breakdown[key];
     }
     
-    if (player.element_type === 3) {
-        // Midfielder
-        let goalPointsPer90 = player.expected_goals_per_90 !== undefined && player.expected_goals_per_90 !== 0 ? parseFloat(player.expected_goals_per_90) * goalPointsMID : 0;
-        expectedPoints += goalPointsPer90;
-    
-        let cleanSheetPointsPer90 = player.clean_sheets_per_90 !== undefined && player.clean_sheets_per_90 !== 0 ? player.clean_sheets_per_90 * cleanSheetPointsMID : 0;
-        expectedPoints += cleanSheetPointsPer90;
-    
-        correctPenaltiesOrder(player, allPlayers);
-    
-        let penaltiesMissedPer90 = player.penalties_missed !== undefined && player.minutes !== undefined && player.minutes !== 0 ? player.penalties_missed / (player.minutes / 90) : 0;
-        let penaltyMissPointsPer90 = penaltiesMissedPer90 * penaltyMissPointsDeduction;
-        expectedPoints -= penaltyMissPointsPer90;
-    }
-    
-    if (player.element_type === 4) {
-        // Forward
-        let goalPointsPer90 = player.expected_goals_per_90 !== undefined && player.expected_goals_per_90 !== 0 ? parseFloat(player.expected_goals_per_90) * goalPointsFWD : 0;
-        expectedPoints += goalPointsPer90;
-    
-        correctPenaltiesOrder(player, allPlayers);
-    
-        let penaltiesMissedPer90 = player.penalties_missed !== undefined && player.minutes !== undefined && player.minutes !== 0 ? player.penalties_missed / (player.minutes / 90) : 0;
-        let penaltyMissPointsPer90 = penaltiesMissedPer90 * penaltyMissPointsDeduction;
-        expectedPoints -= penaltyMissPointsPer90;
-    }
+    return buildExplainability(player, xPoints, availability, breakdown, teamContext, 0);
+}
 
-    let lastFiveData = getLastFive_claude(player, fixture);
-    if(lastFiveData.averagePoints > 0 && lastFiveData.count > 0) {
-        let formWeight = Math.min(lastFiveData.count, 5) * 0.1;
-        expectedPoints = (expectedPoints * (1 - formWeight)) + (lastFiveData.averagePoints * formWeight);
-    }
+// ==========================================
+// MODULES (Inline for now to avoid cross-origin module import issues in browser)
+// ==========================================
 
-    // Incorporate chance of playing
-    let chanceOfPlaying = 100;
+// --- Math & Distributions ---
+function factorial(n) {
+    if (n === 0 || n === 1) return 1;
+    let result = 1;
+    for (let i = 2; i <= n; i++) result *= i;
+    return result;
+}
+
+function poissonPMF(lambda, k) {
+    return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial(k);
+}
+
+function pAtLeast(lambda, threshold) {
+    let pLess = 0;
+    for (let k = 0; k < threshold; k++) {
+        pLess += poissonPMF(lambda, k);
+    }
+    return 1 - pLess;
+}
+
+// --- Shrinkage ---
+function credibilityWeight(n, k) {
+    return n / (n + k);
+}
+
+function shrink(observed, prior, n, k) {
+    const w = credibilityWeight(n, k);
+    return observed * w + prior * (1 - w);
+}
+
+// --- Availability ---
+function getExpectedMinutes(player) {
+    let cop = 1.0;
     if (player.chance_of_playing_next_round !== null && player.chance_of_playing_next_round !== undefined) {
-        chanceOfPlaying = player.chance_of_playing_next_round;
+        cop = player.chance_of_playing_next_round / 100;
     } else if (player.chance_of_playing_this_round !== null && player.chance_of_playing_this_round !== undefined) {
-        chanceOfPlaying = player.chance_of_playing_this_round;
-    }
-    expectedPoints = expectedPoints * (chanceOfPlaying / 100);
-
-    
-    // Regress to mean for small sample sizes (less than 3 full games played) to prevent early-season anomalies
-    if (player.minutes !== undefined && player.minutes < 270) {
-        let weight = player.minutes / 270;
-        
-        // Use price as a proxy for expected performance baseline early in the season
-        let cost = player.now_cost / 10;
-        let baseline = cost * 0.65; // e.g., 10.0m -> 6.5 pts, 5.0m -> 3.25 pts, 4.0m -> 2.6 pts
-        
-        // If FPL model explicitly predicts this player will blank (e.g., bench warmer, injured), trust it
-        let fplPred = parseFloat(player.ep_next);
-        if (!isNaN(fplPred) && fplPred < 1.0) {
-            baseline = fplPred;
-        } else if (!isNaN(fplPred) && player.minutes === 0) {
-            // For brand new players who haven't played a minute, blend price baseline with FPL prediction
-            baseline = (baseline * 0.5) + (fplPred * 0.5);
-        }
-        
-        expectedPoints = (expectedPoints * weight) + (baseline * (1 - weight));
-    }
-    
-    // Apply Fixture Difficulty Multiplier and Pulse Live Standings Blend
-    if (fixture) {
-        let fdr = 3;
-        if (player.team === fixture.team_h) fdr = fixture.team_h_difficulty;
-        else if (player.team === fixture.team_a) fdr = fixture.team_a_difficulty;
-        
-        let fdrMultiplier = 1.0;
-        if (fdr === 1) fdrMultiplier = 1.30;
-        else if (fdr === 2) fdrMultiplier = 1.15;
-        else if (fdr === 3) fdrMultiplier = 1.00;
-        else if (fdr === 4) fdrMultiplier = 0.85;
-        else if (fdr === 5) fdrMultiplier = 0.70;
-        
-        let finalMultiplier = fdrMultiplier;
-
-        // Try to fetch Pulse Live Standings to blend real-time stats
-        if (typeof pulseStandings !== 'undefined' && pulseStandings && pulseStandings.tables && typeof teams !== 'undefined') {
-            let oppTeamId = (player.team === fixture.team_h) ? fixture.team_a : fixture.team_h;
-            let oppTeamFPL = teams.find(t => t.id === oppTeamId);
-            
-            if (oppTeamFPL) {
-                let oppPulseEntry = pulseStandings.tables[0].entries.find(e => e.team.name === oppTeamFPL.name || e.team.club.abbr === oppTeamFPL.short_name);
-                
-                if (oppPulseEntry) {
-                    // Check if opponent is playing Home or Away this fixture
-                    let oppStats = (player.team === fixture.team_h) ? oppPulseEntry.away : oppPulseEntry.home;
-                    
-                    if (oppStats && oppStats.played >= 3) {
-                        let pulseMultiplier = 1.0;
-                        if (player.element_type === 1 || player.element_type === 2) {
-                            // GK/DEF: We care about Opponent's Goals FOR (how lethal are they?)
-                            let oppGF = oppStats.goalsFor / oppStats.played;
-                            pulseMultiplier = 1.0 + (1.5 - oppGF) * 0.3; 
-                        } else {
-                            // MID/FWD: We care about Opponent's Goals AGAINST (how leaky are they?)
-                            let oppGA = oppStats.goalsAgainst / oppStats.played;
-                            pulseMultiplier = 1.0 + (oppGA - 1.5) * 0.3;
-                        }
-                        
-                        // Bound multiplier to sane limits
-                        pulseMultiplier = Math.max(0.70, Math.min(1.30, pulseMultiplier));
-                        
-                        // 60% Pulse Live real-time stats, 40% FPL FDR
-                        finalMultiplier = (pulseMultiplier * 0.6) + (fdrMultiplier * 0.4);
-                    }
-                }
-            }
-        }
-        
-        expectedPoints = expectedPoints * finalMultiplier;
+        cop = player.chance_of_playing_this_round / 100;
     }
 
-    // Blend with FPL's ep_next at 15% weight to smooth outliers without dragging down our aggressive model too much
-    const fplPred = parseFloat(player.ep_next);
-    if (!isNaN(fplPred) && fplPred > 0) {
-        expectedPoints = (expectedPoints * 0.85) + (fplPred * 0.15);
-    }
+    const avgMinutes = player.starts === 0 ? 0 : player.minutes / player.starts;
+    let expMins = avgMinutes * cop;
     
-    // Add bump to overall team expected points to reach ~60 average
-    // Apply this AFTER the FPL blend so the conservative FPL score doesn't undo the bump
-    expectedPoints = expectedPoints * 1.25;
+    if (expMins > 90) expMins = 90;
     
-    return expectedPoints;
+    // Bucket probs
+    let p0 = 1 - cop;
+    let p60plus = (expMins >= 60) ? (expMins / 90) * cop : 0.1 * cop;
+    let p1_59 = 1 - p0 - p60plus;
+    if (p1_59 < 0) p1_59 = 0;
+
+    return {
+        expected_minutes: expMins,
+        buckets: { p0, p1_59, p60plus }
+    };
 }
 
-function getLastFive_claude(player, fixture) {
-    const playerName = player.first_name + " " + player.second_name;
-    
-    if (!db) return { averagePoints: 0, count: 0 };
-
-    const overallQuery = `
-        SELECT total_points 
-        FROM fpl_data 
-        WHERE name = $name AND minutes >= 10 
-        ORDER BY kickoff_time DESC 
-        LIMIT 5
-    `;
-    const overallStmt = db.prepare(overallQuery);
-    overallStmt.bind({$name: playerName});
-    
-    let overallCount = 0;
-    let overallPoints = 0;
-    while(overallStmt.step()) {
-        overallPoints += parseFloat(overallStmt.get()[0]);
-        overallCount++;
-    }
-    overallStmt.free();
-
-    let averagePoints = 0;
-    if (overallCount > 0) {
-        averagePoints = overallPoints / overallCount;
-    }
-
-    if (!fixture) {
-        return { averagePoints, count: overallCount };
-    }
-
-    const opponentTeam = getOpponentTeam(player.team, fixture);
-
-    const fixtureQuery = `
-        SELECT total_points, kickoff_time 
-        FROM fpl_data 
-        WHERE name = $name AND opp_team_name = $opp AND minutes >= 10 
-        ORDER BY kickoff_time DESC 
-        LIMIT 5
-    `;
-    const fixtureStmt = db.prepare(fixtureQuery);
-    fixtureStmt.bind({$name: playerName, $opp: opponentTeam});
-    
-    let fixtureCount = 0;
-    let fixturePoints = 0;
-    const twoYearsAgo = new Date().getTime() - (2 * 365 * 24 * 60 * 60 * 1000); // 2 years ago in ms
-    
-    while(fixtureStmt.step()) {
-        const row = fixtureStmt.get();
-        const pts = parseFloat(row[0]);
-        const matchTime = new Date(row[1]).getTime();
-        
-        // Only count historical opponent fixtures if they occurred within the last 2 years
-        if (!isNaN(matchTime) && matchTime > twoYearsAgo) {
-            fixturePoints += pts;
-            fixtureCount++;
-        }
-    }
-    fixtureStmt.free();
-
-    if (overallCount > 0 && fixtureCount > 0) {
-        // Bump opponent specific weight to 50% (was 30%)
-        averagePoints = ((overallPoints / overallCount) * 0.5) + ((fixturePoints / fixtureCount) * 0.5);
-    }
-    
-    return { averagePoints, count: overallCount };
+// --- Events ---
+function calculateAppearance(availability) {
+    return (availability.buckets.p1_59 * SCORING.appearance.bucket1_59) + 
+           (availability.buckets.p60plus * SCORING.appearance.bucket60plus);
 }
 
-function correctPenaltiesOrder(player, allPlayers) {
+function calculateGoals(player, availability, teamCtx, oppCtx) {
+    const pos = player.element_type;
+    let pts = SCORING.goals.FWD;
+    if (pos === 1) pts = SCORING.goals.GK;
+    if (pos === 2) pts = SCORING.goals.DEF;
+    if (pos === 3) pts = SCORING.goals.MID;
+    
+    const xG90 = player.expected_goals_per_90 ? parseFloat(player.expected_goals_per_90) : 0;
+    const prior = 0.05; // Fallback prior
+    const matches = player.minutes / 90;
+    
+    const shrunk_xG90 = shrink(xG90, prior, matches, CONFIG.k_goals);
+    const lambda = shrunk_xG90 * teamCtx.attack * oppCtx.defense * (availability.expected_minutes / 90);
+    return lambda * pts;
+}
 
-    if (!player.penalties_order) {
-        return;
+function calculateAssists(player, availability, teamCtx, oppCtx) {
+    const xA90 = player.expected_assists_per_90 ? parseFloat(player.expected_assists_per_90) : 0;
+    const prior = 0.05; 
+    const matches = player.minutes / 90;
+    
+    const shrunk_xA90 = shrink(xA90, prior, matches, CONFIG.k_assists);
+    const lambda = shrunk_xA90 * teamCtx.attack * oppCtx.defense * (availability.expected_minutes / 90);
+    return lambda * SCORING.assists;
+}
+
+function calculateCleanSheet(player, availability, teamCtx, oppCtx) {
+    const pos = player.element_type;
+    let pts = 0;
+    if (pos === 1 || pos === 2) pts = SCORING.clean_sheets.GK;
+    if (pos === 3) pts = SCORING.clean_sheets.MID;
+    if (pts === 0) return 0;
+    
+    const opp_xG = oppCtx.attack * teamCtx.defense * 1.5; // baseline 1.5 goals
+    const pCS = poissonPMF(opp_xG, 0);
+    return pCS * availability.buckets.p60plus * pts;
+}
+
+function calculateGoalsConceded(player, availability, oppCtx) {
+    const pos = player.element_type;
+    if (!SCORING.goals_conceded.positions.includes(pos)) return 0;
+    
+    const opp_xG = oppCtx.attack * 1.5; 
+    let expectedDeduction = 0;
+    
+    for (let k = 2; k <= 10; k++) {
+        expectedDeduction += poissonPMF(opp_xG, k) * Math.floor(k / 2);
     }
+    
+    return -(expectedDeduction * (1 - availability.buckets.p0));
+}
 
-    // Step 1: Filter out players belonging to the same team as the input player
-    const teamPlayers = allPlayers.filter(p => p.team === player.team);
+function calculateDefCon(player, availability, oppCtx) {
+    const pos = player.element_type;
+    if (pos === 1) return 0; // GK not eligible
+    
+    const threshold = (pos === 2) ? SCORING.defcon.threshold_def : SCORING.defcon.threshold_mid_fwd;
+    const rawRate = player.defensive_contribution_per_90 ? parseFloat(player.defensive_contribution_per_90) : 0;
+    const matches = player.minutes / 90;
+    const prior = (pos === 2) ? 8.0 : 4.0;
+    
+    const shrunkRate = shrink(rawRate, prior, matches, CONFIG.k_defcon);
+    const lambda = shrunkRate * oppCtx.possession * (availability.expected_minutes / 90);
+    
+    const pDefCon = pAtLeast(lambda, threshold);
+    return pDefCon * SCORING.defcon.points;
+}
 
-    // Step 2: Filter players with non-null, non-zero, and non-empty string penalties_order
-    const playersWithPenalties = teamPlayers.filter(p => 
-        p.penalties_order !== null && 
-        p.penalties_order !== 0 && 
-        p.penalties_order !== ""
-    );
+function calculateSaves(player, availability, teamCtx, oppCtx) {
+    if (player.element_type !== 1) return 0;
+    
+    const oppSOT = oppCtx.attack * 4.5; // Baseline 4.5 SOT
+    const oppGoals = oppCtx.attack * teamCtx.defense * 1.5;
+    const lambda_saves = Math.max(0, oppSOT - oppGoals);
+    
+    let expectedSavePoints = 0;
+    for (let k = 3; k <= 15; k++) {
+        expectedSavePoints += poissonPMF(lambda_saves, k) * Math.floor(k / 3);
+    }
+    
+    return expectedSavePoints * SCORING.saves.points * (1 - availability.buckets.p0);
+}
 
-    // Step 3: Sort players by their penalties_order
-    playersWithPenalties.sort((a, b) => a.penalties_order - b.penalties_order);
+function calculateBonus(player, availability, teamCtx, oppCtx) {
+    const rawRate = player.bonus ? player.bonus / (player.minutes / 90 || 1) : 0;
+    const shrunkRate = shrink(rawRate, 0.1, player.minutes / 90, CONFIG.k_bonus);
+    return shrunkRate * (availability.expected_minutes / 90);
+}
 
-    // Step 4: Correct the penalties order
-    playersWithPenalties.forEach((p, index) => {
-        p.penalties_order = index + 1; // Reassign penalties_order starting from 1
-    });
+function calculateCards(player, availability) {
+    const ycRate = player.yellow_cards ? player.yellow_cards / (player.minutes / 90 || 1) : 0;
+    const shrunkYC = shrink(ycRate, 0.15, player.minutes / 90, CONFIG.k_cards);
+    
+    const rcRate = player.red_cards ? player.red_cards / (player.minutes / 90 || 1) : 0;
+    const shrunkRC = shrink(rcRate, 0.01, player.minutes / 90, CONFIG.k_cards);
+    
+    return (shrunkYC * SCORING.cards.yellow + shrunkRC * SCORING.cards.red) * (availability.expected_minutes / 90);
+}
 
-    // Update pen order
-    player.penalties_order = playersWithPenalties.find(_ => _.id === player.id).penalties_order;
+function calculatePenaltyMiss(player, availability) {
+    return 0;
+}
+
+// --- Explainability ---
+function buildExplainability(player, xPoints, availability, breakdown, sampleSizes, fixtureAdjustment) {
+    let confScore = 0.5; // Baseline
+    confScore += Math.min(1.0, (player.minutes || 0) / 900) * 0.3; // Up to 0.3 from minutes
+    confScore *= (availability.buckets.p0 > 0.5 ? 0.5 : 1.0); // Penalty for low starting prob
+    
+    let confStr = "low";
+    if (confScore > 0.4) confStr = "medium";
+    if (confScore > 0.7) confStr = "high";
+
+    return {
+        player_id: player.id,
+        xPoints: parseFloat(xPoints.toFixed(2)),
+        expected_minutes: Math.round(availability.expected_minutes),
+        minutes_bucket_probs: {
+            p0: parseFloat(availability.buckets.p0.toFixed(2)),
+            p1_59: parseFloat(availability.buckets.p1_59.toFixed(2)),
+            p60plus: parseFloat(availability.buckets.p60plus.toFixed(2))
+        },
+        breakdown: {
+            appearance: parseFloat((breakdown.appearance || 0).toFixed(2)),
+            goals: parseFloat((breakdown.goals || 0).toFixed(2)),
+            assists: parseFloat((breakdown.assists || 0).toFixed(2)),
+            clean_sheet: parseFloat((breakdown.clean_sheet || 0).toFixed(2)),
+            defcon: parseFloat((breakdown.defcon || 0).toFixed(2)),
+            saves: parseFloat((breakdown.saves || 0).toFixed(2)),
+            bonus: parseFloat((breakdown.bonus || 0).toFixed(2)),
+            cards: parseFloat((breakdown.cards || 0).toFixed(2)),
+            goals_conceded: parseFloat((breakdown.goals_conceded || 0).toFixed(2)),
+            other: parseFloat(((breakdown.pen_miss || 0)).toFixed(2))
+        },
+        fixture_adjustment_pct: fixtureAdjustment,
+        confidence: confStr,
+        confidence_score: parseFloat(confScore.toFixed(2)),
+        sample_sizes: {
+            current_season_minutes: player.minutes || 0
+        }
+    };
 }

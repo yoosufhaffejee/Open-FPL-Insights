@@ -128,7 +128,7 @@ function calculateExpectedPointsCore_v1(player, fixture) {
         let cleanSheetPointsPer90 = player.clean_sheets_per_90 !== undefined && player.clean_sheets_per_90 !== 0 ? player.clean_sheets_per_90 * cleanSheetPointsMID : 0;
         expectedPoints += cleanSheetPointsPer90;
     
-        correctPenaltiesOrder(player, allPlayers);
+        correctPenaltiesOrder_v1(player, allPlayers);
     
         let penaltiesMissedPer90 = player.penalties_missed !== undefined && player.minutes !== undefined && player.minutes !== 0 ? player.penalties_missed / (player.minutes / 90) : 0;
         let penaltyMissPointsPer90 = penaltiesMissedPer90 * penaltyMissPointsDeduction;
@@ -140,7 +140,7 @@ function calculateExpectedPointsCore_v1(player, fixture) {
         let goalPointsPer90 = player.expected_goals_per_90 !== undefined && player.expected_goals_per_90 !== 0 ? parseFloat(player.expected_goals_per_90) * goalPointsFWD : 0;
         expectedPoints += goalPointsPer90;
     
-        correctPenaltiesOrder(player, allPlayers);
+        correctPenaltiesOrder_v1(player, allPlayers);
     
         let penaltiesMissedPer90 = player.penalties_missed !== undefined && player.minutes !== undefined && player.minutes !== 0 ? player.penalties_missed / (player.minutes / 90) : 0;
         let penaltyMissPointsPer90 = penaltiesMissedPer90 * penaltyMissPointsDeduction;
@@ -317,7 +317,7 @@ function getLastFive_v1(player, fixture) {
     return { averagePoints, count: overallCount };
 }
 
-function correctPenaltiesOrder(player, allPlayers) {
+function correctPenaltiesOrder_v1(player, allPlayers) {
 
     if (!player.penalties_order) {
         return;
