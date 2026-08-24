@@ -310,15 +310,34 @@ function sortRecentMatches(columnIndex) {
 function showPlayerInfo(playerId) {
     const player = allPlayers.find(p => p.id === playerId);
     if (!player) return;
+
+    // Show modal immediately with loading state for instant feedback
+    const modalElem = document.getElementById('playerInfoModal');
+    let playerInfoModal = bootstrap.Modal.getInstance(modalElem);
+    if (!playerInfoModal) {
+        playerInfoModal = new bootstrap.Modal(modalElem);
+    }
+    
+    // Save original modal body layout if not already saved
+    if (!window.originalPlayerInfoModalHtml) {
+        window.originalPlayerInfoModalHtml = document.getElementById('player-info-content').innerHTML;
+    }
+    
+    document.getElementById('playerInfoModalLabel').innerHTML = `<h3 class="modal-title font-weight-bold">Loading...</h3>`;
+    document.getElementById('player-info-content').innerHTML = `<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>`;
+    playerInfoModal.show();
+
     getPlayer(player.id)
         .then(response => {
+            // Restore original HTML structure before populating
+            document.getElementById('player-info-content').innerHTML = window.originalPlayerInfoModalHtml;
             // Populate the modal with the player info
             populatePlayerModal(response, player);
-            // Show the modal
-            const playerInfoModal = new bootstrap.Modal(document.getElementById('playerInfoModal'));
-            playerInfoModal.show();
         })
-        .catch(error => console.log('Error fetching player info:', error));
+        .catch(error => {
+            console.log('Error fetching player info:', error);
+            document.getElementById('player-info-content').innerHTML = `<div class="alert alert-danger">Failed to load player information.</div>`;
+        });
 }
 
 // Function to populate the modal with player data
