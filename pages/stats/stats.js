@@ -392,6 +392,9 @@ async function renderStandings() {
         const fplTeam = teams.find(t => t.name === entry.team.name || t.short_name === entry.team.club.abbr);
         if (!fplTeam) return;
 
+        // Check if team is currently playing live
+        entry.isLive = fixtures.some(f => f.started && !f.finished && !f.finished_provisional && (f.team_h === fplTeam.id || f.team_a === fplTeam.id));
+
         // Find all FPL fixtures for this team that have started and have a score
         const teamFixtures = fixtures.filter(f => f.started && (f.team_h === fplTeam.id || f.team_a === fplTeam.id) && f.team_h_score !== null && f.team_a_score !== null);
         
@@ -469,6 +472,7 @@ async function renderStandings() {
                         <img src="${badgeUrl}" alt="${entry.team.name}" style="width: 25px; height: 25px;" class="me-2">
                         <span class="d-none d-sm-inline fw-semibold">${entry.team.name}</span>
                         <span class="d-inline d-sm-none fw-semibold">${entry.team.shortName}</span>
+                        ${entry.isLive ? '<span class="spinner-grow text-success spinner-grow-sm ms-2" role="status" style="width: 0.5rem; height: 0.5rem;" title="Playing Now"><span class="visually-hidden">Live</span></span>' : ''}
                     </div>
                 </td>
                 <td class="text-center">${entry.overall.played}</td>
