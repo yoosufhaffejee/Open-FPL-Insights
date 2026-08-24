@@ -317,15 +317,17 @@ function renderPlayerElement(player) {
 
     playerElement.innerHTML = `
         ${image}
-        <h5>${player.web_name} ${player.isCaptain ? '(C)' : player.isVice ? '(V)' : ''}</h5>
-        <h6>(${(player.now_cost / 10).toFixed(1)}m)</h6>
-        <div class="fixtures">
-            ${Array.from({ length: 3 }, (_, i) => `
-                <div class="fixture">
-                    <span class="predicted-points">0</span>
-                    <span class="fixture-detail">FIX (H)</span>
-                </div>
-            `).join('')}
+        <div class="player-info-card">
+            <h5>${player.web_name} ${player.isCaptain ? '(C)' : player.isVice ? '(V)' : ''}</h5>
+            <div class="player-price">${(player.now_cost / 10).toFixed(1)}m</div>
+            <div class="fixtures">
+                ${Array.from({ length: 3 }, (_, i) => `
+                    <div class="fixture">
+                        <span class="predicted-points">0</span>
+                        <span class="fixture-detail">FIX (H)</span>
+                    </div>
+                `).join('')}
+            </div>
         </div>
         <div class="icon-buttons">
             <button class="icon-button"><i class="fas fa-exchange-alt"></i></button>

@@ -68,19 +68,17 @@ function renderLivePitch(picks) {
         }
 
         const playerCard = `
-            <div class="text-center" style="width: 80px;">
+            <div class="player">
                 <div class="position-relative d-inline-block">
                     <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${player.team_code}${player.element_type == 1 ? '_1' : ''}-110.webp" 
                          style="width: 50px;" class="drop-shadow" 
                          onerror="playerImgOnerror(this, ${player.team_code}, ${player.element_type})">
-                    ${isCaptain ? '<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark border border-dark">C</span>' : ''}
-                    ${isVice ? '<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-light text-dark border border-dark">V</span>' : ''}
+                    ${isCaptain ? '<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark border border-dark" style="z-index: 3;">C</span>' : ''}
+                    ${isVice ? '<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-light text-dark border border-dark" style="z-index: 3;">V</span>' : ''}
                 </div>
-                <div class="bg-dark text-white fw-bold rounded-top border border-secondary border-bottom-0 mt-1" style="font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 2px;">
-                    ${player.web_name}
-                </div>
-                <div class="${pick.multiplier > 0 ? 'bg-success' : 'bg-secondary'} text-white fw-bold rounded-bottom border border-secondary" style="font-size: 0.9rem;">
-                    ${points}
+                <div class="player-info-card">
+                    <h5>${player.web_name}</h5>
+                    <div style="font-size: 0.8rem; font-weight: bold; margin-top: 2px; padding: 2px; border-radius: 4px; text-align: center; color: #fff; background: ${pick.multiplier > 0 ? '#198754' : '#6c757d'};">${points}</div>
                 </div>
             </div>
         `;

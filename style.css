@@ -144,46 +144,68 @@ h1, h2, h3, h4, h5, h6 {
     50%       { opacity: 0.4; transform: scale(0.7); }
 }
 
-.player h5 {
-    font-size: 0.85rem;
-    margin: 2px 0 0 0;
-    white-space: nowrap;
+.player-info-card {
+    background-color: rgba(30, 30, 30, 0.85); /* dark gray translucent */
+    border-radius: 6px;
+    padding: 4px;
+    width: 100%;
+    margin-top: -5px; /* overlap shirt slightly */
+    z-index: 2;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.player h6 {
+.player-info-card h5 {
     font-size: 0.75rem;
+    font-weight: bold;
     margin: 0;
-    font-weight: normal;
-    color: #ccc;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.player-price {
+    font-size: 0.7rem;
+    color: #00ff85; /* nice green for price */
+    font-weight: bold;
+    background: rgba(0,0,0,0.4);
+    border-radius: 4px;
+    padding: 1px 4px;
+    display: inline-block;
+    margin-top: 2px;
 }
 
 .fixtures {
     display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
     justify-content: center;
-    align-items: flex-start;
-    width: 100%;
-    margin: 2px 0;
-    gap: 3px;
+    gap: 2px;
+    margin-top: 4px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 4px;
+    padding: 2px;
 }
 
 .fixture {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin: 0 2px;
-    color: #fff;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    padding: 2px 4px;
+    border-radius: 3px;
+    background: rgba(40,40,40,0.7); /* small contrast */
 }
 
 .predicted-points {
+    font-size: 0.75rem;
+    color: #00ff85;
     font-weight: bold;
-    font-size: 0.8em; /* Adjust font size if needed */
 }
 
 .fixture-detail {
-    font-size: 0.7em; /* Adjust font size if needed */
+    font-size: 0.55rem;
+    color: #ccc;
+    text-shadow: none;
 }
 
 .icon-buttons {
@@ -214,11 +236,6 @@ h1, h2, h3, h4, h5, h6 {
     visibility: visible; /* Show the icon buttons on hover */
     opacity: 1; /* Make buttons visible */
     color: #aaa;
-}
-
-.predicted-points {
-    font-weight: bold;
-    color: #00ff85;
 }
 
 .actionButton {
