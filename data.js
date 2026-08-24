@@ -177,7 +177,7 @@ window.calculateAllPredictions = async () => {
                     let expectedPoints = calculateExpectedPointsCore(player, fixture);
                     const cacheKey = `${player.id}_${fixture.id}`;
                     if (typeof expectedPoints === 'object') {
-                        setPredictionCacheValue(cacheKey, expectedPoints);
+                        setPredictionCacheValue(cacheKey, Number(expectedPoints.xPoints.toFixed(2)));
                     } else {
                         setPredictionCacheValue(cacheKey, Number(expectedPoints.toFixed(2)));
                     }
@@ -192,7 +192,7 @@ window.calculateAllPredictions = async () => {
             }
             let ep = calculateExpectedPointsCore(player, null);
             if (typeof ep === 'object') {
-                setPredictionCacheValue(`${player.id}_no_fixture`, ep);
+                setPredictionCacheValue(`${player.id}_no_fixture`, Number(ep.xPoints.toFixed(2)));
             } else {
                 setPredictionCacheValue(`${player.id}_no_fixture`, Number(ep.toFixed(2)));
             }
