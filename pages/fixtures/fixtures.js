@@ -206,8 +206,8 @@ function getStatDetails(fixture, identifier, teamName) {
     return stats[teamName].map(stat => {
         const player = allPlayers.find(p => p.id === stat.element);
         if (player) {
-            // Pass player as an argument to showPlayerInfo
-            return `<a href="#" onclick='showPlayerInfo(${JSON.stringify(player)})'>${player.web_name}</a> (${stat.value})`;
+            // Pass player ID as an argument to showPlayerInfo
+            return `<a href="javascript:void(0)" onclick="showPlayerInfo(${player.id})">${player.web_name}</a> (${stat.value})`;
         }
         return `Unknown (${stat.value})`;
     }).join('<br>');
@@ -307,7 +307,9 @@ function sortRecentMatches(columnIndex) {
 }
 
 // Function to fetch and show player info
-function showPlayerInfo(player) {
+function showPlayerInfo(playerId) {
+    const player = allPlayers.find(p => p.id === playerId);
+    if (!player) return;
     getPlayer(player.id)
         .then(response => {
             // Populate the modal with the player info
@@ -579,7 +581,7 @@ function renderTeamLineup(plPlayers, plSubstitutes, fplTeamId, startingContainer
         let statusIcon = '';
 
         if (fplPlayer) {
-            playerDisplay = `<a href="#" onclick='showPlayerInfo(${JSON.stringify(fplPlayer)})'>${fplPlayer.web_name}</a>`;
+            playerDisplay = `<a href="javascript:void(0)" onclick="showPlayerInfo(${fplPlayer.id})">${fplPlayer.web_name}</a>`;
             points = fplPlayer.event_points !== undefined ? fplPlayer.event_points : 0;
             
             const posNames = {1:'GK', 2:'DEF', 3:'MID', 4:'FWD'};
