@@ -232,6 +232,7 @@ function renderHistoricStats(results) {
             player: res.player,
             web_name: res.player.web_name,
             team_code: res.player.team_code,
+            team: teams.find(t => t.id === res.player.team)?.short_name || '',
             pos: posStr,
             opponent: res.opponent.name,
             price: res.player.now_cost / 10,
@@ -270,6 +271,7 @@ function renderHistoricStats(results) {
                         </div>`;
             }
         },
+        { headerName: 'Team', field: 'team', width: 90 },
         { headerName: 'Pos', field: 'pos', width: 80 },
         { headerName: 'Opponent', field: 'opponent', width: 120 },
         { headerName: 'Price (£)', field: 'price', width: 100 },
