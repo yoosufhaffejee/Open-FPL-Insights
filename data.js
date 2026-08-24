@@ -190,7 +190,7 @@ window.calculateAllPredictions = async () => {
             predictionCache[`${player.id}_no_fixture`] = ep;
         }
 
-        localStorage.setItem("fpl_predictions_v2", JSON.stringify(predictionCache));
+        localStorage.setItem("fpl_predictions_v4", JSON.stringify(predictionCache));
         statusText.textContent = "Done!";
         progressText.style.width = "100%";
         progressText.textContent = "100%";
@@ -216,7 +216,7 @@ window.calculateAllPredictions = async () => {
 
 
 function checkPredictionsCache() {
-    const stored = localStorage.getItem("fpl_predictions_v2");
+    const stored = localStorage.getItem("fpl_predictions_v4");
     if (!stored || Object.keys(JSON.parse(stored)).length === 0) {
         const banner = document.createElement("div");
         banner.className = "alert alert-warning alert-dismissible fade show text-center";

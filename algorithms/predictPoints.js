@@ -22,7 +22,7 @@ let predictionCache = null;
 
 function loadPredictionCache() {
     if (predictionCache === null) {
-        const stored = localStorage.getItem('fpl_predictions_v2');
+        const stored = localStorage.getItem('fpl_predictions_v4');
         if (stored) {
             try {
                 predictionCache = JSON.parse(stored);
@@ -37,7 +37,7 @@ function loadPredictionCache() {
 
 function clearPredictionCache() {
     predictionCache = null;
-    localStorage.removeItem('fpl_predictions_v2');
+    localStorage.removeItem('fpl_predictions_v4');
 }
 
 function getExpectedPoints(player, fixture) {
@@ -183,7 +183,7 @@ function calculateExpectedPointsCore(player, fixture) {
         expectedPoints = (expectedPoints * weight) + (baseline * (1 - weight));
     }
     
-    // Apply Fixture Difficulty Multiplier
+    // Apply Fixture Difficulty Multiplier and Pulse Live Standings Blend
     if (fixture) {
         let fdr = 3;
         if (player.team === fixture.team_h) fdr = fixture.team_h_difficulty;
@@ -196,7 +196,43 @@ function calculateExpectedPointsCore(player, fixture) {
         else if (fdr === 4) fdrMultiplier = 0.85;
         else if (fdr === 5) fdrMultiplier = 0.70;
         
-        expectedPoints = expectedPoints * fdrMultiplier;
+        let finalMultiplier = fdrMultiplier;
+
+        // Try to fetch Pulse Live Standings to blend real-time stats
+        if (typeof pulseStandings !== 'undefined' && pulseStandings && pulseStandings.tables && typeof teams !== 'undefined') {
+            let oppTeamId = (player.team === fixture.team_h) ? fixture.team_a : fixture.team_h;
+            let oppTeamFPL = teams.find(t => t.id === oppTeamId);
+            
+            if (oppTeamFPL) {
+                let oppPulseEntry = pulseStandings.tables[0].entries.find(e => e.team.name === oppTeamFPL.name || e.team.club.abbr === oppTeamFPL.short_name);
+                
+                if (oppPulseEntry) {
+                    // Check if opponent is playing Home or Away this fixture
+                    let oppStats = (player.team === fixture.team_h) ? oppPulseEntry.away : oppPulseEntry.home;
+                    
+                    if (oppStats && oppStats.played >= 3) {
+                        let pulseMultiplier = 1.0;
+                        if (player.element_type === 1 || player.element_type === 2) {
+                            // GK/DEF: We care about Opponent's Goals FOR (how lethal are they?)
+                            let oppGF = oppStats.goalsFor / oppStats.played;
+                            pulseMultiplier = 1.0 + (1.5 - oppGF) * 0.3; 
+                        } else {
+                            // MID/FWD: We care about Opponent's Goals AGAINST (how leaky are they?)
+                            let oppGA = oppStats.goalsAgainst / oppStats.played;
+                            pulseMultiplier = 1.0 + (oppGA - 1.5) * 0.3;
+                        }
+                        
+                        // Bound multiplier to sane limits
+                        pulseMultiplier = Math.max(0.70, Math.min(1.30, pulseMultiplier));
+                        
+                        // 60% Pulse Live real-time stats, 40% FPL FDR
+                        finalMultiplier = (pulseMultiplier * 0.6) + (fdrMultiplier * 0.4);
+                    }
+                }
+            }
+        }
+        
+        expectedPoints = expectedPoints * finalMultiplier;
     }
 
     // Blend with FPL's ep_next at 15% weight to smooth outliers without dragging down our aggressive model too much
@@ -242,6 +278,42 @@ function getLastFive(player, fixture) {
 
     if (!fixture) {
         return { averagePoints, count: overallCount };
+    }
+
+    const opponentTeam = getOpponentTeam(player.team, fixture);
+
+        const fixtureQuery = `
+        SELECT total_points, kickoff_time 
+        FROM fpl_data 
+        WHERE name = $name AND opp_team_name = $opp AND minutes >= 10 
+        ORDER BY kickoff_time DESC 
+        LIMIT 5
+    `;
+    const fixtureStmt = db.prepare(fixtureQuery);
+    fixtureStmt.bind({$name: playerName, $opp: opponentTeam});
+    
+    let fixtureCount = 0;
+    let fixturePoints = 0;
+    const twoYearsAgo = new Date().getTime() - (2 * 365 * 24 * 60 * 60 * 1000); // 2 years ago in ms
+    
+    while(fixtureStmt.step()) {
+        const row = fixtureStmt.get();
+        const pts = parseFloat(row[0]);
+        const matchTime = new Date(row[1]).getTime();
+        
+        // Only count historical opponent fixtures if they occurred within the last 2 years
+        if (!isNaN(matchTime) && matchTime > twoYearsAgo) {
+            fixturePoints += pts;
+            fixtureCount++;
+        }
+    }
+    fixtureStmt.free();
+
+    if (overallCount > 0 && fixtureCount > 0) {
+        // Bump opponent specific weight to 50% (was 30%)
+        averagePoints = ((overallPoints / overallCount) * 0.5) + ((fixturePoints / fixtureCount) * 0.5);
+    }
+    return { averagePoints, count: overallCount };
     }
 
     const opponentTeam = getOpponentTeam(player.team, fixture);
