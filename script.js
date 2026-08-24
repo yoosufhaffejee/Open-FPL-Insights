@@ -1053,6 +1053,14 @@ function populatePlayerModal(data, player) {
         fplPredictedElem.style.color = '#333';
         fplPredictedElem.style.textShadow = 'none';
         
+        const upcomingGameweek = gameweeks.find(gw => gw.id >= selectedGameweek);
+        const gwNum = upcomingGameweek ? upcomingGameweek.id : selectedGameweek;
+        
+        const fplTitle = document.getElementById('modal-fpl-title');
+        const ourTitle = document.getElementById('modal-our-title');
+        if (fplTitle) fplTitle.textContent = `FPL Model (GW${gwNum})`;
+        if (ourTitle) ourTitle.textContent = `Our Algorithm (GW${gwNum})`;
+        
         let predictedPoints = player.predicted_points;
         if (predictedPoints === undefined) {
             const upcomingGameweek = gameweeks.find(gw => gw.id >= selectedGameweek);
