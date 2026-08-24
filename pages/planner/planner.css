@@ -9,10 +9,7 @@ body.planner-page {
     overflow: hidden;
 }
 
-/* Ensure the pitch renders nicely */
-.planner-page .row {
-    margin: 0;
-}
+
 
 .planner-page .player {
     display: inline-block;
