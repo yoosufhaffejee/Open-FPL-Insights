@@ -22,7 +22,7 @@ let predictionCache = null;
 
 function loadPredictionCache() {
     if (predictionCache === null) {
-        const stored = localStorage.getItem('fpl_predictions');
+        const stored = localStorage.getItem('fpl_predictions_v2');
         if (stored) {
             try {
                 predictionCache = JSON.parse(stored);
@@ -37,7 +37,7 @@ function loadPredictionCache() {
 
 function clearPredictionCache() {
     predictionCache = null;
-    localStorage.removeItem('fpl_predictions');
+    localStorage.removeItem('fpl_predictions_v2');
 }
 
 function getExpectedPoints(player, fixture) {
@@ -183,6 +183,22 @@ function calculateExpectedPointsCore(player, fixture) {
         expectedPoints = (expectedPoints * weight) + (baseline * (1 - weight));
     }
     
+    // Apply Fixture Difficulty Multiplier
+    if (fixture) {
+        let fdr = 3;
+        if (player.team === fixture.team_h) fdr = fixture.team_h_difficulty;
+        else if (player.team === fixture.team_a) fdr = fixture.team_a_difficulty;
+        
+        let fdrMultiplier = 1.0;
+        if (fdr === 1) fdrMultiplier = 1.30;
+        else if (fdr === 2) fdrMultiplier = 1.15;
+        else if (fdr === 3) fdrMultiplier = 1.00;
+        else if (fdr === 4) fdrMultiplier = 0.85;
+        else if (fdr === 5) fdrMultiplier = 0.70;
+        
+        expectedPoints = expectedPoints * fdrMultiplier;
+    }
+
     // Blend with FPL's ep_next at 15% weight to smooth outliers without dragging down our aggressive model too much
     const fplPred = parseFloat(player.ep_next);
     if (!isNaN(fplPred) && fplPred > 0) {
