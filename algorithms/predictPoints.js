@@ -22,7 +22,7 @@ let predictionCache = null;
 
 function loadPredictionCache() {
     if (predictionCache === null) {
-        const stored = localStorage.getItem('fpl_predictions_v4');
+        const stored = localStorage.getItem('fpl_predictions_v5');
         if (stored) {
             try {
                 predictionCache = JSON.parse(stored);
@@ -37,7 +37,7 @@ function loadPredictionCache() {
 
 function clearPredictionCache() {
     predictionCache = null;
-    localStorage.removeItem('fpl_predictions_v4');
+    localStorage.removeItem('fpl_predictions_v5');
 }
 
 function getExpectedPoints(player, fixture) {
@@ -76,11 +76,11 @@ function calculateExpectedPointsCore(player, fixture) {
     let assistsPer90 = player.expected_assists_per_90 !== undefined && player.expected_assists_per_90 !== 0 ? parseFloat(player.expected_assists_per_90) : 0;
     expectedPoints += assistsPer90 * assistPoints;
 
-    // Defensive Contribution Points (Outfield players only)
-    if (player.element_type !== 1) {
+    // Defensive Contribution Points (DEF and MID only)
+    if (player.element_type === 2 || player.element_type === 3) {
         let defConPer90 = parseFloat(player.defensive_contribution_per_90);
         if (!isNaN(defConPer90) && defConPer90 > 0) {
-            // Defenders need 10 actions, Mid/Fwd need 12 actions
+            // Defenders need 10 actions, Mid need 12 actions
             let threshold = (player.element_type === 2) ? 10 : 12;
             // Approximate the probability of hitting the threshold in a single match
             let prob = Math.pow(defConPer90 / threshold, 2) * 0.5;
@@ -282,7 +282,7 @@ function getLastFive(player, fixture) {
 
     const opponentTeam = getOpponentTeam(player.team, fixture);
 
-        const fixtureQuery = `
+    const fixtureQuery = `
         SELECT total_points, kickoff_time 
         FROM fpl_data 
         WHERE name = $name AND opp_team_name = $opp AND minutes >= 10 
@@ -313,34 +313,9 @@ function getLastFive(player, fixture) {
         // Bump opponent specific weight to 50% (was 30%)
         averagePoints = ((overallPoints / overallCount) * 0.5) + ((fixturePoints / fixtureCount) * 0.5);
     }
-    return { averagePoints, count: overallCount };
-    }
-
-    const opponentTeam = getOpponentTeam(player.team, fixture);
-
-    const fixtureQuery = `
-        SELECT total_points 
-        FROM fpl_data 
-        WHERE name = $name AND opp_team_name = $opp AND minutes >= 10 
-        ORDER BY kickoff_time DESC 
-        LIMIT 5
-    `;
-    const fixtureStmt = db.prepare(fixtureQuery);
-    fixtureStmt.bind({$name: playerName, $opp: opponentTeam});
-    
-    let fixtureCount = 0;
-    let fixturePoints = 0;
-    while(fixtureStmt.step()) {
-        fixturePoints += parseFloat(fixtureStmt.get()[0]);
-        fixtureCount++;
-    }
-    fixtureStmt.free();
-
-    if (overallCount > 0 && fixtureCount > 0) {
-        averagePoints = ((overallPoints / overallCount) * 0.7) + ((fixturePoints / fixtureCount) * 0.3);
-    }
     
     return { averagePoints, count: overallCount };
+}
 
 function correctPenaltiesOrder(player, allPlayers) {
 

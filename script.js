@@ -1071,8 +1071,80 @@ function populatePlayerModal(data, player) {
 
         ourPredictedElem.textContent = predictedPoints !== undefined ? predictedPoints.toFixed(1) : '0.0';
         ourPredictedElem.style.color = '#333';
-        ourPredictedElem.style.textShadow = 'none';
+                ourPredictedElem.style.textShadow = 'none';
+        
+        // Populate Breakdown Card
+        const breakdownCard = document.getElementById('modal-breakdown-card');
+        const breakdownBody = document.getElementById('modal-our-breakdown');
+        if (breakdownCard && breakdownBody) {
+            breakdownCard.style.display = 'block';
+            let playChance = 100;
+            if (player.chance_of_playing_next_round !== null && player.chance_of_playing_next_round !== undefined) playChance = player.chance_of_playing_next_round;
+            else if (player.chance_of_playing_this_round !== null && player.chance_of_playing_this_round !== undefined) playChance = player.chance_of_playing_this_round;
+            
+            let html = '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>Play Prob:</span><span class="text-info">' + playChance + '%</span></div>';
+            
+            // Goals
+            let xG = parseFloat(player.expected_goals_per_90) || 0;
+            if (xG > 0) {
+                let ptsPerGoal = player.element_type === 1 ? 10 : (player.element_type === 2 ? 6 : (player.element_type === 3 ? 5 : 4));
+                let expectedGoalPts = (xG * ptsPerGoal).toFixed(1);
+                html += '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>xG Base:</span><span class="text-success">' + xG.toFixed(2) + ' <span class="text-white-50 small">(' + expectedGoalPts + ' pts)</span></span></div>';
+            }
+            
+            // Assists
+            let xA = parseFloat(player.expected_assists_per_90) || 0;
+            if (xA > 0) {
+                let expectedAssistPts = (xA * 3).toFixed(1);
+                html += '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>xA Base:</span><span class="text-success">' + xA.toFixed(2) + ' <span class="text-white-50 small">(' + expectedAssistPts + ' pts)</span></span></div>';
+            }
+            
+            // Clean Sheets
+            let xCS = parseFloat(player.clean_sheets_per_90) || 0;
+            if (xCS > 0 && player.element_type !== 4) { // Not for forwards
+                let ptsPerCS = player.element_type === 3 ? 1 : 4;
+                let expectedCSPts = (xCS * ptsPerCS).toFixed(1);
+                html += '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>Clean Sheet:</span><span class="text-success">' + (xCS*100).toFixed(0) + '% <span class="text-white-50 small">(' + expectedCSPts + ' pts)</span></span></div>';
+            }
+
+            // DEFCON (Only for DEF/MID)
+            let defCon = parseFloat(player.defensive_contribution_per_90) || 0;
+            if (defCon > 0 && (player.element_type === 2 || player.element_type === 3)) {
+                let threshold = (player.element_type === 2) ? 10 : 12;
+                let prob = Math.pow(defCon / threshold, 2) * 0.5;
+                if (prob > 0.95) prob = 0.95;
+                let expectedDefconPts = (prob * 2).toFixed(1);
+                html += '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>DEFCON / 90:</span><span class="text-warning">' + defCon.toFixed(1) + ' <span class="text-white-50 small">(' + expectedDefconPts + ' pts)</span></span></div>';
+            }
+
+            // Saves (Only for GK)
+            let saves = parseFloat(player.saves_per_90) || 0;
+            if (saves > 0 && player.element_type === 1) {
+                let expectedSavesPts = (saves * (1/3)).toFixed(1);
+                html += '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>Saves / 90:</span><span class="text-warning">' + saves.toFixed(1) + ' <span class="text-white-50 small">(' + expectedSavesPts + ' pts)</span></span></div>';
+            }
+            
+            // Goals Conceded (Only for GK/DEF)
+            let xGC = parseFloat(player.expected_goals_conceded_per_90) || 0;
+            if (xGC > 0 && (player.element_type === 1 || player.element_type === 2)) {
+                let expectedGcPts = (xGC / 2).toFixed(1);
+                html += '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>xGC Base:</span><span class="text-danger">' + xGC.toFixed(2) + ' <span class="text-white-50 small">(-' + expectedGcPts + ' pts)</span></span></div>';
+            }
+            
+            // Cards Deduction
+            if (player.minutes > 0) {
+                let y_per_90 = player.yellow_cards / (player.minutes / 90);
+                let r_per_90 = player.red_cards / (player.minutes / 90);
+                let expectedCardPts = (y_per_90 + (3 * r_per_90)).toFixed(2);
+                if (expectedCardPts > 0) {
+                    html += '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>Cards / 90:</span><span class="text-danger"> <span class="text-white-50 small">(-' + expectedCardPts + ' pts)</span></span></div>';
+                }
+            }
+            
+            breakdownBody.innerHTML = html;
+        }
     }
+
 
     // Populate Upcoming Fixtures
     const maxFixtures = 38;
