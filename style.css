@@ -62,11 +62,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Row layout */
-.row {
+.pitch-container .row, .subs-container .row {
     display: flex;
     justify-content: space-between;
     width: 100%;
     margin-bottom: 10px;
+    margin-left: 0;
+    margin-right: 0;
 }
 
 .player {
@@ -272,10 +274,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Specific flex layouts for each player row */
-.row.gk { justify-content: center; }
-.row.defense { justify-content: space-around; }
-.row.midfield { justify-content: space-around; }
-.row.attack { justify-content: space-around; }
+.pitch-container .row.gk { justify-content: center; }
+.pitch-container .row.defense { justify-content: space-around; }
+.pitch-container .row.midfield { justify-content: space-around; }
+.pitch-container .row.attack { justify-content: space-around; }
 
 /* Subs container */
 .subs-container {
@@ -354,7 +356,7 @@ h1, h2, h3, h4, h5, h6 {
         padding: 1px 0;
     }
 
-    .row {
+    .pitch-container .row, .subs-container .row {
         flex-direction: row;
         flex-wrap: nowrap;
         justify-content: space-around;

@@ -233,7 +233,7 @@ async function loadTemplateTeam() {
     templateLoaded = true; // Prevent re-running
     
     // Check session storage cache
-    const cached = sessionStorage.getItem('templateTeam');
+    const cached = sessionStorage.getItem('templateTeam_v2');
     if (cached) {
         renderTemplatePitch(JSON.parse(cached));
         return;
@@ -295,7 +295,7 @@ async function loadTemplateTeam() {
         }
         
         // Cache and Render
-        sessionStorage.setItem('templateTeam', JSON.stringify(squad));
+        sessionStorage.setItem('templateTeam_v2', JSON.stringify(squad));
         renderTemplatePitch(squad);
 
     } catch (error) {
