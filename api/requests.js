@@ -253,7 +253,7 @@ const getPulseLiveStandings = async () => {
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
         const { timestamp, data } = JSON.parse(cached);
-        if (Date.now() - timestamp < 5 * 60 * 1000) {
+        if (Date.now() - timestamp < 60 * 1000) {
             return data;
         }
     }

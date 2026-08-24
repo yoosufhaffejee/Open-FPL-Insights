@@ -385,7 +385,53 @@ async function renderStandings() {
         return;
     }
 
-    const entries = standingsData.tables[0].entries;
+    let entries = JSON.parse(JSON.stringify(standingsData.tables[0].entries));
+    
+    // Calculate live overrides from fixtures
+    entries.forEach(entry => {
+        const fplTeam = teams.find(t => t.name === entry.team.name || t.short_name === entry.team.club.abbr);
+        if (!fplTeam) return;
+
+        // Find all FPL fixtures for this team that have started and have a score
+        const teamFixtures = fixtures.filter(f => f.started && (f.team_h === fplTeam.id || f.team_a === fplTeam.id) && f.team_h_score !== null && f.team_a_score !== null);
+        
+        // FPL scores update live. If teamFixtures > entry.overall.played, PulseLive hasn't updated yet.
+        if (teamFixtures.length > entry.overall.played) {
+            const missingFixtures = teamFixtures.slice(entry.overall.played);
+            missingFixtures.forEach(f => {
+                const isHome = f.team_h === fplTeam.id;
+                const goalsFor = isHome ? f.team_h_score : f.team_a_score;
+                const goalsAgainst = isHome ? f.team_a_score : f.team_h_score;
+                
+                entry.overall.played += 1;
+                entry.overall.goalsFor += goalsFor;
+                entry.overall.goalsAgainst += goalsAgainst;
+                entry.overall.goalsDifference += (goalsFor - goalsAgainst);
+                
+                if (goalsFor > goalsAgainst) {
+                    entry.overall.won += 1;
+                    entry.overall.points += 3;
+                } else if (goalsFor === goalsAgainst) {
+                    entry.overall.drawn += 1;
+                    entry.overall.points += 1;
+                } else {
+                    entry.overall.lost += 1;
+                }
+            });
+        }
+    });
+
+    // Re-sort the entries array by points, then goal difference, then goals scored
+    entries.sort((a, b) => {
+        if (b.overall.points !== a.overall.points) return b.overall.points - a.overall.points;
+        if (b.overall.goalsDifference !== a.overall.goalsDifference) return b.overall.goalsDifference - a.overall.goalsDifference;
+        return b.overall.goalsFor - a.overall.goalsFor;
+    });
+
+    // Update positions
+    entries.forEach((entry, index) => {
+        entry.position = index + 1;
+    });
     
     let html = `
         <table class="table table-dark table-striped table-hover align-middle shadow-sm">
@@ -576,6 +622,20 @@ window.addEventListener('DOMContentLoaded', () => {
             renderStandings();
             renderScatterChart();
             renderTeamDefense();
+            
+            // Live refresh for the league table
+            setInterval(async () => {
+                const hasLiveGames = fixtures.some(f => f.started && !f.finished && !f.finished_provisional);
+                if (!hasLiveGames) return;
+                
+                try {
+                    const data = await getFixtures();
+                    fixtures = data; // Update global
+                    await renderStandings();
+                } catch (e) {
+                    console.error("Live table refresh failed", e);
+                }
+            }, 60000);
         }
     }, 100);
 });
