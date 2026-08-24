@@ -165,7 +165,7 @@ window.calculateAllPredictions = async () => {
         progressText.textContent = "0%";
 
         clearPredictionCache();
-        predictionCache = {};
+        initPredictionCacheForCalc();
 
         const remainingFixtures = fixtures.filter(f => !f.finished);
         let totalCombos = allPlayers.length * remainingFixtures.length;
@@ -176,7 +176,7 @@ window.calculateAllPredictions = async () => {
                 if (fixture.team_a === player.team || fixture.team_h === player.team) {
                     let expectedPoints = calculateExpectedPointsCore(player, fixture);
                     const cacheKey = `${player.id}_${fixture.id}`;
-                    predictionCache[cacheKey] = expectedPoints;
+                    setPredictionCacheValue(cacheKey, expectedPoints);
                 }
                 doneCombos++;
                 if (doneCombos % 1000 === 0) {
@@ -187,10 +187,10 @@ window.calculateAllPredictions = async () => {
                 }
             }
             let ep = calculateExpectedPointsCore(player, null);
-            predictionCache[`${player.id}_no_fixture`] = ep;
+            setPredictionCacheValue(`${player.id}_no_fixture`, ep);
         }
 
-        localStorage.setItem("fpl_predictions_v5", JSON.stringify(predictionCache));
+        savePredictionCache();
         statusText.textContent = "Done!";
         progressText.style.width = "100%";
         progressText.textContent = "100%";
