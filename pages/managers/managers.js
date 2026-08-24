@@ -368,7 +368,18 @@ function updatePlayerFixturesAndPoints(playerElement, player, predictedPoints) {
                     team.id === (playerFixture.team_a === player.team ? playerFixture.team_h : playerFixture.team_a)
                 );
 
-                fixtureElement.querySelector('.fixture-detail').textContent = `${opponentTeam.short_name} (${playerFixture.team_a === player.team ? 'A' : 'H'})`;
+                const isAway = playerFixture.team_a === player.team;
+                const haText = isAway ? 'A' : 'H';
+                const haClass = isAway ? 'ha-away' : 'ha-home';
+                fixtureElement.querySelector('.fixture-detail').innerHTML = `${opponentTeam.short_name}<br><span class="${haClass}">(${haText})</span>`;
+                
+                const difficulty = isAway ? playerFixture.team_a_difficulty : playerFixture.team_h_difficulty;
+                let diffClass = '';
+                if (difficulty <= 2) diffClass = 'diff-easy';
+                else if (difficulty === 3) diffClass = 'diff-avg';
+                else if (difficulty === 4) diffClass = 'diff-hard';
+                else if (difficulty >= 5) diffClass = 'diff-vhard';
+                fixtureElement.className = 'fixture ' + diffClass;
 
                 let playerPredictedPoints = calculatePlayerPredictedPoints(player, playerFixture, upcomingGameweek);
 
@@ -385,14 +396,33 @@ function updatePlayerFixturesAndPoints(playerElement, player, predictedPoints) {
                         actualPoints = livePlayer.stats.total_points * multiplier;
                     }
                 }
+                
+                let valToColor = actualPoints !== null ? actualPoints : (playerPredictedPoints !== '?' ? parseFloat(playerPredictedPoints) : '?');
+                let ptsClass = '';
+                if (valToColor !== '?') {
+                    if (player.element_type === 1 || player.element_type === 2) {
+                        if (valToColor > 5.5) ptsClass = 'pts-elite';
+                        else if (valToColor >= 4.0) ptsClass = 'pts-good';
+                        else if (valToColor >= 2.5) ptsClass = 'pts-avg';
+                        else ptsClass = 'pts-bad';
+                    } else {
+                        if (valToColor > 6.5) ptsClass = 'pts-elite';
+                        else if (valToColor >= 4.5) ptsClass = 'pts-good';
+                        else if (valToColor >= 3.0) ptsClass = 'pts-avg';
+                        else ptsClass = 'pts-bad';
+                    }
+                }
+                
+                const ptsElem = fixtureElement.querySelector('.predicted-points');
 
                 if (actualPoints !== null) {
-                    fixtureElement.querySelector('.predicted-points').textContent = actualPoints;
-                    fixtureElement.querySelector('.predicted-points').style.fontWeight = 'bold'; // Emphasize it's actual
+                    ptsElem.textContent = actualPoints;
+                    ptsElem.style.fontWeight = 'bold'; // Emphasize it's actual
                 } else {
-                    fixtureElement.querySelector('.predicted-points').textContent = playerPredictedPoints === '?' ? '?' : playerPredictedPoints.toFixed(1);
-                    fixtureElement.querySelector('.predicted-points').style.fontWeight = 'normal';
+                    ptsElem.textContent = playerPredictedPoints === '?' ? '?' : playerPredictedPoints.toFixed(1);
+                    ptsElem.style.fontWeight = 'normal';
                 }
+                ptsElem.className = 'predicted-points ' + ptsClass;
 
                 if (fixtureIndex === 0 && !player.isSub) {
                     if (playerPredictedPoints !== '?') predictedPoints += playerPredictedPoints;

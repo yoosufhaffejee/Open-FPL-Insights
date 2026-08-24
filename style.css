@@ -236,15 +236,18 @@ h1, h2, h3, h4, h5, h6 {
 .icon-button {
     background: none;
     border: none;
-    font-size: 0.8em;
-    color: #333;
+    font-size: 1.1em; /* Increased size on desktop */
+    color: rgba(255, 255, 255, 0.7); /* translucent white by default */
     cursor: pointer;
-    margin: 0 5px; /* Adjust spacing between icons */
-    pointer-events: auto; /* Allow clicks on the button itself */
+    margin: 0 5px;
+    pointer-events: auto;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8); /* Drop shadow so they pop off the pitch */
+    transition: all 0.15s ease;
 }
 
 .icon-button:hover {
-    color: darkgrey; /* Change color on hover if desired */
+    color: #ffffff; /* bright white on hover */
+    transform: scale(1.15); /* slight pop effect */
 }
 
 .player:hover .icon-buttons {
@@ -315,7 +318,7 @@ h1, h2, h3, h4, h5, h6 {
     .icon-button {
         background: none;
         border: none;
-        font-size: 0.7em;
+        font-size: 0.85em;
         color: #fff;
         cursor: pointer;
         margin: 0 2px;
@@ -551,8 +554,11 @@ h1, h2, h3, h4, h5, h6 {
     border: 2px dashed #00ff85 !important;
 }
 
-.captain, .vice {
-    color: #00ff85;
+.captain {
+    color: #ffd700 !important; /* Gold */
+}
+.vice {
+    color: silver !important; /* Silver */
 }
 
 #upcoming-fixtures-list div {
@@ -601,3 +607,19 @@ h1, h2, h3, h4, h5, h6 {
         margin: 5px !important;
     }
 }
+
+/* FPL Predicted Points and Fixture Color Coding */
+.pts-elite { color: #00ff85 !important; } /* Dark Green/Neon */
+.pts-good { color: #85ffb2 !important; }  /* Light Green */
+.pts-avg { color: #e6d933 !important; }   /* Yellow */
+.pts-bad { color: #ff5959 !important; }   /* Red */
+
+/* Fixture difficulty backgrounds */
+.diff-easy { background: rgba(0, 255, 133, 0.15) !important; border-color: rgba(0, 255, 133, 0.2) !important; }
+.diff-avg { background: rgba(255, 255, 255, 0.05) !important; border-color: rgba(255, 255, 255, 0.05) !important; }
+.diff-hard { background: rgba(255, 89, 89, 0.15) !important; border-color: rgba(255, 89, 89, 0.2) !important; }
+.diff-vhard { background: rgba(200, 0, 0, 0.3) !important; border-color: rgba(200, 0, 0, 0.4) !important; }
+
+/* Home/Away colors */
+.ha-home { color: #ffffff; font-weight: bold; }
+.ha-away { color: #aaaaaa; }

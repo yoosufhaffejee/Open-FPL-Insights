@@ -478,10 +478,14 @@ function updateTeamUI() {
         fwd: [...availableSlots.fwd]
     };
 
-    // Sort players: Field players first, then Subs sorted by position (GK first)
+    // Sort players: Field players first, then Subs (GK first, outfield keep their order)
     myPlayers.sort((a, b) => {
         if (a.isSub !== b.isSub) return a.isSub ? 1 : -1;
-        if (a.isSub && b.isSub) return a.element_type - b.element_type;
+        if (a.isSub && b.isSub) {
+            if (a.element_type === 1 && b.element_type !== 1) return -1;
+            if (b.element_type === 1 && a.element_type !== 1) return 1;
+            return 0; // Keep existing order for outfield subs
+        }
         return 0;
     });
 
@@ -645,11 +649,40 @@ function updatePlayerFixturesAndPoints(playerElement, player, predictedPoints) {
                     team.id === (playerFixture.team_a === player.team ? playerFixture.team_h : playerFixture.team_a)
                 );
 
-                fixtureElement.querySelector('.fixture-detail').innerHTML = `${opponentTeam.short_name}<br>(${playerFixture.team_a === player.team ? 'A' : 'H'})`;
+                const isAway = playerFixture.team_a === player.team;
+                const haText = isAway ? 'A' : 'H';
+                const haClass = isAway ? 'ha-away' : 'ha-home';
+                fixtureElement.querySelector('.fixture-detail').innerHTML = `${opponentTeam.short_name}<br><span class="${haClass}">(${haText})</span>`;
+                
+                const difficulty = isAway ? playerFixture.team_a_difficulty : playerFixture.team_h_difficulty;
+                let diffClass = '';
+                if (difficulty <= 2) diffClass = 'diff-easy';
+                else if (difficulty === 3) diffClass = 'diff-avg';
+                else if (difficulty === 4) diffClass = 'diff-hard';
+                else if (difficulty >= 5) diffClass = 'diff-vhard';
+                fixtureElement.className = 'fixture ' + diffClass;
 
                 let playerPredictedPoints = calculatePlayerPredictedPoints(player, playerFixture, upcomingGameweek);
 
-                fixtureElement.querySelector('.predicted-points').textContent = playerPredictedPoints === '?' ? '?' : playerPredictedPoints.toFixed(1);
+                let ptsClass = '';
+                if (playerPredictedPoints !== '?') {
+                    const pts = parseFloat(playerPredictedPoints);
+                    if (player.element_type === 1 || player.element_type === 2) {
+                        if (pts > 5.5) ptsClass = 'pts-elite';
+                        else if (pts >= 4.0) ptsClass = 'pts-good';
+                        else if (pts >= 2.5) ptsClass = 'pts-avg';
+                        else ptsClass = 'pts-bad';
+                    } else {
+                        if (pts > 6.5) ptsClass = 'pts-elite';
+                        else if (pts >= 4.5) ptsClass = 'pts-good';
+                        else if (pts >= 3.0) ptsClass = 'pts-avg';
+                        else ptsClass = 'pts-bad';
+                    }
+                }
+
+                const ptsElem = fixtureElement.querySelector('.predicted-points');
+                ptsElem.textContent = playerPredictedPoints === '?' ? '?' : playerPredictedPoints.toFixed(1);
+                ptsElem.className = 'predicted-points ' + ptsClass;
 
                 // Add up all the players predicted points for the current GW
                 if (fixtureIndex === 0) {
