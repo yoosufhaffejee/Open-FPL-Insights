@@ -181,7 +181,7 @@ function getPlayerHistoricStatsAgainst(player, oppTeamName) {
 }
 
 function loadHistoricCache() {
-    const stored = localStorage.getItem('historic_stats_cache');
+    const stored = localStorage.getItem('historic_stats_cache_v2');
     if (stored) {
         try {
             historicStatsCache = JSON.parse(stored);
@@ -192,7 +192,7 @@ function loadHistoricCache() {
                 keys.sort((a, b) => parseInt(a) - parseInt(b));
                 // remove oldest
                 delete historicStatsCache[keys[0]];
-                localStorage.setItem('historic_stats_cache', JSON.stringify(historicStatsCache));
+                localStorage.setItem('historic_stats_cache_v2', JSON.stringify(historicStatsCache));
             }
         } catch (e) {
             historicStatsCache = {};
@@ -206,7 +206,7 @@ function saveHistoricCache() {
         keys.sort((a, b) => parseInt(a) - parseInt(b));
         delete historicStatsCache[keys[0]];
     }
-    localStorage.setItem('historic_stats_cache', JSON.stringify(historicStatsCache));
+    localStorage.setItem('historic_stats_cache_v2', JSON.stringify(historicStatsCache));
 }
 
 let historicGridOptions = null;
@@ -241,7 +241,7 @@ function renderHistoricStats(results) {
             matches: res.stats.matches.length,
             avgMins: res.stats.avgMins,
             g_a: res.stats.totalGoals + ' / ' + res.stats.totalAssists,
-            xg_xa: res.stats.totalXg.toFixed(2) + ' / ' + res.stats.totalXa.toFixed(2),
+            xg_xa: (res.stats.totalXg || 0).toFixed(2) + ' / ' + (res.stats.totalXa || 0).toFixed(2),
             avgBps: res.stats.avgBps,
             bonus: res.stats.totalBonus,
             history: res.stats.matches
