@@ -78,41 +78,25 @@ function renderFDR() {
                 
                 let difficulty = isHome ? f.team_h_difficulty : f.team_a_difficulty;
                 
-                let teamAtt = isHome ? team.strength_attack_home : team.strength_attack_away;
-                let teamDef = isHome ? team.strength_defence_home : team.strength_defence_away;
-                let oppAtt = isHome ? opponent.strength_attack_away : opponent.strength_attack_home;
-                let oppDef = isHome ? opponent.strength_defence_away : opponent.strength_defence_home;
-                
-                // Fallbacks if FPL data is missing early season
-                if (!teamAtt) teamAtt = 1100;
-                if (!teamDef) teamDef = 1100;
-                if (!oppAtt) oppAtt = 1100;
-                if (!oppDef) oppDef = 1100;
-
-                // Calculate projected xG for our team
-                // Base 1.4 goals per game, scaled by relative strengths
-                let xG = 1.4 * Math.pow(teamAtt / oppDef, 2.5);
-                xG = Math.max(0.3, Math.min(4.0, xG)); // Cap between 0.3 and 4.0
-                
-                // Calculate opponent xG to derive Clean Sheet percentage
-                let oppXG = 1.4 * Math.pow(oppAtt / teamDef, 2.5);
-                oppXG = Math.max(0.3, Math.min(4.0, oppXG));
-                
-                // Poisson distribution for 0 goals (e^-lambda)
-                let csChance = Math.round(Math.exp(-oppXG) * 100);
-                
                 // Fallback bounds 1-5
                 difficulty = Math.max(1, Math.min(5, difficulty));
                 
                 let cellText = `${oppShort} (${isHome ? 'H' : 'A'})`;
                 
-                let xGFormatted = xG.toFixed(2);
+                const projectedMap = {
+                    1: { xG: 2.5, cs: 50 },
+                    2: { xG: 2.1, cs: 40 },
+                    3: { xG: 1.5, cs: 25 },
+                    4: { xG: 1.1, cs: 15 },
+                    5: { xG: 0.8, cs: 5  }
+                };
+                
                 if (useGoals && !useCS) {
-                    cellText += `<br><small style="font-size: 0.8em; font-weight: 600;">${xGFormatted} xG</small>`;
+                    cellText += `<br><small style="font-size: 0.8em; font-weight: 600;">${projectedMap[difficulty].xG} xG</small>`;
                 } else if (useCS && !useGoals) {
-                    cellText += `<br><small style="font-size: 0.8em; font-weight: 600;">${csChance}% CS</small>`;
+                    cellText += `<br><small style="font-size: 0.8em; font-weight: 600;">${projectedMap[difficulty].cs}% CS</small>`;
                 } else if (useCS && useGoals) {
-                    cellText += `<br><small style="font-size: 0.75em; font-weight: 600;">${xGFormatted} xG | ${csChance}% CS</small>`;
+                    cellText += `<br><small style="font-size: 0.75em; font-weight: 600;">${projectedMap[difficulty].xG} xG | ${projectedMap[difficulty].cs}% CS</small>`;
                 }
                 
                 rowFixtures.push({

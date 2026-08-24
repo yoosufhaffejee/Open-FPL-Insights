@@ -56,6 +56,7 @@ body.fdr-page {
     height: 24px;
     margin-right: 8px;
     object-fit: contain;
+    vertical-align: middle;
 }
 
 .form-check-input:checked {
@@ -69,11 +70,14 @@ body.fdr-page {
 }
 
 .team-name-cell {
-    display: flex;
-    align-items: center;
     padding: 10px 15px !important;
     background-color: #1a1a1a;
     min-width: 180px;
+    text-align: left;
+    vertical-align: middle;
+}
+.team-name-cell span {
+    vertical-align: middle;
 }
 
 /* Enable sticky first column */
@@ -81,19 +85,19 @@ body.fdr-page {
 .fdr-table td:first-child {
     position: sticky;
     left: 0;
-    z-index: 2;
+    z-index: 10;
     background-color: #1a1a1a !important;
     border-right: 2px solid #333 !important;
     min-width: 180px;
+    background-clip: padding-box;
 }
 
 .fdr-table th:first-child {
-    z-index: 3;
+    z-index: 11;
 }
 
-/* Ensure gameweek columns don't squish too much */
+/* Ensure exactly 5 gameweek columns show at once */
 .fdr-table th:not(:first-child),
 .fdr-table td:not(:first-child) {
-    min-width: 120px;
-    width: 120px;
+    min-width: calc((100vw - 250px) / 5);
 }
