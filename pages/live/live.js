@@ -80,7 +80,7 @@ function renderLivePitch(picks) {
                     <div class="player-header" style="justify-content: center; border-bottom: none;">
                         <span class="player-name">${player.web_name}</span>
                     </div>
-                    <div style="font-size: 0.75rem; font-weight: bold; margin-top: 1px; padding: 1px 0; border-radius: 2px; text-align: center; color: #fff; background: ${pick.multiplier > 0 ? '#008736' : '#6c757d'};">${points}</div>
+                    <div style="font-size: 0.75rem; font-weight: bold; margin-top: 1px; padding: 1px 0; border-radius: 2px; text-align: center; color: ${pick.multiplier > 0 ? '#111' : '#ccc'}; background: ${pick.multiplier > 0 ? '#00ff85' : '#444'};">${points}</div>
                 </div>
             </div>
         `;
