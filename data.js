@@ -224,6 +224,8 @@ window.calculateAllPredictions = async () => {
 
 
 function checkPredictionsCache() {
+    if (typeof hasValidPredictionCache !== 'function') return;
+    
     if (!hasValidPredictionCache()) {
         const banner = document.createElement("div");
         banner.className = "alert alert-warning alert-dismissible fade show text-center";
