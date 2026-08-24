@@ -82,8 +82,9 @@ function clearPredictionCache_claude() {
 function getExpectedPoints_claude(player, fixture) {
     loadPredictionCache_claude();
     const cacheKey = `${player.id}_${fixture ? fixture.id : 'no_fixture'}`;
-    if (predictionCache_claude[cacheKey] !== undefined) {
-        return predictionCache_claude[cacheKey].xPoints;
+    const cached = predictionCache_claude[cacheKey];
+    if (cached !== undefined) {
+        return typeof cached === 'object' ? cached.xPoints : cached;
     }
     return '?';
 }

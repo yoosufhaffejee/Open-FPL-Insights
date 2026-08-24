@@ -176,7 +176,11 @@ window.calculateAllPredictions = async () => {
                 if (fixture.team_a === player.team || fixture.team_h === player.team) {
                     let expectedPoints = calculateExpectedPointsCore(player, fixture);
                     const cacheKey = `${player.id}_${fixture.id}`;
-                    setPredictionCacheValue(cacheKey, Number(expectedPoints.toFixed(2)));
+                    if (typeof expectedPoints === 'object') {
+                        setPredictionCacheValue(cacheKey, expectedPoints);
+                    } else {
+                        setPredictionCacheValue(cacheKey, Number(expectedPoints.toFixed(2)));
+                    }
                 }
                 doneCombos++;
                 if (doneCombos % 1000 === 0) {
@@ -187,7 +191,11 @@ window.calculateAllPredictions = async () => {
                 }
             }
             let ep = calculateExpectedPointsCore(player, null);
-            setPredictionCacheValue(`${player.id}_no_fixture`, Number(ep.toFixed(2)));
+            if (typeof ep === 'object') {
+                setPredictionCacheValue(`${player.id}_no_fixture`, ep);
+            } else {
+                setPredictionCacheValue(`${player.id}_no_fixture`, Number(ep.toFixed(2)));
+            }
         }
 
         savePredictionCache();
