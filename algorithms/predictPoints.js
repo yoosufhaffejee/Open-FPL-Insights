@@ -23,20 +23,32 @@ function clearPredictionCache() {
 
 // Caching abstraction for data.js
 function initPredictionCacheForCalc() {
-    if (ACTIVE_ALGORITHM === "GPT") predictionCache_gpt = {};
+    // Clear out old cruft to prevent QuotaExceededError
+    try {
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            let key = localStorage.key(i);
+            if (key && key.startsWith('fpl_predictions_') && !key.includes('_v5_v1') && !key.includes('_v5_gpt') && !key.includes('_v5_claude')) {
+                keysToRemove.push(key);
+            }
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+    } catch(e) {}
+    
+    if (ACTIVE_ALGORITHM === "GPT") return initPredictionCache_gpt();
     else if (ACTIVE_ALGORITHM === "CLAUDE") predictionCache_claude = {};
     else predictionCache_v1 = {};
 }
 
 function setPredictionCacheValue(key, value) {
-    if (ACTIVE_ALGORITHM === "GPT") predictionCache_gpt[key] = value;
+    if (ACTIVE_ALGORITHM === "GPT") return setPredictionCacheValue_gpt(key, value);
     else if (ACTIVE_ALGORITHM === "CLAUDE") predictionCache_claude[key] = value;
     else predictionCache_v1[key] = value;
 }
 
 function savePredictionCache() {
     if (ACTIVE_ALGORITHM === "GPT") {
-        localStorage.setItem("fpl_predictions_v5_gpt", JSON.stringify(predictionCache_gpt));
+        return savePredictionCache_gpt();
     } else if (ACTIVE_ALGORITHM === "CLAUDE") {
         localStorage.setItem("fpl_predictions_v5_claude", JSON.stringify(predictionCache_claude));
     } else {

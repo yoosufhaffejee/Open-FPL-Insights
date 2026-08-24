@@ -290,7 +290,7 @@ function updateTeamUI() {
         if (selectedGameweek >= getUpcomingGameweek().id) {
             updateTeamInfo("Bank Balance", `${bankBalance.toFixed(1)}m`);
         }
-        updateTeamInfo("Predicted Points", predictedPoints.toFixed(0));
+        updateTeamInfo("Predicted Points", (predictedPoints !== '?' ? Number(predictedPoints).toFixed(0) : '?'));
     });
 
     // Handle missing players/ghost players
@@ -779,7 +779,7 @@ function populatePlayerModal(data, player) {
             predictedPoints = predictedPoints / 2;
         }
 
-        ourPredictedElem.textContent = predictedPoints !== undefined ? predictedPoints.toFixed(1) : '0.0';
+        ourPredictedElem.textContent = (predictedPoints !== undefined && predictedPoints !== '?') ? Number(predictedPoints).toFixed(1) : (predictedPoints === '?' ? '?' : '0.0');
         ourPredictedElem.style.color = '#333';
         ourPredictedElem.style.textShadow = 'none';
     }

@@ -383,7 +383,7 @@ function populatePlayerModal(data, player) {
             predictedPoints = predictedPoints / 2;
         }
 
-        ourPredictedElem.textContent = predictedPoints !== undefined ? predictedPoints.toFixed(1) : '0.0';
+        ourPredictedElem.textContent = (predictedPoints !== undefined && predictedPoints !== '?') ? Number(predictedPoints).toFixed(1) : (predictedPoints === '?' ? '?' : '0.0');
         ourPredictedElem.style.color = '#333';
     }
 

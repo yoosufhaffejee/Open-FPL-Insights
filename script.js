@@ -513,7 +513,7 @@ function updateTeamUI() {
         // Update bank balance
         bankBalance -= player.now_cost / 10;
         updateTeamInfo("Bank Balance", `${bankBalance.toFixed(1)}m`);
-        updateTeamInfo("Predicted Points", predictedPoints.toFixed(0));
+        updateTeamInfo("Predicted Points", (predictedPoints !== '?' ? Number(predictedPoints).toFixed(0) : '?'));
     
     // Ensure Auto Pick button is disabled only when 15 real players exist
     const realPlayersCount = myPlayers.filter(p => p.now_cost > 0).length;
@@ -1069,7 +1069,7 @@ function populatePlayerModal(data, player) {
             predictedPoints = predictedPoints / 2;
         }
 
-        ourPredictedElem.textContent = predictedPoints !== undefined ? predictedPoints.toFixed(1) : '0.0';
+        ourPredictedElem.textContent = (predictedPoints !== undefined && predictedPoints !== '?') ? Number(predictedPoints).toFixed(1) : (predictedPoints === '?' ? '?' : '0.0');
         ourPredictedElem.style.color = '#333';
                         ourPredictedElem.style.textShadow = 'none';
         
