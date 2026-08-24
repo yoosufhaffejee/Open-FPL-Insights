@@ -355,12 +355,12 @@ function populatePlayerModal(data, player) {
                  style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; background: #eee;" 
                  onerror="playerImgOnerror(this, ${player.team_code})">
             <div>
-                <h3 class="mb-0 fw-bold">${player.first_name} ${player.second_name}</h3>
-                <div class="d-flex gap-2 text-muted fs-6 mt-1 align-items-center">
-                    <span class="badge bg-secondary">${positionMap[player.element_type]}</span>
-                    <span><i class="fas fa-pound-sign"></i> ${(player.now_cost / 10).toFixed(1)}m</span>
-                    <span><i class="fas fa-users"></i> ${player.selected_by_percent}% owned</span>
-                    <span><i class="fas fa-star text-warning"></i> ${player.total_points} pts</span>
+                <h3 class="mb-1 fw-bold">${player.first_name} ${player.second_name}</h3>
+                <div class="d-flex flex-wrap align-items-center gap-3 text-muted" style="font-size: 0.9rem;">
+                    <span class="badge bg-secondary px-2 py-1">${positionMap[player.element_type]}</span>
+                    <span><i class="fas fa-pound-sign me-1"></i>${(player.now_cost / 10).toFixed(1)}m</span>
+                    <span><i class="fas fa-users me-1 text-secondary"></i>${player.selected_by_percent}% owned</span>
+                    <span><i class="fas fa-star text-warning me-1"></i>${player.total_points} pts</span>
                 </div>
             </div>
         </div>
@@ -400,18 +400,16 @@ function populatePlayerModal(data, player) {
         const homeAway = fixture.is_home ? 'H' : 'A';
 
         const fixtureItem = document.createElement('div');
-        fixtureItem.className = `p-2 flex-shrink-0 border rounded me-2 text-center text-dark ${difficultyClass}`;
+        fixtureItem.className = `p-2 flex-shrink-0 border rounded me-2 d-flex flex-column justify-content-center align-items-center text-dark ${difficultyClass}`;
         fixtureItem.style.width = '100px'; 
         fixtureItem.style.fontWeight = 'bold';
 
         fixtureItem.innerHTML = `
-            <div style="font-size: 0.8rem; opacity: 0.8;">GW${fixture.event}</div>
-            <div>
-                <img src="https://resources.premierleague.com/premierleague/badges/100/t${opponentTeam.code}.png" 
-                     alt="${opponentTeam.short_name}" 
-                     style="width: 35px; height: 35px; margin: 4px 0;">
-            </div>
-            <div>${opponentTeam.short_name} (${homeAway})</div>
+            <div style="font-size: 0.75rem; opacity: 0.9; margin-bottom: 2px;">GW${fixture.event}</div>
+            <img src="https://resources.premierleague.com/premierleague/badges/100/t${opponentTeam.code}.png" 
+                 alt="${opponentTeam.short_name}" 
+                 style="width: 35px; height: 35px; object-fit: contain;">
+            <div style="font-size: 0.85rem; margin-top: 4px;">${opponentTeam.short_name} (${homeAway})</div>
         `;
         fixturesList.appendChild(fixtureItem);
     });

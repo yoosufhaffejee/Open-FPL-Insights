@@ -741,12 +741,23 @@ function showPlayerInfo(player) {
 
 // Function to populate the modal with player data
 function populatePlayerModal(data, player) {
-    // Set the player name in the modal title
+    // Set the player name in the modal title    // 1. Header with Photo & Key Stats
     document.getElementById('playerInfoModalLabel').innerHTML = `
-    <img src="https://resources.premierleague.com/premierleague/photos/players/250x250/p${player.code}.png" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;" onerror="playerImgOnerror(this, ${player.team_code}, ${player.element_type})">
-    ${player.first_name} ${player.second_name}`;
-
-    // Clear previous data
+        <div class="d-flex align-items-center gap-3 w-100">
+            <img src="https://resources.premierleague.com/premierleague/photos/players/250x250/p${player.code}.png" 
+                 style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; background: #eee;" 
+                 onerror="playerImgOnerror(this, ${player.team_code})">
+            <div>
+                <h3 class="mb-1 fw-bold">${player.first_name} ${player.second_name}</h3>
+                <div class="d-flex flex-wrap align-items-center gap-3 text-muted" style="font-size: 0.9rem;">
+                    <span class="badge bg-secondary px-2 py-1">${positionMap[player.element_type]}</span>
+                    <span><i class="fas fa-pound-sign me-1"></i>${(player.now_cost / 10).toFixed(1)}m</span>
+                    <span><i class="fas fa-users me-1 text-secondary"></i>${player.selected_by_percent}% owned</span>
+                    <span><i class="fas fa-star text-warning me-1"></i>${player.total_points} pts</span>
+                </div>
+            </div>
+        </div>
+    `;
     const fixturesList = document.getElementById('upcoming-fixtures-list');
     const recentMatchesTable = document.querySelector('#recent-matches-table tbody');
     const pastSeasonsTable = document.querySelector('#past-seasons-table tbody');
