@@ -1,0 +1,37 @@
+{
+  "autoPick.js": {
+    "mtime": 1787402527.573624,
+    "ast_hash": "236f8771d2ed0855f87a4e2a63831dfa",
+    "semantic_hash": "236f8771d2ed0855f87a4e2a63831dfa"
+  },
+  "historicStats.js": {
+    "mtime": 1787574376.0473402,
+    "ast_hash": "6f51ae29e3dbe247dea039a807d639f3",
+    "semantic_hash": "6f51ae29e3dbe247dea039a807d639f3"
+  },
+  "optimizeTeam.js": {
+    "mtime": 1726784099.9589987,
+    "ast_hash": "1f3de6118bacd3969ede7dcc0636c3ea",
+    "semantic_hash": "1f3de6118bacd3969ede7dcc0636c3ea"
+  },
+  "predictPoints.js": {
+    "mtime": 1787594658.7347913,
+    "ast_hash": "12cc4472605310e5bd5129fd5affa4c2",
+    "semantic_hash": "12cc4472605310e5bd5129fd5affa4c2"
+  },
+  "predictPoints_claude.js": {
+    "mtime": 1787590710.756521,
+    "ast_hash": "9b159adeedb0cecaa7ca7487872f7446",
+    "semantic_hash": "9b159adeedb0cecaa7ca7487872f7446"
+  },
+  "predictPoints_gpt.js": {
+    "mtime": 1787594657.8094382,
+    "ast_hash": "7116e8eda2ffc5d1d4f71f8a4586b940",
+    "semantic_hash": "7116e8eda2ffc5d1d4f71f8a4586b940"
+  },
+  "predictPoints_v1.js": {
+    "mtime": 1787590710.756521,
+    "ast_hash": "ee87a5a7cdd892de45d8a03a6443676c",
+    "semantic_hash": "ee87a5a7cdd892de45d8a03a6443676c"
+  }
+}
