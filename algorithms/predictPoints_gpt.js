@@ -283,6 +283,23 @@ function loadPredictionCache_gpt() {
     }
 }
 
+function initPredictionCache_gpt() {
+    predictionCache_gpt = {};
+}
+
+function setPredictionCacheValue_gpt(key, value) {
+    if (predictionCache_gpt === null) {
+        predictionCache_gpt = {};
+    }
+    predictionCache_gpt[key] = value;
+}
+
+function savePredictionCache_gpt() {
+    if (predictionCache_gpt !== null) {
+        localStorage.setItem('fpl_predictions_v5_gpt', JSON.stringify(predictionCache_gpt));
+    }
+}
+
 function clearPredictionCache_gpt() {
     predictionCache_gpt = null;
     localStorage.removeItem('fpl_predictions_v5_gpt');
@@ -388,6 +405,7 @@ function calculateExpectedPointsCore_gpt(player, fixture) {
     // 8. Output object
     return {
         expectedPoints: Number(expectedPoints.toFixed(5)),
+        xPoints: Number(expectedPoints.toFixed(5)), // Alias for data.js compatibility
         expectedMinutes: Number(avail.expectedMinutes.toFixed(2)),
         confidence: Number(confidence.toFixed(2)),
         floor: Number(Math.max(0, expectedPoints * 0.4).toFixed(2)),
@@ -411,4 +429,7 @@ if (typeof window !== 'undefined') {
     window.getExpectedPoints_gpt = getExpectedPoints_gpt;
     window.calculateExpectedPointsCore_gpt = calculateExpectedPointsCore_gpt;
     window.clearPredictionCache_gpt = clearPredictionCache_gpt;
+    window.initPredictionCache_gpt = initPredictionCache_gpt;
+    window.setPredictionCacheValue_gpt = setPredictionCacheValue_gpt;
+    window.savePredictionCache_gpt = savePredictionCache_gpt;
 }
