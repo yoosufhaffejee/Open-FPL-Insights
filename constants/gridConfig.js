@@ -123,6 +123,20 @@ function setupGridOptions(filteredPlayers) {
                 valueGetter: (params) => parseFloat(params.data.defensive_contribution_per_90) || 0
             },
             {
+                headerName: 'FPL Pred Pts',
+                field: 'ep_this',
+                width: 140,
+                valueGetter: (params) => isNaN(parseFloat(params.data.ep_this)) ? 0 : parseFloat(params.data.ep_this),
+                cellClass: params => params.value >= 6 ? 'text-success fw-bold' : (params.value >= 4 ? 'text-warning' : '')
+            },
+            {
+                headerName: 'FPL Next Pred Pts',
+                field: 'ep_next',
+                width: 170,
+                valueGetter: (params) => isNaN(parseFloat(params.data.ep_next)) ? 0 : parseFloat(params.data.ep_next),
+                cellClass: params => params.value >= 6 ? 'text-success fw-bold' : (params.value >= 4 ? 'text-warning' : '')
+            },
+            {
                 headerValueGetter: () => typeof selectedGameweek !== 'undefined' ? `Exp Pts GW${selectedGameweek}` : 'Exp Pts',
                 colId: 'custom_exp_pts',
                 width: 150,
