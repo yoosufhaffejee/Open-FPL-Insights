@@ -159,13 +159,48 @@ function calculateExpectedPointsCore_v1(player, fixture) {
 
     // Incorporate chance of playing
     let chanceOfPlaying = 100;
+    let chanceOverridden = false;
     if (player.chance_of_playing_next_round !== null && player.chance_of_playing_next_round !== undefined) {
         chanceOfPlaying = player.chance_of_playing_next_round;
     } else if (player.chance_of_playing_this_round !== null && player.chance_of_playing_this_round !== undefined) {
         chanceOfPlaying = player.chance_of_playing_this_round;
     }
-    expectedPoints = expectedPoints * (chanceOfPlaying / 100);
-
+    
+    // Project post-injury chance of playing for future fixtures
+    if (chanceOfPlaying === 0 && player.news && player.news.includes("Expected back") && fixture && fixture.kickoff_time) {
+        let match = player.news.match(/Expected back (\d{1,2}\s+[A-Za-z]+)/);
+        if (match && match[1]) {
+            let currentYear = new Date().getFullYear();
+            let expectedBackDate = new Date(`${match[1]} ${currentYear}`);
+            
+            // Handle year wrap around (e.g. injured in Dec, expected back in Jan)
+            if (!isNaN(expectedBackDate) && expectedBackDate < new Date(new Date().setMonth(new Date().getMonth() - 6))) {
+                 expectedBackDate.setFullYear(currentYear + 1);
+            }
+            
+            let fixtureDate = new Date(fixture.kickoff_time);
+            
+            if (!isNaN(fixtureDate) && fixtureDate >= expectedBackDate) {
+                let daysPostReturn = (fixtureDate - expectedBackDate) / (1000 * 60 * 60 * 24);
+                
+                // Base cautious chance: 50%
+                let projectedChance = 50; 
+                
+                // 1. Adjust based on how far past their return date this fixture is (+33% per week)
+                projectedChance += (daysPostReturn / 7) * 33;
+                
+                // 2. Adjust based on FPL Price (proxy for First Team importance)
+                let cost = player.now_cost / 10;
+                if (cost >= 7.0) projectedChance += 25; // Premium: Fast-tracked
+                else if (cost >= 5.5) projectedChance += 10; // Mid: Likely starter
+                else if (cost <= 4.5) projectedChance -= 15; // Budget: Unlikely to rush
+                
+                // 3. Cap max projected chance to 85% to maintain uncertainty
+                chanceOfPlaying = Math.max(0, Math.min(85, projectedChance));
+                chanceOverridden = true;
+            }
+        }
+    }
     
     // Regress to mean for small sample sizes (less than 3 full games played) to prevent early-season anomalies
     if (player.minutes !== undefined && player.minutes < 270) {
@@ -177,9 +212,10 @@ function calculateExpectedPointsCore_v1(player, fixture) {
         
         // If FPL model explicitly predicts this player will blank (e.g., bench warmer, injured), trust it
         let fplPred = parseFloat(player.ep_next);
-        if (!isNaN(fplPred) && fplPred < 1.0) {
+        
+        if (!chanceOverridden && !isNaN(fplPred) && fplPred < 1.0) {
             baseline = fplPred;
-        } else if (!isNaN(fplPred) && player.minutes === 0) {
+        } else if (!chanceOverridden && !isNaN(fplPred) && player.minutes === 0) {
             // For brand new players who haven't played a minute, blend price baseline with FPL prediction
             baseline = (baseline * 0.5) + (fplPred * 0.5);
         } else if (lastFiveData.count > 0 && lastFiveData.averagePoints !== undefined) {
@@ -273,14 +309,17 @@ function calculateExpectedPointsCore_v1(player, fixture) {
     }
 
     // Blend with FPL's ep_next at 15% weight to smooth outliers without dragging down our aggressive model too much
-    const fplPred = parseFloat(player.ep_next);
-    if (!isNaN(fplPred) && fplPred > 0) {
-        expectedPoints = (expectedPoints * 0.85) + (fplPred * 0.15);
+    const fplPredFinal = parseFloat(player.ep_next);
+    if (!chanceOverridden && !isNaN(fplPredFinal) && fplPredFinal > 0) {
+        expectedPoints = (expectedPoints * 0.85) + (fplPredFinal * 0.15);
     }
     
     // Add bump to overall team expected points to reach ~60 average
     // Apply this AFTER the FPL blend so the conservative FPL score doesn't undo the bump
     expectedPoints = expectedPoints * 1.25;
+    
+    // Apply final chance of playing multiplier to ensure it scales correctly after all baseline/form/fixture tweaks
+    expectedPoints = expectedPoints * (chanceOfPlaying / 100);
     
     return expectedPoints;
 }
