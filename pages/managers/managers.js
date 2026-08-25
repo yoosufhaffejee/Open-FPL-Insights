@@ -168,6 +168,7 @@ async function getLatestPicks(gameweek) {
 async function calculateSeasonPoints() {
     let seasonPoints = 0;
     let overallRating = 0;
+    let totalIdealPoints = 0;
 
     // Normal for loop to handle async operations correctly
     for (let i = 0; i < gameweeks.length; i++) {
@@ -192,19 +193,21 @@ async function calculateSeasonPoints() {
 
             const bestPlayers = optimizeTeam(myPlayers);
             bestPlayers.forEach(player => {
-                gwPoints += player.predicted_points;
+                gwPoints += player.isCaptain ? (player.predicted_points * 2) : player.predicted_points;
             });
         }
 
+        let maxIdeal = getIdealMaxPointsForGW(gw.id, calculatePlayerPredictedPoints, allPlayers, fixtures);
         if (gwRating <= 0) {
-            gwRating = (gwPoints / 70) * 100;
+            gwRating = Math.min(100, (gwPoints / maxIdeal) * 100);
         }
 
         seasonPoints += gwPoints;
-        overallRating += gwRating;
+        totalIdealPoints += maxIdeal;
     };
 
-    updateTeamInfo("Overall Rating", parseInt(overallRating/gameweeks.length) + '%');
+    overallRating = Math.min(100, (seasonPoints / totalIdealPoints) * 100);
+    updateTeamInfo("Overall Rating", Math.round(overallRating) + '%');
     updateTeamInfo("Season Points", parseInt(seasonPoints));
 }
 

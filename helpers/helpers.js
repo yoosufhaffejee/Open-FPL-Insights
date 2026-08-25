@@ -117,7 +117,7 @@ function showOnboardingModal(assetPrefix = './', forceShow = false) {
     }
     
     const html = `
-    <div class="modal fade" id="fplOnboardingModal" tabindex="-1" aria-hidden="true" style="z-index: 10050;">
+    <div class="modal fade" id="fplOnboardingModal" tabindex="-1" style="z-index: 10050;">
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content bg-dark text-white border-secondary">
                 <div class="modal-header border-secondary">
