@@ -78,7 +78,7 @@ h1, h2, h3, h4, h5, h6 {
     text-align: center;
     padding: 5px;
     width: 100%;
-    max-width: 100px; /* Increased from 80px so long names don't overlap */
+    max-width: 110px; /* Increased to accommodate longer names without stretching */
 }
 
 .player img {
@@ -151,8 +151,8 @@ h1, h2, h3, h4, h5, h6 {
     color: #ffffff;
     border-radius: 6px;
     padding: 4px 6px;
-    width: auto;
-    min-width: 100%;
+    width: 100%; /* Force all cards to take full width of .player to be uniform */
+    box-sizing: border-box;
     margin-top: -8px; /* overlap shirt slightly */
     z-index: 2;
     position: relative;
@@ -169,16 +169,20 @@ h1, h2, h3, h4, h5, h6 {
     border-bottom: 1px solid rgba(255, 255, 255, 0.15);
     padding-bottom: 3px;
     margin-bottom: 3px;
-    gap: 8px;
+    gap: 4px; /* Reduced gap to allow more space for name */
 }
 
 .player-name {
-    font-size: 0.8rem;
+    font-size: 0.75rem; /* Reduced slightly from 0.8rem */
     font-weight: 700;
     margin: 0;
     color: #ffffff;
     white-space: nowrap;
-    /* Removed overflow hidden and ellipsis for desktop */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+    text-align: left;
 }
 
 .player-price {

@@ -45,6 +45,12 @@ function setupGridOptions(filteredPlayers) {
                 field: 'web_name', 
                 floatingFilter: true, 
                 pinned: 'left',
+                onCellClicked: (params) => {
+                    if (params.data) {
+                        showPlayerInfo(params.data);
+                    }
+                },
+                cellStyle: { cursor: 'pointer' },
                 cellRenderer: (params) => {
                     if (!params.data) return '';
                     let injuryIcon = '';
@@ -55,7 +61,7 @@ function setupGridOptions(filteredPlayers) {
                     }
                     return `<div class="d-flex align-items-center" style="height: 100%;">
                                 <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${params.data.team_code}-66.webp" style="width: 20px; margin-right: 8px;">
-                                <span>${params.value}</span>
+                                <span onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${params.value}</span>
                                 ${injuryIcon ? `<span class="ms-2" style="font-size: 0.9em; cursor: help;">${injuryIcon}</span>` : ''}
                             </div>`;
                 }
