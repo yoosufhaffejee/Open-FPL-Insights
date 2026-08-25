@@ -84,6 +84,38 @@ function setupGridOptions(filteredPlayers) {
                     return `<span style="color: #4caf50; font-weight: 500;">&pound;${params.value.toFixed(1)}m</span>${icon}`;
                 }
             },
+            {
+                headerValueGetter: () => typeof selectedGameweek !== 'undefined' ? `Exp Pts GW${selectedGameweek}` : 'Exp Pts',
+                colId: 'custom_exp_pts',
+                field: 'custom_exp_pts',
+                width: 150,
+                valueFormatter: params => params.value ? params.value.toFixed(2) : "0.00",
+                cellClass: params => {
+                    let pts = params.value;
+                    let isDefGk = params.data.element_type === 1 || params.data.element_type === 2;
+                    if (isDefGk) {
+                        return pts > 5.5 ? 'pts-elite fw-bold' : (pts >= 4.0 ? 'pts-good fw-bold' : (pts >= 2.5 ? 'pts-avg fw-bold' : 'pts-bad fw-bold'));
+                    } else {
+                        return pts > 6.5 ? 'pts-elite fw-bold' : (pts >= 4.5 ? 'pts-good fw-bold' : (pts >= 3.0 ? 'pts-avg fw-bold' : 'pts-bad fw-bold'));
+                    }
+                }
+            },
+            {
+                headerValueGetter: () => typeof selectedGameweek !== 'undefined' ? `Exp Pts GW${selectedGameweek + 1}` : 'Next Exp Pts',
+                colId: 'custom_exp_pts_next',
+                field: 'custom_exp_pts_next',
+                width: 150,
+                valueFormatter: params => params.value ? params.value.toFixed(2) : "0.00",
+                cellClass: params => {
+                    let pts = params.value;
+                    let isDefGk = params.data.element_type === 1 || params.data.element_type === 2;
+                    if (isDefGk) {
+                        return pts > 5.5 ? 'pts-elite fw-bold' : (pts >= 4.0 ? 'pts-good fw-bold' : (pts >= 2.5 ? 'pts-avg fw-bold' : 'pts-bad fw-bold'));
+                    } else {
+                        return pts > 6.5 ? 'pts-elite fw-bold' : (pts >= 4.5 ? 'pts-good fw-bold' : (pts >= 3.0 ? 'pts-avg fw-bold' : 'pts-bad fw-bold'));
+                    }
+                }
+            },
             { headerName: 'Total Points', width: 120, field: 'total_points' },
             {
                 headerName: 'Form',
@@ -136,38 +168,7 @@ function setupGridOptions(filteredPlayers) {
                 valueGetter: (params) => isNaN(parseFloat(params.data.ep_next)) ? 0 : parseFloat(params.data.ep_next),
                 cellClass: params => params.value >= 6 ? 'text-success fw-bold' : (params.value >= 4 ? 'text-warning' : '')
             },
-            {
-                headerValueGetter: () => typeof selectedGameweek !== 'undefined' ? `Exp Pts GW${selectedGameweek}` : 'Exp Pts',
-                colId: 'custom_exp_pts',
-                field: 'custom_exp_pts',
-                width: 150,
-                valueFormatter: params => params.value ? params.value.toFixed(2) : "0.00",
-                cellClass: params => {
-                    let pts = params.value;
-                    let isDefGk = params.data.element_type === 1 || params.data.element_type === 2;
-                    if (isDefGk) {
-                        return pts > 5.5 ? 'pts-elite fw-bold' : (pts >= 4.0 ? 'pts-good fw-bold' : (pts >= 2.5 ? 'pts-avg fw-bold' : 'pts-bad fw-bold'));
-                    } else {
-                        return pts > 6.5 ? 'pts-elite fw-bold' : (pts >= 4.5 ? 'pts-good fw-bold' : (pts >= 3.0 ? 'pts-avg fw-bold' : 'pts-bad fw-bold'));
-                    }
-                }
-            },
-            {
-                headerValueGetter: () => typeof selectedGameweek !== 'undefined' ? `Exp Pts GW${selectedGameweek + 1}` : 'Next Exp Pts',
-                colId: 'custom_exp_pts_next',
-                field: 'custom_exp_pts_next',
-                width: 150,
-                valueFormatter: params => params.value ? params.value.toFixed(2) : "0.00",
-                cellClass: params => {
-                    let pts = params.value;
-                    let isDefGk = params.data.element_type === 1 || params.data.element_type === 2;
-                    if (isDefGk) {
-                        return pts > 5.5 ? 'pts-elite fw-bold' : (pts >= 4.0 ? 'pts-good fw-bold' : (pts >= 2.5 ? 'pts-avg fw-bold' : 'pts-bad fw-bold'));
-                    } else {
-                        return pts > 6.5 ? 'pts-elite fw-bold' : (pts >= 4.5 ? 'pts-good fw-bold' : (pts >= 3.0 ? 'pts-avg fw-bold' : 'pts-bad fw-bold'));
-                    }
-                }
-            },
+
             {
                 headerName: 'Value Season',
                 field: 'value_season',
