@@ -22,7 +22,7 @@ let predictionCache_v1 = null;
 
 function loadPredictionCache_v1() {
     if (predictionCache_v1 === null) {
-        const stored = localStorage.getItem('fpl_predictions_v6_v1');
+        const stored = localStorage.getItem('fpl_predictions_v11_v1');
         if (stored) {
             try {
                 predictionCache_v1 = JSON.parse(stored);
@@ -37,7 +37,7 @@ function loadPredictionCache_v1() {
 
 function clearPredictionCache_v1() {
     predictionCache_v1 = null;
-    localStorage.removeItem('fpl_predictions_v6_v1');
+    localStorage.removeItem('fpl_predictions_v11_v1');
 }
 
 function getExpectedPoints_v1(player, fixture) {
@@ -82,9 +82,16 @@ function calculateExpectedPointsCore_v1(player, fixture) {
         // Sort descending by projected BPS
         playerBPSProjections.sort((a, b) => b.projBPS - a.projBPS);
         
-        if (playerBPSProjections.length > 0 && playerBPSProjections[0].id === player.id) expectedBonus = 3;
-        else if (playerBPSProjections.length > 1 && playerBPSProjections[1].id === player.id) expectedBonus = 2;
-        else if (playerBPSProjections.length > 2 && playerBPSProjections[2].id === player.id) expectedBonus = 1;
+        if (playerBPSProjections.length > 0 && playerBPSProjections[0].id === player.id) expectedBonus = 2.5;
+        else if (playerBPSProjections.length > 1 && playerBPSProjections[1].id === player.id) expectedBonus = 1.5;
+        else if (playerBPSProjections.length > 2 && playerBPSProjections[2].id === player.id) expectedBonus = 0.8;
+        else if (playerBPSProjections.length > 3 && playerBPSProjections[3].id === player.id) expectedBonus = 0.4;
+        else if (playerBPSProjections.length > 4 && playerBPSProjections[4].id === player.id) expectedBonus = 0.2;
+        
+        // Blend with historical bonus to smooth out match-specific harshness
+        let histBonus = (player.minutes > 0) ? (player.bonus / (player.minutes / 90)) : 0;
+        expectedBonus = (expectedBonus + histBonus) / 2;
+        expectedBonus = Math.min(2.0, expectedBonus);
     } else {
         // Fallback if fixture not available
         expectedBonus = (player.minutes > 0) ? (player.bonus / (player.minutes / 90)) : 0;
@@ -104,10 +111,9 @@ function calculateExpectedPointsCore_v1(player, fixture) {
         if (!isNaN(defConPer90) && defConPer90 > 0) {
             // Defenders need 10 actions, Mid need 12 actions
             let threshold = (player.element_type === 2) ? 10 : 12;
-            // Approximate the probability of hitting the threshold in a single match
-            let prob = Math.pow(defConPer90 / threshold, 2) * 0.5;
-            if (prob > 1.0) prob = 1.0; // Cap at 100% certainty (2.0 points)
-            expectedPoints += (prob * 2); // Up to 2 points awarded
+            let prob = defConPer90 / threshold;
+            if (prob > 1.0) prob = 1.0; // Cap at 100%
+            expectedPoints += prob; // 1 expected point max for averaging the threshold (matches 0.36pts for 4.3)
         }
     }
 
@@ -233,7 +239,59 @@ function calculateExpectedPointsCore_v1(player, fixture) {
         
         // Use price as a proxy for expected performance baseline early in the season
         let cost = player.now_cost / 10;
-        let baseline = cost * 0.65; // e.g., 10.0m -> 6.5 pts, 5.0m -> 3.25 pts, 4.0m -> 2.6 pts
+        let baseline = cost * 0.65;
+        
+        // Adjust price scaling based on position because a 7.0m DEF is equivalent to a 10.0m+ MID
+        if (player.element_type === 1) { // GK
+            // GKs range 4.0 to 5.5. A 5.5m GK is premium.
+            baseline = 3.0 + ((cost - 4.0) * 0.8);
+        } else if (player.element_type === 2) { // DEF
+            // DEFs range 4.0 to 7.5. A 7.0m DEF is hyper premium.
+            baseline = 2.5 + ((cost - 4.0) * 0.8); 
+        } else if (player.element_type === 3) { // MID
+            // MIDs range 4.5 to 13.0+.
+            baseline = 2.0 + ((cost - 4.5) * 0.6);
+        } else if (player.element_type === 4) { // FWD
+            // FWDs range 4.5 to 15.0+.
+            baseline = 2.0 + ((cost - 4.5) * 0.55);
+        }
+        
+        // Blend with team-position average if available (e.g. average points per 90 of Arsenal DEFs)
+        if (typeof allPlayers !== 'undefined') {
+            let teamPosStarters = allPlayers.filter(p => p.team === player.team && p.element_type === player.element_type && p.id !== player.id && p.minutes > 270);
+            if (teamPosStarters.length > 0) {
+                // Construct a positional baseline that heavily weights team-wide defensive/attacking form, 
+                // but dampens individual anomalies (like Gabriel's set piece goals) for new players.
+                let avgPtsPer90 = teamPosStarters.reduce((sum, p) => {
+                    let pts = 2.0; // Starting points
+                    let xG = parseFloat(p.expected_goals_per_90) || 0;
+                    let xA = parseFloat(p.expected_assists_per_90) || 0;
+                    let xGC = parseFloat(p.expected_goals_conceded_per_90) || 0;
+                    
+                    if (p.element_type === 1 || p.element_type === 2) {
+                        // DEF/GK: heavily prioritize xGC (Clean Sheets), dampen xG/xA by 50%
+                        pts += (xG * 6 * 0.5) + (xA * 3 * 0.5);
+                        let csProb = Math.max(0, 1 - (xGC / 1.5)); // rough estimate of CS prob
+                        pts += (csProb * 4);
+                    } else if (p.element_type === 3) {
+                        // MID: prioritize xG/xA, standard CS weight
+                        pts += (xG * 5) + (xA * 3);
+                        let csProb = Math.max(0, 1 - (xGC / 1.5));
+                        pts += (csProb * 1);
+                    } else {
+                        // FWD: purely xG/xA
+                        pts += (xG * 4) + (xA * 3);
+                    }
+                    
+                    // Add standard bonus/bps baseline
+                    pts += 0.5;
+                    return sum + pts;
+                }, 0) / teamPosStarters.length;
+                
+                // Blend 50/50 with the original Price Proxy baseline
+                baseline = (baseline * 0.5) + (avgPtsPer90 * 0.5);
+            }
+        }
         
         // If FPL model explicitly predicts this player will blank (e.g., bench warmer, injured), trust it
         let fplPred = parseFloat(player.ep_next);
@@ -343,8 +401,31 @@ function calculateExpectedPointsCore_v1(player, fixture) {
     // Apply this AFTER the FPL blend so the conservative FPL score doesn't undo the bump
     expectedPoints = expectedPoints * 1.25;
     
-    // Apply final chance of playing multiplier to ensure it scales correctly after all baseline/form/fixture tweaks
-    expectedPoints = expectedPoints * (chanceOfPlaying / 100);
+    // Determine a dynamic "Starter Confidence" probability for rotation risks
+    let startProb = 1.0;
+    if (typeof allPlayers !== 'undefined') {
+        let teammates = allPlayers.filter(p => p.team === player.team);
+        let maxStarts = Math.max(...teammates.map(p => p.starts || 0), 1);
+        let startPercentage = (player.starts || 0) / maxStarts;
+        
+        let form = parseFloat(player.form) || 0;
+        let selected = parseFloat(player.selected_by_percent) || 0;
+        
+        // Boost start probability if they have elite form or high ownership (e.g. nailed new signings)
+        if (form >= 6.0 || selected >= 15.0) {
+            startProb = Math.max(startPercentage, 0.9);
+        } else if (form >= 3.0 || selected >= 5.0) {
+            startProb = Math.max(startPercentage, 0.7);
+        } else {
+            startProb = startPercentage;
+        }
+        
+        // Soften the penalty so we don't completely tank rotation players, just slightly downgrade
+        startProb = Math.max(0.2, Math.pow(startProb, 0.5));
+    }
+    
+    let truePlayProb = (chanceOfPlaying / 100) * startProb;
+    expectedPoints = expectedPoints * truePlayProb;
     
     return expectedPoints;
 }

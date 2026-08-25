@@ -78,7 +78,7 @@ h1, h2, h3, h4, h5, h6 {
     text-align: center;
     padding: 5px;
     width: 100%;
-    max-width: 110px; /* Increased to accommodate longer names without stretching */
+    max-width: 125px;
 }
 
 .player img {
@@ -259,7 +259,7 @@ h1, h2, h3, h4, h5, h6 {
 /* Gold on hover for captain/vice icons */
 .icon-button:hover .fa-crown,
 .icon-button:hover .fa-star {
-    color: #ffd700;
+    color: #ffd700 !important;
 }
 
 .player:hover .icon-buttons {
@@ -571,7 +571,7 @@ h1, h2, h3, h4, h5, h6 {
     color: #ffd700 !important; /* Gold */
 }
 .vice {
-    color: silver !important; /* Silver */
+    color: #ffd700 !important; /* Gold */
 }
 
 #upcoming-fixtures-list div {

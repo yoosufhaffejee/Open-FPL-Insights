@@ -52,7 +52,7 @@ function savePredictionCache() {
     } else if (ACTIVE_ALGORITHM === "CLAUDE") {
         localStorage.setItem("fpl_predictions_v5_claude", JSON.stringify(predictionCache_claude));
     } else {
-        localStorage.setItem("fpl_predictions_v6_v1", JSON.stringify(predictionCache_v1));
+        localStorage.setItem("fpl_predictions_v11_v1", JSON.stringify(predictionCache_v1));
     }
 }
 
@@ -60,7 +60,7 @@ function hasValidPredictionCache() {
     let stored = null;
     if (ACTIVE_ALGORITHM === "GPT") stored = localStorage.getItem("fpl_predictions_v5_gpt");
     else if (ACTIVE_ALGORITHM === "CLAUDE") stored = localStorage.getItem("fpl_predictions_v5_claude");
-    else stored = localStorage.getItem("fpl_predictions_v6_v1");
+    else stored = localStorage.getItem("fpl_predictions_v11_v1");
     
     return stored && Object.keys(JSON.parse(stored)).length > 0;
 }

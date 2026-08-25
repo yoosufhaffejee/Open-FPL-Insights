@@ -3,7 +3,7 @@ function optimizeTeam(players) {
     // Find the existing captain and adjust their predicted points
     players.forEach(player => {
         if (player.isCaptain) {
-            player.predicted_points /= 2;  // Divide the captain's points by 2
+              // Divide the captain's points by 2
         }
         player.isCaptain = false;  // Reset captain flag, we will assign a new one later
     });
@@ -53,10 +53,103 @@ function optimizeTeam(players) {
         bestTeam.forEach(player => {
             player.isCaptain = player.id === highestPointsPlayer.id;
             if (player.isCaptain) {
-                player.predicted_points = player.predicted_points * 2;
+                
             }
         });
     }
 
     return bestTeam;
+}
+window.idealGWPointsCache = window.idealGWPointsCache || {};
+
+function getIdealMaxPointsForGW(gwId, calculatePointsFn, allPlayersData, fixturesData) {
+    if (window.idealGWPointsCache[gwId]) return window.idealGWPointsCache[gwId];
+    
+    let gwPlayers = [];
+    allPlayersData.forEach(p => {
+        let fixture = fixturesData.find(f => f.event === gwId && (f.team_a === p.team || f.team_h === p.team));
+        let pts = calculatePointsFn(p, fixture, gwId);
+        if (pts !== '?') {
+            gwPlayers.push({ ...p, predicted_points: parseFloat(pts) });
+        }
+    });
+
+    gwPlayers.sort((a, b) => b.predicted_points - a.predicted_points);
+    
+    let team = { 1: [], 2: [], 3: [], 4: [] };
+    let required = { 1: 2, 2: 5, 3: 5, 4: 3 };
+    let teamCounts = {};
+    let totalCost = 0;
+    
+    for (let p of gwPlayers) {
+        if (!teamCounts[p.team]) teamCounts[p.team] = 0;
+        let pos = p.element_type;
+        if (team[pos].length < required[pos] && teamCounts[p.team] < 3) {
+            team[pos].push(p);
+            teamCounts[p.team]++;
+            totalCost += p.now_cost;
+        }
+    }
+    
+    let iterations = 0;
+    while (totalCost > 1000 && iterations < 200) {
+        iterations++;
+        let replaceable = Object.values(team).flat();
+        replaceable.sort((a, b) => b.now_cost - a.now_cost);
+        let target = replaceable[0];
+        
+        team[target.element_type] = team[target.element_type].filter(p => p.id !== target.id);
+        totalCost -= target.now_cost;
+        teamCounts[target.team]--;
+        
+        let potentials = gwPlayers.filter(p => 
+            p.element_type === target.element_type && 
+            p.id !== target.id &&
+            (!teamCounts[p.team] || teamCounts[p.team] < 3) &&
+            !team[target.element_type].find(existing => existing.id === p.id) &&
+            (totalCost + p.now_cost) <= 1000
+        );
+        
+        if (potentials.length > 0) {
+            potentials.sort((a, b) => b.predicted_points - a.predicted_points);
+            let replacement = potentials[0];
+            team[replacement.element_type].push(replacement);
+            totalCost += replacement.now_cost;
+            teamCounts[replacement.team]++;
+        } else {
+            let cheapestPotentials = gwPlayers.filter(p => 
+                p.element_type === target.element_type && 
+                p.id !== target.id &&
+                (!teamCounts[p.team] || teamCounts[p.team] < 3) &&
+                !team[target.element_type].find(existing => existing.id === p.id)
+            );
+            if (cheapestPotentials.length > 0) {
+                cheapestPotentials.sort((a, b) => a.now_cost - b.now_cost);
+                let cheapest = cheapestPotentials[0];
+                team[cheapest.element_type].push(cheapest);
+                totalCost += cheapest.now_cost;
+                teamCounts[cheapest.team]++;
+            } else {
+                team[target.element_type].push(target);
+                totalCost += target.now_cost;
+                teamCounts[target.team]++;
+                break;
+            }
+        }
+    }
+    
+    let squad = Object.values(team).flat();
+    if (squad.length < 15) {
+        window.idealGWPointsCache[gwId] = 70;
+        return 70; 
+    }
+    
+    let best11 = optimizeTeam(squad);
+    let maxPoints = 0;
+    best11.forEach(p => {
+        maxPoints += p.isCaptain ? (p.predicted_points * 2) : p.predicted_points;
+    });
+    
+    window.idealGWPointsCache[gwId] = maxPoints;
+    return maxPoints;
 }

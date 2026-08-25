@@ -542,6 +542,7 @@ function updateTeamUI() {
 async function calculateSeasonPoints() {
     let seasonPoints = 0;
     let overallRating = 0;
+    let totalIdealPoints = 0;
 
     // Normal for loop to handle async operations correctly
     for (let i = 0; i < gameweeks.length; i++) {
@@ -567,19 +568,21 @@ async function calculateSeasonPoints() {
 
             const bestPlayers = optimizeTeam(myPlayers);
             bestPlayers.forEach(player => {
-                gwPoints += player.predicted_points;
+                gwPoints += player.isCaptain ? (player.predicted_points * 2) : player.predicted_points;
             });
         }
 
+        let maxIdeal = getIdealMaxPointsForGW(gw.id, calculatePlayerPredictedPoints, allPlayers, fixtures);
         if (gwRating <= 0) {
-            gwRating = (gwPoints / 70) * 100;
+            gwRating = Math.min(100, (gwPoints / maxIdeal) * 100);
         }
 
         seasonPoints += gwPoints;
-        overallRating += gwRating;
+        totalIdealPoints += maxIdeal;
     };
 
-    updateTeamInfo("Overall Rating", parseInt(overallRating/gameweeks.length) + '%');
+    overallRating = Math.min(100, (seasonPoints / totalIdealPoints) * 100);
+    updateTeamInfo("Overall Rating", Math.round(overallRating) + '%');
     updateTeamInfo("Season Points", parseInt(seasonPoints));
 }
 
@@ -600,13 +603,27 @@ function renderPlayerElement(player) {
     const isGK = player.element_type === 1;
     const shirtUrl = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${player.team_code}${isGK ? '_1' : ''}-110.webp`;
     const image = `<img src="${shirtUrl}" alt="${player.web_name}" onerror="playerImgOnerror(this, ${player.team_code}, ${player.element_type})">`;
+        
+    let nameLen = player.web_name.length;
+    let fontSize = "0.85rem"; // Base font size slightly reduced
+    let letterSpacing = "normal";
+    if (nameLen > 11) {
+        fontSize = "0.60rem";
+        letterSpacing = "-0.5px";
+    } else if (nameLen > 8) {
+        fontSize = "0.70rem";
+        letterSpacing = "-0.2px";
+    }
 
     playerElement.innerHTML = `
         ${image}
         <div class="player-info-card">
             <div class="player-header">
-                <span class="player-name">${player.web_name} ${player.isCaptain ? '(C)' : player.isVice ? '(V)' : ''}</span>
-                <span class="player-price">£${(player.now_cost / 10).toFixed(1)}</span>
+                <div class="d-flex align-items-center" style="min-width: 0; flex: 1; margin-right: 2px;">
+                    <span class="player-name" style="font-size: ${fontSize}; letter-spacing: ${letterSpacing};">${player.web_name}</span>
+                    ${player.isCaptain ? '<span class="ms-1 fw-bold" style="font-size:0.7rem; flex-shrink: 0;">(C)</span>' : player.isVice ? '<span class="ms-1 fw-bold text-warning" style="font-size:0.7rem; flex-shrink: 0;">(V)</span>' : ''}
+                </div>
+                <span class="player-price" style="flex-shrink: 0;">£${(player.now_cost / 10).toFixed(1)}</span>
             </div>
             <div class="fixtures">
                 ${Array.from({ length: 3 }, (_, i) => `
@@ -685,15 +702,26 @@ function updatePlayerFixturesAndPoints(playerElement, player, predictedPoints) {
                     }
                 }
 
+                let displayPoints = playerPredictedPoints;
+                if (player.isCaptain && playerPredictedPoints !== '?') {
+                    displayPoints = playerPredictedPoints * 2;
+                }
+
                 const ptsElem = fixtureElement.querySelector('.predicted-points');
-                ptsElem.textContent = playerPredictedPoints === '?' ? '?' : playerPredictedPoints.toFixed(1);
+                ptsElem.textContent = displayPoints === '?' ? '?' : displayPoints.toFixed(1);
                 ptsElem.className = 'predicted-points ' + ptsClass;
 
                 // Add up all the players predicted points for the current GW
                 if (fixtureIndex === 0) {
                     player.predicted_points = playerPredictedPoints;
                     if (!player.isSub) {
-                        if (playerPredictedPoints !== '?') predictedPoints += playerPredictedPoints;
+                        if (playerPredictedPoints !== '?') {
+                            if (player.isCaptain) {
+                                predictedPoints += (playerPredictedPoints * 2);
+                            } else {
+                                predictedPoints += playerPredictedPoints;
+                            }
+                        }
                     }
                 }
             }
@@ -1129,9 +1157,7 @@ function populatePlayerModal(data, player) {
         }
         
         // Always show the non-captained version in this menu
-        if (player.isCaptain && predictedPoints !== undefined) {
-            predictedPoints = predictedPoints / 2;
-        }
+        // Raw predicted points are non-captained by default now.
 
         ourPredictedElem.textContent = (predictedPoints !== undefined && predictedPoints !== '?') ? Number(predictedPoints).toFixed(1) : (predictedPoints === '?' ? '?' : '0.0');
         ourPredictedElem.style.color = '#333';
@@ -1176,9 +1202,9 @@ function populatePlayerModal(data, player) {
             let defCon = parseFloat(player.defensive_contribution_per_90) || 0;
             if (defCon > 0 && (player.element_type === 2 || player.element_type === 3)) {
                 let threshold = (player.element_type === 2) ? 10 : 12;
-                let prob = Math.pow(defCon / threshold, 2) * 0.5;
-                if (prob > 0.95) prob = 0.95;
-                let expectedDefconPts = (prob * 2).toFixed(1);
+                let prob = defCon / threshold;
+                if (prob > 1.0) prob = 1.0;
+                let expectedDefconPts = prob.toFixed(1);
                 html += '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>DEFCON / 90:</span><span class="text-warning">' + defCon.toFixed(1) + ' <span class="text-white-50 small">(' + expectedDefconPts + ' pts)</span></span></div>';
             }
 
@@ -1218,9 +1244,15 @@ function populatePlayerModal(data, player) {
                     return { id: p.id, projBPS: bps90 + form };
                 });
                 playerBPSProjections.sort((a, b) => b.projBPS - a.projBPS);
-                if (playerBPSProjections.length > 0 && playerBPSProjections[0].id === player.id) expectedBonus = 3;
-                else if (playerBPSProjections.length > 1 && playerBPSProjections[1].id === player.id) expectedBonus = 2;
-                else if (playerBPSProjections.length > 2 && playerBPSProjections[2].id === player.id) expectedBonus = 1;
+                if (playerBPSProjections.length > 0 && playerBPSProjections[0].id === player.id) expectedBonus = 2.5;
+                else if (playerBPSProjections.length > 1 && playerBPSProjections[1].id === player.id) expectedBonus = 1.5;
+                else if (playerBPSProjections.length > 2 && playerBPSProjections[2].id === player.id) expectedBonus = 0.8;
+                else if (playerBPSProjections.length > 3 && playerBPSProjections[3].id === player.id) expectedBonus = 0.4;
+                else if (playerBPSProjections.length > 4 && playerBPSProjections[4].id === player.id) expectedBonus = 0.2;
+                
+                let histBonus = (player.minutes > 0) ? (player.bonus / (player.minutes / 90)) : 0;
+                expectedBonus = (expectedBonus + histBonus) / 2;
+                expectedBonus = Math.min(2.0, expectedBonus);
             } else {
                 expectedBonus = (player.minutes > 0) ? (player.bonus / (player.minutes / 90)) : 0;
                 expectedBonus = Math.min(1.5, expectedBonus);

@@ -387,9 +387,7 @@ function populatePlayerModal(data, player) {
             }
         }
         
-        if (player.isCaptain && predictedPoints !== undefined) {
-            predictedPoints = predictedPoints / 2;
-        }
+        
 
         ourPredictedElem.textContent = (predictedPoints !== undefined && predictedPoints !== '?') ? Number(predictedPoints).toFixed(1) : (predictedPoints === '?' ? '?' : '0.0');
         ourPredictedElem.style.color = '#333';
@@ -433,9 +431,9 @@ function populatePlayerModal(data, player) {
             let defCon = parseFloat(player.defensive_contribution_per_90) || 0;
             if (defCon > 0 && (player.element_type === 2 || player.element_type === 3)) {
                 let threshold = (player.element_type === 2) ? 10 : 12;
-                let prob = Math.pow(defCon / threshold, 2) * 0.5;
-                if (prob > 0.95) prob = 0.95;
-                let expectedDefconPts = (prob * 2).toFixed(1);
+                let prob = defCon / threshold;
+                if (prob > 1.0) prob = 1.0;
+                let expectedDefconPts = prob.toFixed(1);
                 html += '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>DEFCON / 90:</span><span class="text-warning">' + defCon.toFixed(1) + ' <span class="text-white-50 small">(' + expectedDefconPts + ' pts)</span></span></div>';
             }
 
@@ -475,9 +473,15 @@ function populatePlayerModal(data, player) {
                     return { id: p.id, projBPS: bps90 + form };
                 });
                 playerBPSProjections.sort((a, b) => b.projBPS - a.projBPS);
-                if (playerBPSProjections.length > 0 && playerBPSProjections[0].id === player.id) expectedBonus = 3;
-                else if (playerBPSProjections.length > 1 && playerBPSProjections[1].id === player.id) expectedBonus = 2;
-                else if (playerBPSProjections.length > 2 && playerBPSProjections[2].id === player.id) expectedBonus = 1;
+                if (playerBPSProjections.length > 0 && playerBPSProjections[0].id === player.id) expectedBonus = 2.5;
+                else if (playerBPSProjections.length > 1 && playerBPSProjections[1].id === player.id) expectedBonus = 1.5;
+                else if (playerBPSProjections.length > 2 && playerBPSProjections[2].id === player.id) expectedBonus = 0.8;
+                else if (playerBPSProjections.length > 3 && playerBPSProjections[3].id === player.id) expectedBonus = 0.4;
+                else if (playerBPSProjections.length > 4 && playerBPSProjections[4].id === player.id) expectedBonus = 0.2;
+                
+                let histBonus = (player.minutes > 0) ? (player.bonus / (player.minutes / 90)) : 0;
+                expectedBonus = (expectedBonus + histBonus) / 2;
+                expectedBonus = Math.min(2.0, expectedBonus);
             } else {
                 expectedBonus = (player.minutes > 0) ? (player.bonus / (player.minutes / 90)) : 0;
                 expectedBonus = Math.min(1.5, expectedBonus);
