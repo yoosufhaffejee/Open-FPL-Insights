@@ -274,13 +274,13 @@ function renderPlannerGrid() {
         let infoHTML = `
             <td style="text-align: left;">
                 <div class="d-flex align-items-center">
-                    <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${gw0Player.team_code}${gw0Player.element_type == 1 ? '_1' : ''}-110.webp" class="shirt cursor-pointer" onclick="selectTransferOut(${slotId}, 0)" onerror="playerImgOnerror(this, ${gw0Player.team_code}, ${gw0Player.element_type})">
+                    <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${gw0Player.team_code}${gw0Player.element_type == 1 ? '_1' : ''}-110.webp" class="shirt cursor-pointer" onclick="selectTransferOut('${slotId}', 0)" onerror="playerImgOnerror(this, ${gw0Player.team_code}, ${gw0Player.element_type})">
                     <div>
-                        <div class="fw-bold cursor-pointer" onclick="selectTransferOut(${slotId}, 0)">${gw0Player.web_name}${subBadge}</div>
+                        <div class="fw-bold cursor-pointer" onclick="selectTransferOut('${slotId}', 0)">${gw0Player.web_name}${subBadge}</div>
                         <div class="small text-white-50">${teamName} - £${(gw0Player.now_cost/10).toFixed(1)}m</div>
                         <div class="small mt-1" style="font-size:0.7rem;">
-                            <span class="cursor-pointer ${isCap}" onclick="setCaptain(${slotId}, true)" title="Set Captain" style="cursor: pointer;">[C]</span> 
-                            <span class="cursor-pointer ${isVice} ms-1" onclick="setCaptain(${slotId}, false)" title="Set Vice Captain" style="cursor: pointer;">[V]</span>
+                            <span class="cursor-pointer ${isCap}" onclick="setCaptain('${slotId}', true)" title="Set Captain" style="cursor: pointer;">[C]</span> 
+                            <span class="cursor-pointer ${isVice} ms-1" onclick="setCaptain('${slotId}', false)" title="Set Vice Captain" style="cursor: pointer;">[V]</span>
                         </div>
                     </div>
                 </div>
@@ -328,7 +328,7 @@ function renderPlannerGrid() {
             if(playerInSlot.isSub && state.activeChip !== 'BB') ptsDisplay = `<span class="text-white-50">(${ptsDisplay})</span>`;
 
             gwsHTML += `
-                <td style="${outline} cursor: pointer; vertical-align: top;" onclick="selectTransferOut(${slotId}, ${gwIndex})">
+                <td style="${outline} cursor: pointer; vertical-align: top;" onclick="selectTransferOut('${slotId}', ${gwIndex})">
                     <div class="gw-cell ${fdrClass} h-100 d-flex flex-column justify-content-between">
                         ${changedPlayerHtml}
                         <div class="opp lh-sm mb-1" style="font-size: 0.75rem;">${oppText}</div>
@@ -708,8 +708,8 @@ function populatePlayerModal(data, player) {
         fplPredictedElem.style.color = '#333';
         fplPredictedElem.style.textShadow = 'none';
         
-        const upcomingGameweek = gameweeks.find(gw => gw.id >= selectedGameweek);
-        const gwNum = upcomingGameweek ? upcomingGameweek.id : selectedGameweek;
+        const upcomingGameweek = gameweeks.find(gw => gw.id >= (typeof selectedGameweek !== 'undefined' ? selectedGameweek : getUpcomingGameweek().id));
+        const gwNum = upcomingGameweek ? upcomingGameweek.id : (typeof selectedGameweek !== 'undefined' ? selectedGameweek : getUpcomingGameweek().id);
         
         const fplTitle = document.getElementById('modal-fpl-title');
         const ourTitle = document.getElementById('modal-our-title');
@@ -718,7 +718,7 @@ function populatePlayerModal(data, player) {
         
         let predictedPoints = player.predicted_points;
         if (predictedPoints === undefined) {
-            const upcomingGameweek = gameweeks.find(gw => gw.id >= selectedGameweek);
+            const upcomingGameweek = gameweeks.find(gw => gw.id >= (typeof selectedGameweek !== 'undefined' ? selectedGameweek : getUpcomingGameweek().id));
             if (upcomingGameweek) {
                 const fixture = getPlayerFixture(player, upcomingGameweek.id);
                 if (fixture) {
@@ -991,277 +991,3 @@ function populatePlayerModal(data, player) {
 }
 
 // Function to update team info
-function updateTeamInfo(label, newValue) {
-    // Find all team info items
-    const teamInfoItems = document.querySelectorAll('.team-info-item');
-    
-    // Iterate through the items to find the correct label
-    teamInfoItems.forEach(item => {
-        const itemLabel = item.querySelector('.label').textContent.trim();
-        if (itemLabel === label) {
-            item.querySelector('.value').textContent = newValue;
-        }
-    });
-}
-
-// Usage examples
-// updateTeamInfo("Overall Rating", overallRating + "%");
-// updateTeamInfo("Predicted Points", predictedPoints);
-// updateTeamInfo("GW Rating", "83%");
-// updateTeamInfo("Bank Balance", bankBalance + "m");
-
-function loadPlayers(gameweek = selectedGameweek) {
-    filledSlots["gk"] = 0;
-    filledSlots["def"] = 0;
-    filledSlots["mid"] = 0;
-    filledSlots["fwd"] = 0;
-
-    // Function to parse cookies
-    function getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-    }
-
-    // Attempt to load the cookie for the specified gameweek
-    let myPlayersCookie = getCookie(`myPlayersGW${gameweek}`);
-
-    // If no data exists for the specified gameweek, load the last saved gameweek
-    if (!myPlayersCookie) {
-        // Loop backwards through gameweeks to find the most recent saved team
-        for (let gw = gameweek - 1; gw >= gameweeks[0].id; gw--) {
-            myPlayersCookie = getCookie(`myPlayersGW${gw}`);
-            if (myPlayersCookie) {
-                let gwTeam = JSON.parse(myPlayersCookie);
-                if (gwTeam.players.length >= 15) {
-                    break;
-                }
-            }
-        }
-    }
-    else {
-        let gwTeam = JSON.parse(myPlayersCookie);
-        if (gwTeam.players.length < 15) {
-            // Loop backwards through gameweeks to find the most recent saved team
-            for (let gw = gameweek - 1; gw >= gameweeks[0].id; gw--) {
-                myPlayersCookie = getCookie(`myPlayersGW${gw}`);
-                if (myPlayersCookie) {
-                    let gwTeam = JSON.parse(myPlayersCookie);
-                    if (gwTeam.players.length >= 15) {
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    // If still no data found, default to the upcoming gameweek
-    if (!myPlayersCookie) {
-        const upcomingGameweek = getUpcomingGameweek();
-        if (upcomingGameweek) {
-            myPlayersCookie = getCookie(`myPlayersGW${upcomingGameweek.id}`);
-        }
-    }
-
-    if (myPlayersCookie) {
-        // Parse the JSON string
-        const { players } = JSON.parse(myPlayersCookie);
-
-        // Reconstruct myPlayers using player IDs from allPlayers
-        myPlayers = players.map(({ id, slotId, isSub, isCaptain, isVice }) => {
-            const player = allPlayers.find(player => player.id === id);
-            if (player) {
-                player.slotId = slotId;
-                player.isSub = isSub; // Set the isSub property
-                player.isCaptain = isCaptain;
-                player.isVice = isVice;
-
-                // Calculate filled slots
-                const positionPrefix = pitchPositionMap[player.element_type];
-                if (positionPrefix) {
-                    filledSlots[positionPrefix]++;
-                }
-            }
-            return player;
-        }).filter(player => player !== undefined); // Filter out any undefined players
-        
-        
-
-        // Update the UI to reflect the loaded team
-        updateTeamUI();
-    } else {
-        // No data found for any gameweek, handle this case if needed
-        console.log('No saved team data available.');
-    }
-}
-
-function savePlayers() {
-    // Disable the Save button
-    document.getElementById('saveButton').disabled = true;
-
-    // Extract player IDs, slotIds, and isSub from the myPlayers array
-    const playerData = myPlayers.map(player => ({
-        id: player.id,
-        slotId: player.slotId,
-        isSub: player.isSub, // Include the isSub property
-        isCaptain : player.isCaptain,
-        isVice: player.isVice
-    }));
-
-    // Convert the playerData array to a JSON string
-    const dataJSON = JSON.stringify({ selectedGameweek, players: playerData });
-
-    // Save the JSON string in a cookie
-    document.cookie = `myPlayersGW${selectedGameweek}=${dataJSON}; path=/; max-age=31536000`; // Cookie expires in 1 year
-}
-
-function loadManagerId() {
-    const cookies = document.cookie.split('; ');
-    
-    for (let cookie of cookies) {
-        if (cookie.startsWith('managerId=')) {
-            managerId = cookie.split('=')[1];
-            return;
-        }
-    }
-
-    console.log('No manager ID found in cookie.');
-}
-
-function resetPlayers() {
-    // Reset your myPlayers array (example: clear all players)
-    myPlayers = [];
-
-    // Reset filledSlots count for each position
-    for (let position in filledSlots) {
-        filledSlots[position] = 0;
-    }
-
-    // Enable the Save and Auto Pick buttons again
-    document.getElementById('saveButton').disabled = false;
-    document.getElementById('autoPickButton').disabled = false;
-
-    updateTeamUI();
-
-    // Update Grid if needed
-    if (typeof grid !== 'undefined') {
-        grid.refreshCells();
-    }
-}
-
-// Function to auto-pick players
-function autoPickPlayers() {
-    document.getElementById('autoPickButton').disabled = true;
-
-    if (allPlayers) {
-        // Select the best team from allPlayers while keeping existing picks
-        myPlayers = selectBestTeam(allPlayers, myPlayers || []);
-
-        // Reset filledSlots before re-assigning
-        for (let position in filledSlots) {
-            filledSlots[position] = 0;
-        }
-
-        // First pass: mark already slotted players
-        myPlayers.forEach(player => {
-            if (player.slotId) {
-                const positionPrefix = pitchPositionMap[player.element_type];
-                filledSlots[positionPrefix]++;
-            }
-        });
-
-        // Second pass: assign slots to new players
-        myPlayers.forEach(player => {
-            if (!player.slotId) {
-                const positionPrefix = pitchPositionMap[player.element_type];
-                // Find next available slot
-                for (let i = 0; i < availableSlots[positionPrefix].length; i++) {
-                    const candidateSlot = availableSlots[positionPrefix][i];
-                    if (!myPlayers.find(p => p.slotId === candidateSlot)) {
-                        player.slotId = candidateSlot;
-                        player.isSub = ['pos2', 'pos7', 'pos12', 'pos15'].includes(candidateSlot);
-                        filledSlots[positionPrefix]++;
-                        break;
-                    }
-                }
-            }
-        });
-        if (grid) { grid.updateGridOptions({ rowData: filteredPlayers }); }
-
-        updateTeamUI();
-    }
-}
-
-let grid = null;
-// Function to display filteredPlayers (you can customize this)
-function displayPlayers(filteredPlayers) {
-    if (typeof getPredictedPointsForGW === 'function' && typeof selectedGameweek !== 'undefined') {
-        filteredPlayers.forEach(p => {
-            p.custom_exp_pts = getPredictedPointsForGW(p, selectedGameweek);
-            p.custom_exp_pts_next = getPredictedPointsForGW(p, selectedGameweek + 1);
-        });
-    }
-    filteredPlayers.sort((a, b) => b.total_points - a.total_points);
-
-    if (grid) {
-        grid.updateGridOptions({
-            rowData: filteredPlayers
-        });
-        return;
-    }
-    
-    setupGridOptions(filteredPlayers);
-
-    // Your Javascript code to create the Data Grid
-    const myGridElement = document.querySelector('#myGrid');
-    if (myGridElement) {
-        grid = agGrid.createGrid(myGridElement, gridOptions);
-    }
-}
-
-async function Initialize() {
-    if (!gameweeks || gameweeks.length === 0) {
-        document.body.innerHTML = `
-            <div class="container mt-5 text-center text-white p-5 border border-danger rounded bg-dark">
-                <h3 class="text-danger">Failed to load FPL Data</h3>
-                <p>Your network might be blocking the API requests.</p>
-                <p>Try switching from mobile data to Wi-Fi, or use a VPN.</p>
-                <button class="btn btn-primary mt-3" onclick="window.location.reload()">Retry</button>
-            </div>
-        `;
-        const loader = document.getElementById('global-loader');
-        if (loader) loader.style.display = 'none';
-        return;
-    }
-
-    populateTeamFilter();
-    filteredPlayers = allPlayers;
-
-    loadManagerId();
-    await calculateSeasonPoints();
-    
-    selectedGameweek = getUpcomingGameweek().id;
-    await updateGameweekInfo();
-
-    // Load the players from the cookie when the page loads
-    loadPlayers();
-                
-    // Initial display of all filteredPlayers
-    displayPlayers(filteredPlayers); 
-}
-
-
-window.predictedPointsCache = {};
-function getPredictedPointsForGW(player, gwId) {
-    if (!window.predictedPointsCache[gwId]) window.predictedPointsCache[gwId] = {};
-    if (window.predictedPointsCache[gwId][player.id] !== undefined) {
-        return window.predictedPointsCache[gwId][player.id];
-    }
-    const gw = gameweeks.find(g => g.id === gwId);
-    if (!gw) return 0;
-    const fixture = getPlayerFixture(player, gwId);
-    let pts = calculatePlayerPredictedPoints(player, fixture, gw);
-    pts = pts === '?' ? 0 : parseFloat(pts);
-    window.predictedPointsCache[gwId][player.id] = pts;
-    return pts;
-}

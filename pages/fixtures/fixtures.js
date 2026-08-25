@@ -381,8 +381,8 @@ function populatePlayerModal(data, player) {
         fplPredictedElem.style.color = '#333';
         fplPredictedElem.style.textShadow = 'none';
         
-        const upcomingGameweek = gameweeks.find(gw => gw.id >= selectedGameweek);
-        const gwNum = upcomingGameweek ? upcomingGameweek.id : selectedGameweek;
+        const upcomingGameweek = gameweeks.find(gw => gw.id >= (typeof selectedGameweek !== 'undefined' ? selectedGameweek : getUpcomingGameweek().id));
+        const gwNum = upcomingGameweek ? upcomingGameweek.id : (typeof selectedGameweek !== 'undefined' ? selectedGameweek : getUpcomingGameweek().id);
         
         const fplTitle = document.getElementById('modal-fpl-title');
         const ourTitle = document.getElementById('modal-our-title');
@@ -391,7 +391,7 @@ function populatePlayerModal(data, player) {
         
         let predictedPoints = player.predicted_points;
         if (predictedPoints === undefined) {
-            const upcomingGameweek = gameweeks.find(gw => gw.id >= selectedGameweek);
+            const upcomingGameweek = gameweeks.find(gw => gw.id >= (typeof selectedGameweek !== 'undefined' ? selectedGameweek : getUpcomingGameweek().id));
             if (upcomingGameweek) {
                 const fixture = getPlayerFixture(player, upcomingGameweek.id);
                 if (fixture) {
@@ -664,277 +664,404 @@ function populatePlayerModal(data, player) {
 }
 
 // Function to update team info
-function updateTeamInfo(label, newValue) {
-    // Find all team info items
-    const teamInfoItems = document.querySelectorAll('.team-info-item');
+
+function getPlayerFixture(player, gameweekId) {
+    return fixtures.find(fixture => fixture.event === gameweekId &&
+                (fixture.team_a === player.team || fixture.team_h === player.team));
+}
+
+// Function to calculate predicted points for a player and a fixture
+function calculatePlayerPredictedPoints(player, fixture, upcomingGameweek) {
+    if (!fixture) return 0;
+
+    let isHome = fixture.team_h === player.team;
+    const opponentTeam = teams.find(team =>
+        team.id === (fixture.team_a === player.team ? fixture.team_h : fixture.team_a)
+    );
+
+    let playerPredictedPoints = getExpectedPoints(player, fixture);
+
+    if (playerPredictedPoints === '?') return '?';
+
+    let upcomingId = typeof upcomingGameweek === 'object' ? upcomingGameweek.id : upcomingGameweek;
+    if (getUpcomingGameweek() && getUpcomingGameweek().id == upcomingId) {
+        player.fpl_ep_next = parseFloat(player.ep_next) || 0;
+    }
+
+    const strengthAdjustment2 = 0.10; // +10%
+    const strengthAdjustment4 = 0.10; // -10%
+    const strengthAdjustment5 = 0.20; // -20%
+    const strengthAdjustmentAway = 0.10; // -10%
+
+    // Adjust points based on opponent team strength
+    if (opponentTeam.strength == 2 && playerPredictedPoints <= 10) {
+        playerPredictedPoints += (playerPredictedPoints * strengthAdjustment2);
+    }
+
+    if (opponentTeam.strength == 4) {
+        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustment4);
+    }
+
+    if (opponentTeam.strength == 5) {
+        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustment5);
+    }
+
+    // Adjust points if player is away
+    if (!isHome && playerPredictedPoints >= 2.5) {
+        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustmentAway);
+    }
+
+    // Round to 1 decimal place so the captain multiplier aligns perfectly with the UI display
+    playerPredictedPoints = Math.round(playerPredictedPoints * 10) / 10;
+
+    // Double the points if the player is the captain
+    if (player.isCaptain) {
+        playerPredictedPoints *= 2;
+    }
+
+    return playerPredictedPoints;
+}
+
+window.pulseLiveFixturesData = null;
+
+async function loadLineups(fplFixtureId) {
+    const container = document.getElementById(`lineups-container-${fplFixtureId}`);
     
-    // Iterate through the items to find the correct label
-    teamInfoItems.forEach(item => {
-        const itemLabel = item.querySelector('.label').textContent.trim();
-        if (itemLabel === label) {
-            item.querySelector('.value').textContent = newValue;
-        }
+    // Find FPL fixture
+    const fplFixture = fixtures.find(f => f.id === fplFixtureId);
+    if (!fplFixture) return;
+
+    if (!window.pulseLiveFixturesData) {
+        window.pulseLiveFixturesData = await getPulseLiveFixtures();
+    }
+
+    const homeTeam = teams.find(t => t.id === fplFixture.team_h);
+    const awayTeam = teams.find(t => t.id === fplFixture.team_a);
+    const fplKickoff = new Date(fplFixture.kickoff_time).getTime();
+
+    // Find matching Pulse Live fixture
+    const plMatch = window.pulseLiveFixturesData.find(pl => {
+        // match by home team abbreviation and same day
+        const plHomeTeam = pl.teams[0].team.club ? pl.teams[0].team.club.abbr : pl.teams[0].team.abbr;
+        return plHomeTeam === homeTeam.short_name && Math.abs(pl.kickoff.millis - fplKickoff) < 86400000;
     });
-}
 
-// Usage examples
-// updateTeamInfo("Overall Rating", overallRating + "%");
-// updateTeamInfo("Predicted Points", predictedPoints);
-// updateTeamInfo("GW Rating", "83%");
-// updateTeamInfo("Bank Balance", bankBalance + "m");
-
-function loadPlayers(gameweek = selectedGameweek) {
-    filledSlots["gk"] = 0;
-    filledSlots["def"] = 0;
-    filledSlots["mid"] = 0;
-    filledSlots["fwd"] = 0;
-
-    // Function to parse cookies
-    function getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-    }
-
-    // Attempt to load the cookie for the specified gameweek
-    let myPlayersCookie = getCookie(`myPlayersGW${gameweek}`);
-
-    // If no data exists for the specified gameweek, load the last saved gameweek
-    if (!myPlayersCookie) {
-        // Loop backwards through gameweeks to find the most recent saved team
-        for (let gw = gameweek - 1; gw >= gameweeks[0].id; gw--) {
-            myPlayersCookie = getCookie(`myPlayersGW${gw}`);
-            if (myPlayersCookie) {
-                let gwTeam = JSON.parse(myPlayersCookie);
-                if (gwTeam.players.length >= 15) {
-                    break;
-                }
-            }
-        }
-    }
-    else {
-        let gwTeam = JSON.parse(myPlayersCookie);
-        if (gwTeam.players.length < 15) {
-            // Loop backwards through gameweeks to find the most recent saved team
-            for (let gw = gameweek - 1; gw >= gameweeks[0].id; gw--) {
-                myPlayersCookie = getCookie(`myPlayersGW${gw}`);
-                if (myPlayersCookie) {
-                    let gwTeam = JSON.parse(myPlayersCookie);
-                    if (gwTeam.players.length >= 15) {
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    // If still no data found, default to the upcoming gameweek
-    if (!myPlayersCookie) {
-        const upcomingGameweek = getUpcomingGameweek();
-        if (upcomingGameweek) {
-            myPlayersCookie = getCookie(`myPlayersGW${upcomingGameweek.id}`);
-        }
-    }
-
-    if (myPlayersCookie) {
-        // Parse the JSON string
-        const { players } = JSON.parse(myPlayersCookie);
-
-        // Reconstruct myPlayers using player IDs from allPlayers
-        myPlayers = players.map(({ id, slotId, isSub, isCaptain, isVice }) => {
-            const player = allPlayers.find(player => player.id === id);
-            if (player) {
-                player.slotId = slotId;
-                player.isSub = isSub; // Set the isSub property
-                player.isCaptain = isCaptain;
-                player.isVice = isVice;
-
-                // Calculate filled slots
-                const positionPrefix = pitchPositionMap[player.element_type];
-                if (positionPrefix) {
-                    filledSlots[positionPrefix]++;
-                }
-            }
-            return player;
-        }).filter(player => player !== undefined); // Filter out any undefined players
-        
-        
-
-        // Update the UI to reflect the loaded team
-        updateTeamUI();
-    } else {
-        // No data found for any gameweek, handle this case if needed
-        console.log('No saved team data available.');
-    }
-}
-
-function savePlayers() {
-    // Disable the Save button
-    document.getElementById('saveButton').disabled = true;
-
-    // Extract player IDs, slotIds, and isSub from the myPlayers array
-    const playerData = myPlayers.map(player => ({
-        id: player.id,
-        slotId: player.slotId,
-        isSub: player.isSub, // Include the isSub property
-        isCaptain : player.isCaptain,
-        isVice: player.isVice
-    }));
-
-    // Convert the playerData array to a JSON string
-    const dataJSON = JSON.stringify({ selectedGameweek, players: playerData });
-
-    // Save the JSON string in a cookie
-    document.cookie = `myPlayersGW${selectedGameweek}=${dataJSON}; path=/; max-age=31536000`; // Cookie expires in 1 year
-}
-
-function loadManagerId() {
-    const cookies = document.cookie.split('; ');
-    
-    for (let cookie of cookies) {
-        if (cookie.startsWith('managerId=')) {
-            managerId = cookie.split('=')[1];
-            return;
-        }
-    }
-
-    console.log('No manager ID found in cookie.');
-}
-
-function resetPlayers() {
-    // Reset your myPlayers array (example: clear all players)
-    myPlayers = [];
-
-    // Reset filledSlots count for each position
-    for (let position in filledSlots) {
-        filledSlots[position] = 0;
-    }
-
-    // Enable the Save and Auto Pick buttons again
-    document.getElementById('saveButton').disabled = false;
-    document.getElementById('autoPickButton').disabled = false;
-
-    updateTeamUI();
-
-    // Update Grid if needed
-    if (typeof grid !== 'undefined') {
-        grid.refreshCells();
-    }
-}
-
-// Function to auto-pick players
-function autoPickPlayers() {
-    document.getElementById('autoPickButton').disabled = true;
-
-    if (allPlayers) {
-        // Select the best team from allPlayers while keeping existing picks
-        myPlayers = selectBestTeam(allPlayers, myPlayers || []);
-
-        // Reset filledSlots before re-assigning
-        for (let position in filledSlots) {
-            filledSlots[position] = 0;
-        }
-
-        // First pass: mark already slotted players
-        myPlayers.forEach(player => {
-            if (player.slotId) {
-                const positionPrefix = pitchPositionMap[player.element_type];
-                filledSlots[positionPrefix]++;
-            }
-        });
-
-        // Second pass: assign slots to new players
-        myPlayers.forEach(player => {
-            if (!player.slotId) {
-                const positionPrefix = pitchPositionMap[player.element_type];
-                // Find next available slot
-                for (let i = 0; i < availableSlots[positionPrefix].length; i++) {
-                    const candidateSlot = availableSlots[positionPrefix][i];
-                    if (!myPlayers.find(p => p.slotId === candidateSlot)) {
-                        player.slotId = candidateSlot;
-                        player.isSub = ['pos2', 'pos7', 'pos12', 'pos15'].includes(candidateSlot);
-                        filledSlots[positionPrefix]++;
-                        break;
-                    }
-                }
-            }
-        });
-        if (grid) { grid.updateGridOptions({ rowData: filteredPlayers }); }
-
-        updateTeamUI();
-    }
-}
-
-let grid = null;
-// Function to display filteredPlayers (you can customize this)
-function displayPlayers(filteredPlayers) {
-    if (typeof getPredictedPointsForGW === 'function' && typeof selectedGameweek !== 'undefined') {
-        filteredPlayers.forEach(p => {
-            p.custom_exp_pts = getPredictedPointsForGW(p, selectedGameweek);
-            p.custom_exp_pts_next = getPredictedPointsForGW(p, selectedGameweek + 1);
-        });
-    }
-    filteredPlayers.sort((a, b) => b.total_points - a.total_points);
-
-    if (grid) {
-        grid.updateGridOptions({
-            rowData: filteredPlayers
-        });
+    if (!plMatch) {
+        container.innerHTML = '<div class="alert alert-warning">Lineups not available for this match yet.</div>';
         return;
     }
-    
-    setupGridOptions(filteredPlayers);
 
-    // Your Javascript code to create the Data Grid
-    const myGridElement = document.querySelector('#myGrid');
-    if (myGridElement) {
-        grid = agGrid.createGrid(myGridElement, gridOptions);
+    const matchId = plMatch.id;
+    const lineupData = await getPulseLiveLineup(matchId);
+
+    if (!lineupData || !lineupData.home_team || !lineupData.away_team || !lineupData.home_team.players || lineupData.home_team.players.length === 0) {
+        container.innerHTML = '<div class="alert alert-info">Lineups have not been released yet (usually available 60 minutes before kickoff).</div>';
+        return;
     }
+
+    container.innerHTML = `
+        <div class="row text-start">
+            <div class="col-12 col-md-6 border-md-end mb-4 mb-md-0">
+                <h5 class="text-center mb-3">
+                    <img src="https://resources.premierleague.com/premierleague/badges/100/t${homeTeam.code}.png" style="width:30px;">
+                    ${homeTeam.short_name}
+                </h5>
+                <h6 class="text-muted border-bottom pb-1">Starting XI</h6>
+                <div id="home-starting-${fplFixtureId}" class="mb-3"></div>
+                <h6 class="text-muted border-bottom pb-1">Bench</h6>
+                <div id="home-bench-${fplFixtureId}"></div>
+            </div>
+            <div class="col-12 col-md-6">
+                <h5 class="text-center mb-3">
+                    <img src="https://resources.premierleague.com/premierleague/badges/100/t${awayTeam.code}.png" style="width:30px;">
+                    ${awayTeam.short_name}
+                </h5>
+                <h6 class="text-muted border-bottom pb-1">Starting XI</h6>
+                <div id="away-starting-${fplFixtureId}" class="mb-3"></div>
+                <h6 class="text-muted border-bottom pb-1">Bench</h6>
+                <div id="away-bench-${fplFixtureId}"></div>
+            </div>
+        </div>
+    `;
+
+    renderTeamLineup(lineupData.home_team.players, lineupData.home_team.substitutes, fplFixture.team_h, document.getElementById(`home-starting-${fplFixtureId}`), document.getElementById(`home-bench-${fplFixtureId}`));
+    renderTeamLineup(lineupData.away_team.players, lineupData.away_team.substitutes, fplFixture.team_a, document.getElementById(`away-starting-${fplFixtureId}`), document.getElementById(`away-bench-${fplFixtureId}`));
 }
 
-async function Initialize() {
-    if (!gameweeks || gameweeks.length === 0) {
-        document.body.innerHTML = `
-            <div class="container mt-5 text-center text-white p-5 border border-danger rounded bg-dark">
-                <h3 class="text-danger">Failed to load FPL Data</h3>
-                <p>Your network might be blocking the API requests.</p>
-                <p>Try switching from mobile data to Wi-Fi, or use a VPN.</p>
-                <button class="btn btn-primary mt-3" onclick="window.location.reload()">Retry</button>
+function renderTeamLineup(plPlayers, plSubstitutes, fplTeamId, startingContainer, benchContainer) {
+    const teamPlayers = allPlayers.filter(p => p.team === fplTeamId);
+
+        const buildPlayerHtml = (plPlayer, isBench) => {
+        const fplPlayer = matchPlayer(plPlayer, teamPlayers);
+
+        const displayName = plPlayer.name ? plPlayer.name.display : (plPlayer.knownName || plPlayer.lastName || '?');
+        const shirtNum = plPlayer.matchShirtNumber || plPlayer.shirtNum || '-';
+        const isCaptain = plPlayer.captain || plPlayer.isCaptain || false;
+
+        let playerDisplay = displayName;
+        let points = '-';
+        let posPill = '';
+        let statusIcon = '';
+
+        if (fplPlayer) {
+            playerDisplay = `<a href="javascript:void(0)" onclick="showPlayerInfo(${fplPlayer.id})">${fplPlayer.web_name}</a>`;
+            points = fplPlayer.event_points !== undefined ? fplPlayer.event_points : 0;
+            
+            const posNames = {1:'GK', 2:'DEF', 3:'MID', 4:'FWD'};
+            const posColors = {1:'warning', 2:'primary', 3:'success', 4:'danger'};
+            const posName = posNames[fplPlayer.element_type] || 'UNK';
+            const posColor = posColors[fplPlayer.element_type] || 'secondary';
+            posPill = `<span class="badge bg-${posColor} me-1" style="font-size:0.6rem;">${posName}</span>`;
+
+            if (fplPlayer.status !== 'a') {
+                const color = fplPlayer.status === 'i' ? 'danger' : 'warning';
+                statusIcon = `<i class="fas fa-plus-square text-${color} ms-1" title="${fplPlayer.news}"></i>`;
+            }
+        }
+
+        return `
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <div class="d-flex align-items-center flex-grow-1 pe-1" style="min-width: 0;">
+                    <span class="badge bg-secondary me-1 flex-shrink-0" style="width: 25px;">${shirtNum}</span>
+                    <span class="flex-shrink-0">${posPill}</span>
+                    <div class="text-truncate">
+                        ${playerDisplay}
+                    </div>
+                    <span class="flex-shrink-0">
+                        ${isCaptain ? '<span class="badge bg-warning text-dark ms-1">C</span>' : ''}
+                        ${statusIcon}
+                    </span>
+                </div>
+                <span class="fw-bold flex-shrink-0 ${points > 0 ? 'text-success' : ''}">${points}</span>
             </div>
         `;
-        const loader = document.getElementById('global-loader');
-        if (loader) loader.style.display = 'none';
+    };
+
+    startingContainer.innerHTML = (plPlayers || []).map(p => buildPlayerHtml(p, false)).join('');
+    benchContainer.innerHTML = (plSubstitutes || []).map(p => buildPlayerHtml(p, true)).join('');
+}
+
+function matchPlayer(plPlayer, teamPlayers) {
+    const plDisplayName = (plPlayer.name ? plPlayer.name.display : (plPlayer.knownName || '')) || '';
+    const plLastName = (plPlayer.name ? plPlayer.name.last : (plPlayer.lastName || '')) || '';
+
+    const normDisplay = plDisplayName.toLowerCase().replace(/[^a-z]/g, '');
+    const normLast = plLastName.toLowerCase().replace(/[^a-z]/g, '');
+    
+    // Some PL names are just last names, some have initials
+    const plInitials = plDisplayName.split(' ').map(n => n[0]).join('').toLowerCase();
+
+    let bestMatch = null;
+    let bestScore = Infinity;
+
+    teamPlayers.forEach(fplPlayer => {
+        const fplName = `${fplPlayer.first_name} ${fplPlayer.second_name}`.toLowerCase().replace(/[^a-z]/g, '');
+        const fplWebNameRaw = fplPlayer.web_name.toLowerCase();
+        const fplWebName = fplWebNameRaw.replace(/[^a-z]/g, '');
+        const fplLastName = fplPlayer.second_name.toLowerCase().replace(/[^a-z]/g, '');
+        const fplFirstName = fplPlayer.first_name.toLowerCase().replace(/[^a-z]/g, '');
+        
+        // Exact matches (fast path)
+        if (fplWebName === normLast || fplWebName === normDisplay || fplName === normDisplay) {
+            bestMatch = fplPlayer;
+            bestScore = -100;
+            return;
+        }
+        
+        // Handle "B.Fernandes" (FPL) matching "Bruno Fernandes" (PL)
+        if (fplWebNameRaw.includes('.') && plDisplayName.toLowerCase().includes(fplWebNameRaw.split('.')[1].replace(/[^a-z]/g, ''))) {
+            // e.g. b.fernandes -> fernandes, which is in "bruno fernandes"
+            // check initial matches too
+            if (fplWebNameRaw.split('.')[0] === plDisplayName.toLowerCase()[0]) {
+                bestMatch = fplPlayer;
+                bestScore = -50;
+                return;
+            }
+        }
+        
+        // Handle "Matheus Cunha" matching "Cunha"
+        if (normDisplay.includes(fplWebName) && fplWebName.length > 3) {
+            let score = -10;
+            if (score < bestScore) {
+                bestScore = score;
+                bestMatch = fplPlayer;
+            }
+        }
+        if (fplName.includes(normLast) && normLast.length > 3) {
+            let score = -5;
+            if (score < bestScore) {
+                bestScore = score;
+                bestMatch = fplPlayer;
+            }
+        }
+
+        const d1 = levenshtein(normDisplay, fplName);
+        const d2 = levenshtein(normLast, fplWebName);
+        const d3 = levenshtein(normDisplay, fplWebName);
+        
+        const score = Math.min(d1, d2, d3);
+        
+        if (score < 4 && score < bestScore) {
+            bestScore = score;
+            bestMatch = fplPlayer;
+        }
+    });
+
+    return bestMatch;
+}
+
+function levenshtein(a, b) {
+    if (a.length === 0) return b.length;
+    if (b.length === 0) return a.length;
+    let matrix = [];
+    for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+    for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+    for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+            if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                matrix[i][j] = matrix[i - 1][j - 1];
+            } else {
+                matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1));
+            }
+        }
+    }
+    return matrix[b.length][a.length];
+}
+
+async function renderStandings() {
+    const container = document.getElementById('league-table-container');
+    const standingsData = await getPulseLiveStandings();
+    
+    if (!standingsData || !standingsData.tables || !standingsData.tables[0]) {
+        if(container) container.innerHTML = '<div class="alert alert-warning">Could not load the league table.</div>';
         return;
     }
 
-    populateTeamFilter();
-    filteredPlayers = allPlayers;
-
-    loadManagerId();
-    await calculateSeasonPoints();
+    let entries = JSON.parse(JSON.stringify(standingsData.tables[0].entries));
     
-    selectedGameweek = getUpcomingGameweek().id;
-    await updateGameweekInfo();
+    // Calculate live overrides from fixtures
+    entries.forEach(entry => {
+        const fplTeam = teams.find(t => t.name === entry.team.name || t.short_name === entry.team.club.abbr);
+        if (!fplTeam) return;
 
-    // Load the players from the cookie when the page loads
-    loadPlayers();
+        // Check if team is currently playing live
+        entry.isLive = fixtures.some(f => f.started && !f.finished && !f.finished_provisional && (f.team_h === fplTeam.id || f.team_a === fplTeam.id));
+
+        // Find all FPL fixtures for this team that have started and have a score
+        const teamFixtures = fixtures.filter(f => f.started && (f.team_h === fplTeam.id || f.team_a === fplTeam.id) && f.team_h_score !== null && f.team_a_score !== null);
+        
+        // FPL scores update live. If teamFixtures > entry.overall.played, PulseLive hasn't updated yet.
+        if (teamFixtures.length > entry.overall.played) {
+            const missingFixtures = teamFixtures.slice(entry.overall.played);
+            missingFixtures.forEach(f => {
+                const isHome = f.team_h === fplTeam.id;
+                const goalsFor = isHome ? f.team_h_score : f.team_a_score;
+                const goalsAgainst = isHome ? f.team_a_score : f.team_h_score;
                 
-    // Initial display of all filteredPlayers
-    displayPlayers(filteredPlayers); 
+                entry.overall.played += 1;
+                entry.overall.goalsFor += goalsFor;
+                entry.overall.goalsAgainst += goalsAgainst;
+                entry.overall.goalsDifference += (goalsFor - goalsAgainst);
+                
+                if (goalsFor > goalsAgainst) {
+                    entry.overall.won += 1;
+                    entry.overall.points += 3;
+                } else if (goalsFor === goalsAgainst) {
+                    entry.overall.drawn += 1;
+                    entry.overall.points += 1;
+                } else {
+                    entry.overall.lost += 1;
+                }
+            });
+        }
+    });
+
+    // Re-sort the entries array by points, then goal difference, then goals scored
+    entries.sort((a, b) => {
+        if (b.overall.points !== a.overall.points) return b.overall.points - a.overall.points;
+        if (b.overall.goalsDifference !== a.overall.goalsDifference) return b.overall.goalsDifference - a.overall.goalsDifference;
+        return b.overall.goalsFor - a.overall.goalsFor;
+    });
+
+    // Update positions
+    entries.forEach((entry, index) => {
+        entry.position = index + 1;
+    });
+    
+
+    let html = `
+        <table class="table table-dark table-striped table-hover align-middle">
+            <thead>
+                <tr>
+                    <th scope="col" class="text-center">Pos</th>
+                    <th scope="col">Club</th>
+                    <th scope="col" class="text-center">Pl</th>
+                    <th scope="col" class="text-center">W</th>
+                    <th scope="col" class="text-center">D</th>
+                    <th scope="col" class="text-center">L</th>
+                    <th scope="col" class="text-center d-none d-md-table-cell">GF</th>
+                    <th scope="col" class="text-center d-none d-md-table-cell">GA</th>
+                    <th scope="col" class="text-center">GD</th>
+                    <th scope="col" class="text-center fw-bold text-info" style="position: sticky; right: 0; background-color: #212529; z-index: 2;">Pts</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    entries.forEach(entry => {
+        // Try to match the FPL team for the badge code
+        const fplTeam = teams.find(t => t.name === entry.team.name || t.short_name === entry.team.club.abbr);
+        const badgeUrl = fplTeam ? `https://resources.premierleague.com/premierleague/badges/50/t${fplTeam.code}.png` : '';
+        
+        let rowClass = '';
+        if (entry.position <= 4) rowClass = 'border-primary border-start border-4'; // Champions League
+        else if (entry.position === 5) rowClass = 'border-warning border-start border-4'; // Europa
+        else if (entry.position >= 18) rowClass = 'border-danger border-start border-4'; // Relegation
+
+        html += `
+            <tr>
+                <td class="text-center ${rowClass}">${entry.position}</td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <img src="${badgeUrl}" alt="${entry.team.name}" style="width: 25px; height: 25px;" class="me-2">
+                        <span class="d-none d-sm-inline">${entry.team.name}</span>
+                        <span class="d-inline d-sm-none">${entry.team.shortName}</span>
+                        ${entry.isLive ? '<span class="spinner-grow text-success spinner-grow-sm ms-2" role="status" style="width: 0.5rem; height: 0.5rem;" title="Playing Now"><span class="visually-hidden">Live</span></span>' : ''}
+                    </div>
+                </td>
+                <td class="text-center">${entry.overall.played}</td>
+                <td class="text-center">${entry.overall.won}</td>
+                <td class="text-center">${entry.overall.drawn}</td>
+                <td class="text-center">${entry.overall.lost}</td>
+                <td class="text-center d-none d-md-table-cell">${entry.overall.goalsFor}</td>
+                <td class="text-center d-none d-md-table-cell">${entry.overall.goalsAgainst}</td>
+                <td class="text-center">${entry.overall.goalsDifference > 0 ? '+' + entry.overall.goalsDifference : entry.overall.goalsDifference}</td>
+                <td class="text-center fw-bold text-info fs-5" style="position: sticky; right: 0; background-color: #212529; z-index: 1;">${entry.overall.points}</td>
+            </tr>
+        `;
+    });
+
+    html += `
+            </tbody>
+        </table>
+    `;
+
+    if(container) container.innerHTML = html;
 }
 
+// Call renderStandings when the page finishes loading data
+window.addEventListener('DOMContentLoaded', () => {
+    // We can delay it slightly to let fixtures load first
+    setTimeout(renderStandings, 1000);
+});
 
-window.predictedPointsCache = {};
-function getPredictedPointsForGW(player, gwId) {
-    if (!window.predictedPointsCache[gwId]) window.predictedPointsCache[gwId] = {};
-    if (window.predictedPointsCache[gwId][player.id] !== undefined) {
-        return window.predictedPointsCache[gwId][player.id];
-    }
-    const gw = gameweeks.find(g => g.id === gwId);
-    if (!gw) return 0;
-    const fixture = getPlayerFixture(player, gwId);
-    let pts = calculatePlayerPredictedPoints(player, fixture, gw);
-    pts = pts === '?' ? 0 : parseFloat(pts);
-    window.predictedPointsCache[gwId][player.id] = pts;
-    return pts;
-}
+
+
+
+
+
+
+
+
+
+
