@@ -123,18 +123,42 @@ function setupGridOptions(filteredPlayers) {
                 valueGetter: (params) => parseFloat(params.data.defensive_contribution_per_90) || 0
             },
             {
-                headerName: 'Predicted Points',
-                field: 'ep_this',
+                headerValueGetter: () => typeof selectedGameweek !== 'undefined' ? `Exp Pts GW${selectedGameweek}` : 'Exp Pts',
+                colId: 'custom_exp_pts',
                 width: 150,
-                valueGetter: (params) => isNaN(parseFloat(params.data.ep_this)) ? 0 : parseFloat(params.data.ep_this),
-                cellClass: params => params.value >= 6 ? 'text-success fw-bold' : (params.value >= 4 ? 'text-warning' : '')
+                valueGetter: (params) => {
+                    if (typeof getPredictedPointsForGW !== 'function' || typeof selectedGameweek === 'undefined') return 0;
+                    return getPredictedPointsForGW(params.data, selectedGameweek);
+                },
+                valueFormatter: params => params.value.toFixed(2),
+                cellClass: params => {
+                    let pts = params.value;
+                    let isDefGk = params.data.element_type === 1 || params.data.element_type === 2;
+                    if (isDefGk) {
+                        return pts > 5.5 ? 'pts-elite fw-bold' : (pts >= 4.0 ? 'pts-good fw-bold' : (pts >= 2.5 ? 'pts-avg fw-bold' : 'pts-bad fw-bold'));
+                    } else {
+                        return pts > 6.5 ? 'pts-elite fw-bold' : (pts >= 4.5 ? 'pts-good fw-bold' : (pts >= 3.0 ? 'pts-avg fw-bold' : 'pts-bad fw-bold'));
+                    }
+                }
             },
             {
-                headerName: 'Next Predicted Points',
-                field: 'ep_next',
-                width: 170,
-                valueGetter: (params) => isNaN(parseFloat(params.data.ep_next)) ? 0 : parseFloat(params.data.ep_next),
-                cellClass: params => params.value >= 6 ? 'text-success fw-bold' : (params.value >= 4 ? 'text-warning' : '')
+                headerValueGetter: () => typeof selectedGameweek !== 'undefined' ? `Exp Pts GW${selectedGameweek + 1}` : 'Next Exp Pts',
+                colId: 'custom_exp_pts_next',
+                width: 150,
+                valueGetter: (params) => {
+                    if (typeof getPredictedPointsForGW !== 'function' || typeof selectedGameweek === 'undefined') return 0;
+                    return getPredictedPointsForGW(params.data, selectedGameweek + 1);
+                },
+                valueFormatter: params => params.value.toFixed(2),
+                cellClass: params => {
+                    let pts = params.value;
+                    let isDefGk = params.data.element_type === 1 || params.data.element_type === 2;
+                    if (isDefGk) {
+                        return pts > 5.5 ? 'pts-elite fw-bold' : (pts >= 4.0 ? 'pts-good fw-bold' : (pts >= 2.5 ? 'pts-avg fw-bold' : 'pts-bad fw-bold'));
+                    } else {
+                        return pts > 6.5 ? 'pts-elite fw-bold' : (pts >= 4.5 ? 'pts-good fw-bold' : (pts >= 3.0 ? 'pts-avg fw-bold' : 'pts-bad fw-bold'));
+                    }
+                }
             },
             {
                 headerName: 'Value Season',

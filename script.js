@@ -57,6 +57,11 @@ function navigateGameweek(direction) {
 
     // Call your update function to refresh UI
     updateTeamUI();
+
+    if (typeof grid !== 'undefined' && grid) {
+        grid.refreshHeader();
+        grid.refreshCells({ columns: ['custom_exp_pts', 'custom_exp_pts_next'] });
+    }
 }
 
 // Function to update the gameweek info and deadline display
@@ -1591,3 +1596,18 @@ async function Initialize() {
     displayPlayers(filteredPlayers); 
 }
 
+
+window.predictedPointsCache = {};
+function getPredictedPointsForGW(player, gwId) {
+    if (!window.predictedPointsCache[gwId]) window.predictedPointsCache[gwId] = {};
+    if (window.predictedPointsCache[gwId][player.id] !== undefined) {
+        return window.predictedPointsCache[gwId][player.id];
+    }
+    const gw = gameweeks.find(g => g.id === gwId);
+    if (!gw) return 0;
+    const fixture = getPlayerFixture(player, gwId);
+    let pts = calculatePlayerPredictedPoints(player, fixture, gw);
+    pts = pts === '?' ? 0 : parseFloat(pts);
+    window.predictedPointsCache[gwId][player.id] = pts;
+    return pts;
+}
