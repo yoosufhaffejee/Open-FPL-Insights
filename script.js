@@ -60,7 +60,7 @@ function navigateGameweek(direction) {
 
     if (typeof grid !== 'undefined' && grid) {
         grid.refreshHeader();
-        grid.refreshCells({ columns: ['custom_exp_pts', 'custom_exp_pts_next'] });
+        applyFilters();
     }
 }
 
@@ -1547,6 +1547,12 @@ function autoPickPlayers() {
 let grid = null;
 // Function to display filteredPlayers (you can customize this)
 function displayPlayers(filteredPlayers) {
+    if (typeof getPredictedPointsForGW === 'function' && typeof selectedGameweek !== 'undefined') {
+        filteredPlayers.forEach(p => {
+            p.custom_exp_pts = getPredictedPointsForGW(p, selectedGameweek);
+            p.custom_exp_pts_next = getPredictedPointsForGW(p, selectedGameweek + 1);
+        });
+    }
     filteredPlayers.sort((a, b) => b.total_points - a.total_points);
 
     if (grid) {

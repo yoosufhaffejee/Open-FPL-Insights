@@ -139,12 +139,9 @@ function setupGridOptions(filteredPlayers) {
             {
                 headerValueGetter: () => typeof selectedGameweek !== 'undefined' ? `Exp Pts GW${selectedGameweek}` : 'Exp Pts',
                 colId: 'custom_exp_pts',
+                field: 'custom_exp_pts',
                 width: 150,
-                valueGetter: (params) => {
-                    if (typeof getPredictedPointsForGW !== 'function' || typeof selectedGameweek === 'undefined') return 0;
-                    return getPredictedPointsForGW(params.data, selectedGameweek);
-                },
-                valueFormatter: params => params.value.toFixed(2),
+                valueFormatter: params => params.value ? params.value.toFixed(2) : "0.00",
                 cellClass: params => {
                     let pts = params.value;
                     let isDefGk = params.data.element_type === 1 || params.data.element_type === 2;
@@ -158,12 +155,9 @@ function setupGridOptions(filteredPlayers) {
             {
                 headerValueGetter: () => typeof selectedGameweek !== 'undefined' ? `Exp Pts GW${selectedGameweek + 1}` : 'Next Exp Pts',
                 colId: 'custom_exp_pts_next',
+                field: 'custom_exp_pts_next',
                 width: 150,
-                valueGetter: (params) => {
-                    if (typeof getPredictedPointsForGW !== 'function' || typeof selectedGameweek === 'undefined') return 0;
-                    return getPredictedPointsForGW(params.data, selectedGameweek + 1);
-                },
-                valueFormatter: params => params.value.toFixed(2),
+                valueFormatter: params => params.value ? params.value.toFixed(2) : "0.00",
                 cellClass: params => {
                     let pts = params.value;
                     let isDefGk = params.data.element_type === 1 || params.data.element_type === 2;
