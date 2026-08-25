@@ -22,7 +22,7 @@ let predictionCache_v1 = null;
 
 function loadPredictionCache_v1() {
     if (predictionCache_v1 === null) {
-        const stored = localStorage.getItem('fpl_predictions_v5_v1');
+        const stored = localStorage.getItem('fpl_predictions_v6_v1');
         if (stored) {
             try {
                 predictionCache_v1 = JSON.parse(stored);
@@ -37,7 +37,7 @@ function loadPredictionCache_v1() {
 
 function clearPredictionCache_v1() {
     predictionCache_v1 = null;
-    localStorage.removeItem('fpl_predictions_v5_v1');
+    localStorage.removeItem('fpl_predictions_v6_v1');
 }
 
 function getExpectedPoints_v1(player, fixture) {
@@ -67,8 +67,30 @@ function calculateExpectedPointsCore_v1(player, fixture) {
     let red_cards_per_90 = player.red_cards == 0 ? 0 : player.red_cards / (player.minutes / 90);
     expectedPoints -= (redCardPointsDeduction * red_cards_per_90);
 
-    let bonus_per_90 = player.bonus == 0 ? 0 : player.bonus / (player.minutes / 90);
-    expectedPoints += bonus_per_90;
+    // Calculate expected bonus points by ranking players in this fixture by projected BPS
+    let expectedBonus = 0;
+    if (fixture && typeof allPlayers !== 'undefined') {
+        let oppTeamId = (player.team === fixture.team_h) ? fixture.team_a : fixture.team_h;
+        let matchPlayers = allPlayers.filter(p => p.team === player.team || p.team === oppTeamId);
+        
+        let playerBPSProjections = matchPlayers.map(p => {
+            let bps90 = (p.minutes !== undefined && p.minutes > 0) ? (p.bps / (p.minutes / 90)) : 0;
+            let form = parseFloat(p.form) || 0;
+            return { id: p.id, projBPS: bps90 + form };
+        });
+        
+        // Sort descending by projected BPS
+        playerBPSProjections.sort((a, b) => b.projBPS - a.projBPS);
+        
+        if (playerBPSProjections.length > 0 && playerBPSProjections[0].id === player.id) expectedBonus = 3;
+        else if (playerBPSProjections.length > 1 && playerBPSProjections[1].id === player.id) expectedBonus = 2;
+        else if (playerBPSProjections.length > 2 && playerBPSProjections[2].id === player.id) expectedBonus = 1;
+    } else {
+        // Fallback if fixture not available
+        expectedBonus = (player.minutes > 0) ? (player.bonus / (player.minutes / 90)) : 0;
+        expectedBonus = Math.min(1.5, expectedBonus);
+    }
+    expectedPoints += expectedBonus;
 
     let penalties = player.penalties_saved == 0 ? 0 : player.penalties_saved + player.penalties_missed;
     let penaltiesPer90 = penalties / (player.minutes / 90);
@@ -91,7 +113,8 @@ function calculateExpectedPointsCore_v1(player, fixture) {
 
     if (player.element_type === 1) {
         // Goalkeeper
-        let cleanSheetPointsPer90 = player.clean_sheets_per_90 !== undefined && player.clean_sheets_per_90 !== 0 ? player.clean_sheets_per_90 * cleanSheetPoints : 0;
+        let cappedCS = player.clean_sheets_per_90 !== undefined ? Math.min(1.0, player.clean_sheets_per_90) : 0;
+        let cleanSheetPointsPer90 = cappedCS !== 0 ? cappedCS * cleanSheetPoints : 0;
         expectedPoints += cleanSheetPointsPer90;
     
         let savePointsPer90 = player.saves_per_90 !== undefined && player.saves_per_90 !== 0 ? player.saves_per_90 * (threeShotsSavedPoints / 3) : 0;
@@ -113,7 +136,8 @@ function calculateExpectedPointsCore_v1(player, fixture) {
         let goalPointsPer90 = player.expected_goals_per_90 !== undefined && player.expected_goals_per_90 !== 0 ? parseFloat(player.expected_goals_per_90) * goalPointsDEF : 0;
         expectedPoints += goalPointsPer90;
     
-        let cleanSheetPointsPer90 = player.clean_sheets_per_90 !== undefined && player.clean_sheets_per_90 !== 0 ? player.clean_sheets_per_90 * cleanSheetPoints : 0;
+        let cappedCS = player.clean_sheets_per_90 !== undefined ? Math.min(1.0, player.clean_sheets_per_90) : 0;
+        let cleanSheetPointsPer90 = cappedCS !== 0 ? cappedCS * cleanSheetPoints : 0;
         expectedPoints += cleanSheetPointsPer90;
     
         let goalsConcededPointsPer90 = player.expected_goals_conceded_per_90 !== undefined && player.expected_goals_conceded_per_90 !== 0 ? parseFloat(player.expected_goals_conceded_per_90) / 2 : 0;
@@ -125,7 +149,8 @@ function calculateExpectedPointsCore_v1(player, fixture) {
         let goalPointsPer90 = player.expected_goals_per_90 !== undefined && player.expected_goals_per_90 !== 0 ? parseFloat(player.expected_goals_per_90) * goalPointsMID : 0;
         expectedPoints += goalPointsPer90;
     
-        let cleanSheetPointsPer90 = player.clean_sheets_per_90 !== undefined && player.clean_sheets_per_90 !== 0 ? player.clean_sheets_per_90 * cleanSheetPointsMID : 0;
+        let cappedCS = player.clean_sheets_per_90 !== undefined ? Math.min(1.0, player.clean_sheets_per_90) : 0;
+        let cleanSheetPointsPer90 = cappedCS !== 0 ? cappedCS * cleanSheetPointsMID : 0;
         expectedPoints += cleanSheetPointsPer90;
     
         correctPenaltiesOrder_v1(player, allPlayers);

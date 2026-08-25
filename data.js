@@ -14,6 +14,40 @@ const fetchOverview = async () => {
         const data = await getOverview();
         teams = data.teams;
         allPlayers = data.elements;
+        
+        // Helper to blend early season stats with a realistic price-based proxy
+        allPlayers.forEach(player => {
+            const cost = player.now_cost / 10;
+            const type = player.element_type;
+            const minutes = player.minutes || 0;
+            const weight = Math.min(1.0, minutes / 450); // Fully trust actual stats after ~5 games (450 mins)
+            
+            // xG Proxy
+            let pxG = 0.01;
+            if (type === 4) pxG = Math.max(0, (cost - 4.5) * 0.08 + 0.2);
+            else if (type === 3) pxG = Math.max(0, (cost - 4.5) * 0.06 + 0.1);
+            else if (type === 2) pxG = Math.max(0, (cost - 4.0) * 0.03 + 0.03);
+            player.expected_goals_per_90 = (parseFloat(player.expected_goals_per_90) || 0) * weight + pxG * (1 - weight);
+            
+            // xA Proxy
+            let pxA = 0.01;
+            if (type === 4) pxA = Math.max(0, (cost - 4.5) * 0.04 + 0.1);
+            else if (type === 3) pxA = Math.max(0, (cost - 4.5) * 0.06 + 0.1);
+            else if (type === 2) pxA = Math.max(0, (cost - 4.0) * 0.04 + 0.05);
+            player.expected_assists_per_90 = (parseFloat(player.expected_assists_per_90) || 0) * weight + pxA * (1 - weight);
+            
+            // Clean Sheet Proxy
+            let pCS = 0.0;
+            if (type === 1 || type === 2) pCS = Math.max(0.1, (cost - 4.0) * 0.1 + 0.2);
+            else if (type === 3) pCS = Math.max(0.1, (cost - 4.5) * 0.08 + 0.2);
+            player.clean_sheets_per_90 = (parseFloat(player.clean_sheets_per_90) || 0) * weight + pCS * (1 - weight);
+            
+            // xGC Proxy (Goals Conceded)
+            let pxGC = 1.5;
+            if (type === 1 || type === 2) pxGC = Math.max(0.5, 2.5 - (cost - 4.0) * 0.4);
+            player.expected_goals_conceded_per_90 = (parseFloat(player.expected_goals_conceded_per_90) || 0) * weight + pxGC * (1 - weight);
+        });
+        
         gameSettings = data.game_settings;
         //console.log('Teams and players data loaded.');
     } catch (error) {

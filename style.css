@@ -256,6 +256,12 @@ h1, h2, h3, h4, h5, h6 {
     transform: scale(1.15); /* slight pop effect */
 }
 
+/* Gold on hover for captain/vice icons */
+.icon-button:hover .fa-crown,
+.icon-button:hover .fa-star {
+    color: #ffd700;
+}
+
 .player:hover .icon-buttons {
     visibility: visible; /* Show the icon buttons on hover */
     opacity: 1; /* Make buttons visible */

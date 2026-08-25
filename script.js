@@ -1074,9 +1074,23 @@ function showPlayerInfo(player) {
 // Function to populate the modal with player data
 function populatePlayerModal(data, player) {
     // Set the player name in the modal title
+    const positionMap = { 1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD' };
     document.getElementById('playerInfoModalLabel').innerHTML = `
-    <img src="https://resources.premierleague.com/premierleague/photos/players/250x250/p${player.code}.png" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;" onerror="playerImgOnerror(this, ${player.team_code}, ${player.element_type})">
-    ${player.first_name} ${player.second_name}`;
+        <div class="d-flex align-items-center gap-3 w-100">
+            <img src="https://resources.premierleague.com/premierleague/photos/players/250x250/p${player.code}.png" 
+                 style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; background: #eee;" 
+                 onerror="playerImgOnerror(this, ${player.team_code}, ${player.element_type})">
+            <div>
+                <h3 class="mb-1 fw-bold">${player.first_name} ${player.second_name}</h3>
+                <div class="d-flex flex-wrap align-items-center gap-3 text-muted" style="font-size: 0.9rem;">
+                    <span class="badge bg-secondary px-2 py-1">${positionMap[player.element_type]}</span>
+                    <span><i class="fas fa-pound-sign me-1"></i>${(player.now_cost / 10).toFixed(1)}m</span>
+                    <span><i class="fas fa-users me-1 text-secondary"></i>${player.selected_by_percent}% owned</span>
+                    <span><i class="fas fa-star text-warning me-1"></i>${player.total_points} pts</span>
+                </div>
+            </div>
+        </div>
+    `;
 
     // Clear previous data
     const fixturesList = document.getElementById('upcoming-fixtures-list');
@@ -1132,7 +1146,7 @@ function populatePlayerModal(data, player) {
             if (player.chance_of_playing_next_round !== null && player.chance_of_playing_next_round !== undefined) playChance = player.chance_of_playing_next_round;
             else if (player.chance_of_playing_this_round !== null && player.chance_of_playing_this_round !== undefined) playChance = player.chance_of_playing_this_round;
             
-            let html = '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>Play Prob:</span><span class="text-info">' + playChance + '%</span></div>';
+            let html = '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>Play Prob & App Base:</span><span class="text-success">60m+ <span class="text-white-50 small">(2.0 pts)</span> | <span class="text-info">' + playChance + '% prob</span></span></div>';
             
             // Goals
             let xG = parseFloat(player.expected_goals_per_90) || 0;
@@ -1152,9 +1166,10 @@ function populatePlayerModal(data, player) {
             // Clean Sheets
             let xCS = parseFloat(player.clean_sheets_per_90) || 0;
             if (xCS > 0 && player.element_type !== 4) { // Not for forwards
+                let displayCS = Math.min(1.0, xCS);
                 let ptsPerCS = player.element_type === 3 ? 1 : 4;
-                let expectedCSPts = (xCS * ptsPerCS).toFixed(1);
-                html += '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>Clean Sheet:</span><span class="text-success">' + (xCS*100).toFixed(0) + '% <span class="text-white-50 small">(' + expectedCSPts + ' pts)</span></span></div>';
+                let expectedCSPts = (displayCS * ptsPerCS).toFixed(1);
+                html += '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>Clean Sheet:</span><span class="text-success">' + (displayCS*100).toFixed(0) + '% <span class="text-white-50 small">(' + expectedCSPts + ' pts)</span></span></div>';
             }
 
             // DEFCON (Only for DEF/MID)
@@ -1191,17 +1206,47 @@ function populatePlayerModal(data, player) {
                 }
             }
             
-            // Base Appearance & Bonus
-            let bonus = player.minutes > 0 ? (player.bonus / (player.minutes / 90)) : 0;
-            if (bonus > 0) {
-                html += '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>BPS / 90:</span><span class="text-success">' + bonus.toFixed(2) + ' <span class="text-white-50 small">(' + bonus.toFixed(1) + ' pts)</span></span></div>';
+            // Exp Bonus
+            let expectedBonus = 0;
+            const fixture = getPlayerFixture(player, upcomingGameweek.id);
+            if (fixture && typeof allPlayers !== 'undefined') {
+                let oppTeamId = (player.team === fixture.team_h) ? fixture.team_a : fixture.team_h;
+                let matchPlayers = allPlayers.filter(p => p.team === player.team || p.team === oppTeamId);
+                let playerBPSProjections = matchPlayers.map(p => {
+                    let bps90 = (p.minutes !== undefined && p.minutes > 0) ? (p.bps / (p.minutes / 90)) : 0;
+                    let form = parseFloat(p.form) || 0;
+                    return { id: p.id, projBPS: bps90 + form };
+                });
+                playerBPSProjections.sort((a, b) => b.projBPS - a.projBPS);
+                if (playerBPSProjections.length > 0 && playerBPSProjections[0].id === player.id) expectedBonus = 3;
+                else if (playerBPSProjections.length > 1 && playerBPSProjections[1].id === player.id) expectedBonus = 2;
+                else if (playerBPSProjections.length > 2 && playerBPSProjections[2].id === player.id) expectedBonus = 1;
+            } else {
+                expectedBonus = (player.minutes > 0) ? (player.bonus / (player.minutes / 90)) : 0;
+                expectedBonus = Math.min(1.5, expectedBonus);
+            }
+
+            if (expectedBonus > 0) {
+                html += '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>Exp Bonus:</span><span class="text-success">Proj Rank <span class="text-white-50 small">(+' + expectedBonus.toFixed(1) + ' pts)</span></span></div>';
             }
             
-            html += '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>Base Appearance:</span><span class="text-success">60m+ <span class="text-white-50 small">(2.0 pts)</span></span></div>';
-            html += '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>Form & FDR Adj:</span><span class="text-warning fst-italic">Applied</span></div>';
+            let fdr = 3;
+            if (fixture && fixture.team_h === player.team) fdr = fixture.team_h_difficulty;
+            else if (fixture && fixture.team_a === player.team) fdr = fixture.team_a_difficulty;
+            let formStr = parseFloat(player.form).toFixed(1);
+            let fdrColor = fdr <= 2 ? 'text-success' : (fdr >= 4 ? 'text-danger' : 'text-warning');
+            
+            html += `<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary">
+                        <span>Form & FDR Adj:</span>
+                        <span class="text-white-50 small">
+                            Form: <span class="text-info">${formStr}</span> | 
+                            FDR: <span class="${fdrColor}">${fdr}</span> 
+                            <i class="fa-solid fa-circle-check text-success ms-1" title="Multipliers Applied"></i>
+                        </span>
+                     </div>`;
             
             if (predictedPoints !== undefined) {
-                html += '<div class="d-flex justify-content-between pt-1 mt-1 border-top border-secondary fw-bold text-white"><span>Final Prediction:</span><span class="text-success">' + predictedPoints.toFixed(1) + ' pts</span></div>';
+                html += '<div class="d-flex justify-content-between pt-1 mt-1 border-top border-secondary fw-bold text-white"><span>Final Prediction:</span><span class="text-success">' + (predictedPoints === '?' ? '?' : predictedPoints.toFixed(1)) + ' pts</span></div>';
             }
             
             breakdownBody.innerHTML = html;
