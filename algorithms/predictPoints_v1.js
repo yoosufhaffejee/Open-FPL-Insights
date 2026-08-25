@@ -84,8 +84,8 @@ function calculateExpectedPointsCore_v1(player, fixture) {
             let threshold = (player.element_type === 2) ? 10 : 12;
             // Approximate the probability of hitting the threshold in a single match
             let prob = Math.pow(defConPer90 / threshold, 2) * 0.5;
-            if (prob > 0.95) prob = 0.95; // Cap at 95% certainty (1.9 points)
-            expectedPoints += (prob * 2); // 2 points awarded
+            if (prob > 1.0) prob = 1.0; // Cap at 100% certainty (2.0 points)
+            expectedPoints += (prob * 2); // Up to 2 points awarded
         }
     }
 
@@ -149,7 +149,11 @@ function calculateExpectedPointsCore_v1(player, fixture) {
 
     let lastFiveData = getLastFive_v1(player, fixture);
     if(lastFiveData.averagePoints > 0 && lastFiveData.count > 0) {
-        let formWeight = Math.min(lastFiveData.count, 5) * 0.1;
+        // Form weight is scaled by total minutes played in those games (max 450 mins = 50% weight)
+        // A single 90-min game = 10% weight. Five 20-min cameos = 11% weight. A single 15-min cameo = 1.6% weight.
+        let formWeight = (lastFiveData.totalMinutes / 450) * 0.5;
+        formWeight = Math.max(0, Math.min(0.5, formWeight)); // Cap at 50%
+        
         expectedPoints = (expectedPoints * (1 - formWeight)) + (lastFiveData.averagePoints * formWeight);
     }
 
@@ -178,6 +182,9 @@ function calculateExpectedPointsCore_v1(player, fixture) {
         } else if (!isNaN(fplPred) && player.minutes === 0) {
             // For brand new players who haven't played a minute, blend price baseline with FPL prediction
             baseline = (baseline * 0.5) + (fplPred * 0.5);
+        } else if (lastFiveData.count > 0 && lastFiveData.averagePoints !== undefined) {
+            // Blend recent form into the baseline based on minutes played
+            baseline = (baseline * ((270 - player.minutes) / 270)) + (lastFiveData.averagePoints * (player.minutes / 270));
         }
         
         expectedPoints = (expectedPoints * weight) + (baseline * (1 - weight));
@@ -196,6 +203,36 @@ function calculateExpectedPointsCore_v1(player, fixture) {
         else if (fdr === 4) fdrMultiplier = 0.85;
         else if (fdr === 5) fdrMultiplier = 0.70;
         
+        let oppTeamId = (player.team === fixture.team_h) ? fixture.team_a : fixture.team_h;
+        
+        // Calculate dynamic opponent stats from underlying player data (xGC and xG)
+        let oppGks = allPlayers.filter(p => p.team === oppTeamId && p.element_type === 1);
+        let oppMins = oppGks.reduce((sum, gk) => sum + (gk.minutes || 0), 0);
+        
+        if (oppMins > 0) {
+            let oppXGC = oppGks.reduce((sum, gk) => sum + (parseFloat(gk.expected_goals_conceded) || 0), 0) / (oppMins / 90);
+            
+            let oppOutfielders = allPlayers.filter(p => p.team === oppTeamId && p.element_type !== 1);
+            // Rough approximation of team xG by summing outfielders
+            // (Note: FPL outfielders' xG is individual, so we just sum them to get total team xG)
+            let oppXG = oppOutfielders.reduce((sum, p) => sum + (parseFloat(p.expected_goals) || 0), 0) / (oppMins / 90);
+
+            let dynamicMultiplier = 1.0;
+            if (player.element_type === 1 || player.element_type === 2) {
+                // GK/DEF: We care about Opponent's xG (how lethal are they?)
+                dynamicMultiplier = 1.0 + (1.5 - oppXG) * 0.3; 
+            } else {
+                // MID/FWD: We care about Opponent's xGC (how leaky are they?)
+                dynamicMultiplier = 1.0 + (oppXGC - 1.5) * 0.3;
+            }
+            
+            // Bound multiplier to sane limits
+            dynamicMultiplier = Math.max(0.70, Math.min(1.30, dynamicMultiplier));
+            
+            // Blend FDR with our dynamic underlying stats multiplier (50/50 early on)
+            fdrMultiplier = (dynamicMultiplier * 0.5) + (fdrMultiplier * 0.5);
+        }
+
         let finalMultiplier = fdrMultiplier;
 
         // Try to fetch Pulse Live Standings to blend real-time stats
@@ -251,10 +288,10 @@ function calculateExpectedPointsCore_v1(player, fixture) {
 function getLastFive_v1(player, fixture) {
     const playerName = player.first_name + " " + player.second_name;
     
-    if (!db) return { averagePoints: 0, count: 0 };
+    if (!db) return { averagePoints: 0, count: 0, totalMinutes: 0 };
 
     const overallQuery = `
-        SELECT total_points 
+        SELECT total_points, minutes 
         FROM fpl_data 
         WHERE name = $name AND minutes >= 10 
         ORDER BY kickoff_time DESC 
@@ -265,8 +302,13 @@ function getLastFive_v1(player, fixture) {
     
     let overallCount = 0;
     let overallPoints = 0;
+    let overallMinutes = 0;
     while(overallStmt.step()) {
-        overallPoints += parseFloat(overallStmt.get()[0]);
+        const row = overallStmt.get();
+        overallPoints += parseFloat(row[0]);
+        let mins = parseInt(row[1] || 0);
+        if (mins >= 70) mins = 90; // Treat 70+ mins as a full game
+        overallMinutes += mins;
         overallCount++;
     }
     overallStmt.free();
@@ -277,7 +319,7 @@ function getLastFive_v1(player, fixture) {
     }
 
     if (!fixture) {
-        return { averagePoints, count: overallCount };
+        return { averagePoints, count: overallCount, totalMinutes: overallMinutes };
     }
 
     const opponentTeam = getOpponentTeam(player.team, fixture);
@@ -314,7 +356,7 @@ function getLastFive_v1(player, fixture) {
         averagePoints = ((overallPoints / overallCount) * 0.5) + ((fixturePoints / fixtureCount) * 0.5);
     }
     
-    return { averagePoints, count: overallCount };
+    return { averagePoints, count: overallCount, totalMinutes: overallMinutes };
 }
 
 function correctPenaltiesOrder_v1(player, allPlayers) {

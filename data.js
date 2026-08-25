@@ -167,12 +167,12 @@ window.calculateAllPredictions = async () => {
         clearPredictionCache();
         initPredictionCacheForCalc();
 
-        const remainingFixtures = fixtures.filter(f => !f.finished);
-        let totalCombos = allPlayers.length * remainingFixtures.length;
+        const targetFixtures = fixtures;
+        let totalCombos = allPlayers.length * targetFixtures.length;
         let doneCombos = 0;
 
         for (let player of allPlayers) {
-            for (let fixture of remainingFixtures) {
+            for (let fixture of targetFixtures) {
                 if (fixture.team_a === player.team || fixture.team_h === player.team) {
                     let expectedPoints = calculateExpectedPointsCore(player, fixture);
                     const cacheKey = `${player.id}_${fixture.id}`;
