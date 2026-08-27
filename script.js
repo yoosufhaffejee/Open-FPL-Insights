@@ -1518,9 +1518,12 @@ function loadPlayers(gameweek = selectedGameweek) {
 
         // Update the UI to reflect the loaded team
         updateTeamUI();
+        // Team exists in cookie — allow recalculation
+        document.getElementById('recalculateButton').disabled = false;
     } else {
-        // No data found for any gameweek, handle this case if needed
+        // No data found for any gameweek, keep recalc disabled until team is saved
         console.log('No saved team data available.');
+        document.getElementById('recalculateButton').disabled = true;
     }
 }
 
