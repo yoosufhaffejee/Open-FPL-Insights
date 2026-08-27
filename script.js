@@ -1542,6 +1542,8 @@ function savePlayers() {
 
     // Save the JSON string in a cookie
     document.cookie = `myPlayersGW${selectedGameweek}=${dataJSON}; path=/; max-age=31536000`; // Cookie expires in 1 year
+    // Re‑enable Recalculate button after a successful save
+    document.getElementById('recalculateButton').disabled = false;
 }
 
 function loadManagerId() {
