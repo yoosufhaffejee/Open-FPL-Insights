@@ -69,6 +69,11 @@ async function Initialize() {
         }
     }
     
+    // Ensure all slotIds are strictly unique to fix malformed cookie duplicates
+    baseSquad.forEach((p, idx) => {
+        p.slotId = 'pos' + (idx + 1);
+    });
+
     baseSquadCache = baseSquad.map(p => ({...p}));
     initialBankCache = initialBank;
 
