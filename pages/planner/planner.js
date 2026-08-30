@@ -224,7 +224,7 @@ function renderPlannerGrid() {
     
     if(!header || !body || !footer) return;
     
-    let headerHTML = '<th style="width: 25%; text-align: left;">Player</th>';
+    let headerHTML = '<th style="text-align: left;">Player</th>';
     upcomingGWs.forEach((gw, index) => {
         let state = plannerState[index];
         let chipHtml = `
@@ -523,7 +523,7 @@ function renderPlannerPlayers() {
     listContainer.innerHTML = '';
 
     if (toRender.length === 0) {
-        listContainer.innerHTML = '<div class="text-center text-white-50 mt-5"><p>No players found.</p></div>';
+        listContainer.innerHTML = '<tr><td colspan="7" class="text-center text-white-50 mt-5 pt-5 border-0"><p>No players found.</p></td></tr>';
         return;
     }
 
@@ -546,6 +546,7 @@ function renderPlannerPlayers() {
         let form = parseFloat(player.form).toFixed(1);
         let pts = player.total_points;
         let exp = player.predicted_pts.toFixed(1);
+        let sel = parseFloat(player.selected_by_percent).toFixed(1) + '%';
         
         // Injury/suspension status
         let statusIcon = '';
@@ -557,25 +558,30 @@ function renderPlannerPlayers() {
             statusIcon = '<i class="fas fa-info-circle text-white-50 cursor-pointer" onclick="showPlayerInfoById('+player.id+')"></i>';
         }
 
-        const item = document.createElement('div');
-        item.className = 'player-list-item transfer-in-candidate py-2 border-bottom border-secondary';
+        const item = document.createElement('tr');
+        item.className = 'transfer-in-candidate';
         
         item.innerHTML = `
-            <div class="d-flex align-items-center w-100" style="min-width: 340px;">
-                <div class="me-2" style="width: 15px; text-align: center;">${statusIcon}</div>
-                <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${player.team_code}${player.element_type == 1 ? '_1' : ''}-110.webp" class="shirt me-2 cursor-pointer" onclick="showPlayerInfoById(${player.id})" style="width: 25px;" onerror="playerImgOnerror(this, ${player.team_code}, ${player.element_type})">
-                <div class="flex-grow-1" style="min-width: 0;">
-                    <div class="fw-bold text-white text-truncate cursor-pointer" onclick="showPlayerInfoById(${player.id})" style="font-size: 0.85rem;">${player.web_name}</div>
-                    <div class="small text-white-50" style="font-size: 0.7rem;">${teamName} <span class="ms-1">${posText}</span></div>
+            <td>
+                <div class="d-flex align-items-center">
+                    <div class="me-2" style="width: 15px; text-align: center;">${statusIcon}</div>
+                    <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${player.team_code}${player.element_type == 1 ? '_1' : ''}-110.webp" class="shirt me-2 cursor-pointer" onclick="showPlayerInfoById(${player.id})" style="width: 25px;" onerror="playerImgOnerror(this, ${player.team_code}, ${player.element_type})">
+                    <div class="flex-grow-1" style="min-width: 0;">
+                        <div class="fw-bold text-white text-truncate cursor-pointer" onclick="showPlayerInfoById(${player.id})" style="font-size: 0.85rem; max-width: 120px;">${player.web_name}</div>
+                        <div class="small text-white-50" style="font-size: 0.7rem;">${teamName} <span class="ms-1">${posText}</span></div>
+                    </div>
                 </div>
-                <div style="width: 35px; text-align: center; font-size: 0.8rem;" class="text-white-50">${form}</div>
-                <div style="width: 35px; text-align: center; font-size: 0.8rem;" class="text-white-50">${pts}</div>
-                <div style="width: 45px; text-align: center; font-size: 0.8rem;" class="text-white-50">£${price}</div>
-                <div style="width: 45px; text-align: center; font-size: 0.85rem;" class="fw-bold text-warning">${exp}</div>
-                <div style="width: 35px; text-align: right;">
-                    <button class="btn btn-sm btn-outline-success py-0 px-2 rounded-circle" onclick="planTransfer(${player.id})" title="Transfer In"><i class="fas fa-plus" style="font-size: 0.7rem;"></i></button>
-                </div>
-            </div>
+            </td>
+            <td class="text-center fw-bold text-warning" style="font-size: 0.85rem;">${exp}</td>
+            <td class="text-center text-white-50" style="font-size: 0.8rem;">${pts}</td>
+            <td class="text-center text-white-50" style="font-size: 0.8rem;">£${price}</td>
+            <td class="text-center text-white-50" style="font-size: 0.8rem;">${form}</td>
+            <td class="text-center text-white-50" style="font-size: 0.8rem;">${sel}</td>
+            <td style="position: sticky; right: 0; background-color: #212529; text-align: center; border-left: 1px solid #495057;">
+                <button class="btn btn-sm btn-outline-success rounded-circle d-inline-flex align-items-center justify-content-center p-0" style="width: 24px; height: 24px; margin: auto;" onclick="planTransfer(${player.id})" title="Transfer In">
+                    <i class="fas fa-plus" style="font-size: 0.7rem; display: block;"></i>
+                </button>
+            </td>
         `;
         listContainer.appendChild(item);
     });
@@ -987,3 +993,51 @@ function populatePlayerModal(data, player) {
 }
 
 // Function to update team info
+
+function calculatePlayerPredictedPoints(player, fixture, upcomingGameweek) {
+    if (!fixture) return 0;
+
+    let isHome = fixture.team_h === player.team;
+    const opponentTeam = teams.find(team =>
+        team.id === (fixture.team_a === player.team ? fixture.team_h : fixture.team_a)
+    );
+
+    let playerPredictedPoints = getExpectedPoints(player, fixture);
+
+    if (playerPredictedPoints === '?') return '?';
+
+    let upcomingId = typeof upcomingGameweek === 'object' ? upcomingGameweek.id : upcomingGameweek;
+    if (getUpcomingGameweek() && getUpcomingGameweek().id == upcomingId) {
+        player.fpl_ep_next = parseFloat(player.ep_next) || 0;
+    }
+
+    const strengthAdjustment2 = 0.10; // +10%
+    const strengthAdjustment4 = 0.10; // -10%
+    const strengthAdjustment5 = 0.20; // -20%
+    const strengthAdjustmentAway = 0.10; // -10%
+
+    // Adjust points based on opponent team strength
+    if (opponentTeam.strength == 2 && playerPredictedPoints <= 10) {
+        playerPredictedPoints += (playerPredictedPoints * strengthAdjustment2);
+    }
+
+    if (opponentTeam.strength == 4) {
+        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustment4);
+    }
+
+    if (opponentTeam.strength == 5) {
+        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustment5);
+    }
+
+    // Adjust points if player is away
+    if (!isHome && playerPredictedPoints >= 2.5) {
+        playerPredictedPoints -= (playerPredictedPoints * strengthAdjustmentAway);
+    }
+
+    // Round to 1 decimal place so the captain multiplier aligns perfectly with the UI display
+    playerPredictedPoints = Math.round(playerPredictedPoints * 10) / 10;
+
+    // FPL Model averaging removed
+    return playerPredictedPoints;
+}
+
