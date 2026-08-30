@@ -126,10 +126,10 @@ const setupPage = async () => {
 
     // Call page-specific initializers if they exist
     if (typeof Initialize === 'function') {
-        Initialize();
+        await Initialize();
     }
     if (typeof updateGameweek === 'function') {
-        updateGameweek();
+        await updateGameweek();
     }
 
     const loader = document.getElementById('global-loader');

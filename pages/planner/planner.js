@@ -1,19 +1,10 @@
-document.addEventListener('DOMContentLoaded', async () => {
-    await setupPage();
-    if (!teams || teams.length === 0 || !gameweeks || gameweeks.length === 0) {
-        setTimeout(initPlanner, 1000);
-    } else {
-        initPlanner();
-    }
-});
-
 let upcomingGWs = [];
 let plannerState = []; 
 let selectedTransferOut = null; 
 let baseSquadCache = [];
 let initialBankCache = 0;
 
-async function initPlanner() {
+async function Initialize() {
     let currentGW = getUpcomingGameweek();
     if (currentGW && currentGW.id <= 19) {
         upcomingGWs = gameweeks.slice(0, 19);
