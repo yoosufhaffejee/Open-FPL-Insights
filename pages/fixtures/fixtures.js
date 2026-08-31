@@ -1021,11 +1021,11 @@ async function renderStandings() {
         html += `
             <tr>
                 <td class="text-center ${rowClass}">${entry.position}</td>
-                <td>
+                <td class="text-nowrap">
                     <div class="d-flex align-items-center">
                         <img src="${badgeUrl}" alt="${entry.team.name}" style="width: 25px; height: 25px;" class="me-2">
-                        <span class="d-none d-sm-inline">${entry.team.name}</span>
-                        <span class="d-inline d-sm-none">${entry.team.shortName}</span>
+                        <span class="d-none d-sm-inline fw-semibold">${entry.team.name}</span>
+                        <span class="d-inline d-sm-none fw-semibold">${entry.team.shortName}</span>
                         ${entry.isLive ? '<span class="spinner-grow text-success spinner-grow-sm ms-2" role="status" style="width: 0.5rem; height: 0.5rem;" title="Playing Now"><span class="visually-hidden">Live</span></span>' : ''}
                     </div>
                 </td>

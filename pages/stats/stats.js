@@ -269,6 +269,12 @@ const comparePlayers = async () => {
         { label: 'Expected Goals (xG)', key: 'expected_goals' },
         { label: 'Expected Assists (xA)', key: 'expected_assists' },
         { label: 'Expected Goal Inv (xGI)', key: 'expected_goal_involvements' },
+        { label: 'Exp Goals Conceded (xGC)', key: 'expected_goals_conceded' },
+        { label: 'Defensive Contribution', key: 'defensive_contribution' },
+        { label: 'CBI (Clearances, Blocks, Int)', key: 'clearances_blocks_interceptions' },
+        { label: 'Recoveries', key: 'recoveries' },
+        { label: 'Tackles', key: 'tackles' },
+        { label: 'Saves', key: 'saves' },
         { label: 'Bonus Points', key: 'bonus' },
         { label: 'BPS', key: 'bps' },
         { label: 'ICT Index', key: 'ict_index' }
@@ -467,7 +473,7 @@ async function renderStandings() {
         html += `
             <tr>
                 <td class="text-center ${rowClass}">${entry.position}</td>
-                <td>
+                <td class="text-nowrap">
                     <div class="d-flex align-items-center">
                         <img src="${badgeUrl}" alt="${entry.team.name}" style="width: 25px; height: 25px;" class="me-2">
                         <span class="d-none d-sm-inline fw-semibold">${entry.team.name}</span>

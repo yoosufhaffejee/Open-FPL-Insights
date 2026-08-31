@@ -44,34 +44,58 @@ function init() {
 }
 
 const renderMarketTrends = () => {
-    // Risers (Highest net transfers in)
-    const risers = [...allPlayers].sort((a, b) => (b.transfers_in_event - b.transfers_out_event) - (a.transfers_in_event - a.transfers_out_event)).slice(0, 5);
+    // Risers (Highest price change percentage)
+    const risers = [...allPlayers]
+        .filter(p => parseFloat(p.price_change_percent) > 0)
+        .sort((a, b) => parseFloat(b.price_change_percent) - parseFloat(a.price_change_percent))
+        .slice(0, 5);
     
-    // Fallers (Highest net transfers out)
-    const fallers = [...allPlayers].sort((a, b) => (a.transfers_in_event - a.transfers_out_event) - (b.transfers_in_event - b.transfers_out_event)).slice(0, 5);
+    // Fallers (Lowest price change percentage)
+    const fallers = [...allPlayers]
+        .filter(p => parseFloat(p.price_change_percent) < 0)
+        .sort((a, b) => parseFloat(a.price_change_percent) - parseFloat(b.price_change_percent))
+        .slice(0, 5);
 
-    const formatRiser = (p) => `
-        <div class="list-group-item bg-dark text-white border-secondary d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-                <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${p.team_code}${p.element_type == 1 ? '_1' : ''}-110.webp" style="width: 25px;" class="me-2 drop-shadow" onerror="playerImgOnerror(this, ${p.team_code}, ${p.element_type})">
-                <span>${p.web_name}</span>
+    const formatRiser = (p) => {
+        let pct = parseFloat(p.price_change_percent).toFixed(1);
+        let statusClass = pct >= 100 ? 'bg-success' : 'bg-success bg-opacity-75';
+        let net = (p.transfers_in_event - p.transfers_out_event).toLocaleString();
+        let hourly = p.price_change_hourly_rate ? p.price_change_hourly_rate.toLocaleString() : 0;
+        return `
+            <div class="list-group-item bg-dark text-white border-secondary d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${p.team_code}${p.element_type == 1 ? '_1' : ''}-110.webp" style="width: 25px;" class="me-2 drop-shadow" onerror="playerImgOnerror(this, ${p.team_code}, ${p.element_type})">
+                    <div class="d-flex flex-column">
+                        <span>${p.web_name}</span>
+                        <small class="text-muted" style="font-size: 0.7em;">${net} net | ${hourly}/hr</small>
+                    </div>
+                </div>
+                <span class="badge ${statusClass} rounded-pill">${pct}%</span>
             </div>
-            <span class="badge bg-success rounded-pill">+${(p.transfers_in_event - p.transfers_out_event).toLocaleString()} net</span>
-        </div>
-    `;
+        `;
+    };
 
-    const formatFaller = (p) => `
-        <div class="list-group-item bg-dark text-white border-secondary d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-                <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${p.team_code}${p.element_type == 1 ? '_1' : ''}-110.webp" style="width: 25px;" class="me-2 drop-shadow" onerror="playerImgOnerror(this, ${p.team_code}, ${p.element_type})">
-                <span>${p.web_name}</span>
+    const formatFaller = (p) => {
+        let pct = parseFloat(p.price_change_percent).toFixed(1);
+        let statusClass = pct <= -100 ? 'bg-danger' : 'bg-danger bg-opacity-75';
+        let net = (p.transfers_in_event - p.transfers_out_event).toLocaleString();
+        let hourly = p.price_change_hourly_rate ? p.price_change_hourly_rate.toLocaleString() : 0;
+        return `
+            <div class="list-group-item bg-dark text-white border-secondary d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${p.team_code}${p.element_type == 1 ? '_1' : ''}-110.webp" style="width: 25px;" class="me-2 drop-shadow" onerror="playerImgOnerror(this, ${p.team_code}, ${p.element_type})">
+                    <div class="d-flex flex-column">
+                        <span>${p.web_name}</span>
+                        <small class="text-muted" style="font-size: 0.7em;">${net} net | ${hourly}/hr</small>
+                    </div>
+                </div>
+                <span class="badge ${statusClass} rounded-pill">${pct}%</span>
             </div>
-            <span class="badge bg-danger rounded-pill">${(p.transfers_in_event - p.transfers_out_event).toLocaleString()} net</span>
-        </div>
-    `;
+        `;
+    };
 
-    document.getElementById('price-risers').innerHTML = risers.map(formatRiser).join('');
-    document.getElementById('price-fallers').innerHTML = fallers.map(formatFaller).join('');
+    document.getElementById('price-risers').innerHTML = risers.length > 0 ? risers.map(formatRiser).join('') : '<div class="list-group-item bg-dark text-white border-secondary text-muted">No risers</div>';
+    document.getElementById('price-fallers').innerHTML = fallers.length > 0 ? fallers.map(formatFaller).join('') : '<div class="list-group-item bg-dark text-white border-secondary text-muted">No fallers</div>';
 };
 
 
@@ -99,19 +123,70 @@ function getTeamCode(teamId) {
 
 let defconGridOptions;
 let defconGridApi;
+async function loadDefConStats(players) {
+    if (!players || players.length === 0) return;
+    
+    // Fetch element summaries in parallel
+    const promises = players.map(async (p) => {
+        try {
+            const data = await getPlayer(p.id);
+            let times = 0;
+            let points = 0;
+            
+            if (data && data.history) {
+                data.history.forEach(match => {
+                    if (match.minutes > 0 && match.defensive_contribution !== undefined && match.defensive_contribution !== null) {
+                        let dc = parseFloat(match.defensive_contribution);
+                        if (p.element_type === 2 && dc >= 10) {
+                            times++;
+                            points += 2;
+                        } else if ((p.element_type === 3 || p.element_type === 4) && dc >= 12) {
+                            times++;
+                            points += 2;
+                        }
+                    }
+                });
+            }
+            p.defcon_times = times;
+            p.defcon_pts = points;
+        } catch (err) {
+            console.error('Error fetching defcon for player', p.id, err);
+            p.defcon_times = 0;
+            p.defcon_pts = 0;
+        }
+    });
+    
+    await Promise.all(promises);
+    
+    // Refresh the grid
+    if (defconGridApi) {
+        defconGridApi.setGridOption('rowData', [...players]);
+    }
+}
+
 function renderDefCon() {
-    let defenders = allPlayers.filter(p => (p.element_type === 1 || p.element_type === 2) && parseFloat(p.defensive_contribution) > 0);
+    let defenders = allPlayers.filter(p => p.element_type !== 1 && parseFloat(p.defensive_contribution) > 0);
     defenders.sort((a, b) => parseFloat(b.defensive_contribution) - parseFloat(a.defensive_contribution));
     defenders = defenders.slice(0, 50);
+
+    // Initialize with loading placeholders
+    defenders.forEach(p => {
+        p.defcon_times = '...';
+        p.defcon_pts = '...';
+    });
+
+    const numComparator = (valueA, valueB) => parseFloat(valueA || 0) - parseFloat(valueB || 0);
 
     const columnDefs = [
         { headerName: 'Player', field: 'web_name', filter: true, floatingFilter: true, cellRenderer: params => '<div class="player-name-cell"><img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_' + getTeamCode(params.data.team) + '-66.webp" alt="shirt" style="width:25px;margin-right:5px;">' + params.value + '</div>' },
         { headerName: 'Team', field: 'team', filter: true, floatingFilter: true, valueGetter: params => getTeamName(params.data.team) },
-        { headerName: 'Total Contribution', field: 'defensive_contribution', filter: true, floatingFilter: true, cellClass: 'text-success fw-bold', initialSort: 'desc' },
-        { headerName: 'Per 90', field: 'defensive_contribution_per_90', filter: true, floatingFilter: true },
-        { headerName: 'CBI', field: 'clearances_blocks_interceptions', filter: true, floatingFilter: true },
-        { headerName: 'Recoveries', field: 'recoveries', filter: true, floatingFilter: true },
-        { headerName: 'Tackles', field: 'tackles', filter: true, floatingFilter: true }
+        { headerName: 'DefCon Count', field: 'defcon_times', filter: true, floatingFilter: true, cellClass: 'text-info fw-bold', comparator: numComparator },
+        { headerName: 'DefCon Pts', field: 'defcon_pts', filter: true, floatingFilter: true, cellClass: 'text-warning fw-bold', comparator: numComparator },
+        { headerName: 'Total Contribution', field: 'defensive_contribution', filter: true, floatingFilter: true, cellClass: 'text-success fw-bold', initialSort: 'desc', comparator: numComparator, valueFormatter: params => params.value ? parseFloat(params.value).toFixed(2) : '0.00' },
+        { headerName: 'Per 90', field: 'defensive_contribution_per_90', filter: true, floatingFilter: true, comparator: numComparator, valueFormatter: params => params.value ? parseFloat(params.value).toFixed(2) : '0.00' },
+        { headerName: 'CBI', field: 'clearances_blocks_interceptions', filter: true, floatingFilter: true, comparator: numComparator },
+        { headerName: 'Recoveries', field: 'recoveries', filter: true, floatingFilter: true, comparator: numComparator },
+        { headerName: 'Tackles', field: 'tackles', filter: true, floatingFilter: true, comparator: numComparator }
     ];
 
     defconGridOptions = {
@@ -120,6 +195,9 @@ function renderDefCon() {
         defaultColDef: { sortable: true, filter: true, resizable: true, wrapHeaderText: true, autoHeaderHeight: true, minWidth: 100 }
     };
     defconGridApi = agGrid.createGrid(document.getElementById('defconGrid'), defconGridOptions);
+    
+    // Trigger async load
+    loadDefConStats(defenders);
 }
 
 
@@ -130,14 +208,16 @@ function renderExpectedData() {
     players.sort((a, b) => parseFloat(b.expected_goal_involvements_per_90) - parseFloat(a.expected_goal_involvements_per_90));
     players = players.slice(0, 50);
 
+    const numComparator = (valueA, valueB) => parseFloat(valueA || 0) - parseFloat(valueB || 0);
+
     const columnDefs = [
         { headerName: 'Player', field: 'web_name', filter: true, floatingFilter: true, cellRenderer: params => '<div class="player-name-cell"><img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_' + getTeamCode(params.data.team) + '-66.webp" alt="shirt" style="width:25px;margin-right:5px;">' + params.value + '</div>' },
         { headerName: 'Pos', field: 'element_type', filter: true, floatingFilter: true, valueGetter: params => positionMap[params.data.element_type] },
-        { headerName: 'xGI / 90', field: 'expected_goal_involvements_per_90', filter: true, floatingFilter: true, cellClass: 'text-info fw-bold' },
-        { headerName: 'xG / 90', field: 'expected_goals_per_90', filter: true, floatingFilter: true },
-        { headerName: 'xA / 90', field: 'expected_assists_per_90', filter: true, floatingFilter: true },
-        { headerName: 'xG Total', field: 'expected_goals', filter: true, floatingFilter: true },
-        { headerName: 'xA Total', field: 'expected_assists', filter: true, floatingFilter: true }
+        { headerName: 'xGI / 90', field: 'expected_goal_involvements_per_90', filter: true, floatingFilter: true, cellClass: 'text-info fw-bold', comparator: numComparator, valueFormatter: params => params.value ? parseFloat(params.value).toFixed(2) : '0.00' },
+        { headerName: 'xG / 90', field: 'expected_goals_per_90', filter: true, floatingFilter: true, comparator: numComparator, valueFormatter: params => params.value ? parseFloat(params.value).toFixed(2) : '0.00' },
+        { headerName: 'xA / 90', field: 'expected_assists_per_90', filter: true, floatingFilter: true, comparator: numComparator, valueFormatter: params => params.value ? parseFloat(params.value).toFixed(2) : '0.00' },
+        { headerName: 'xG Total', field: 'expected_goals', filter: true, floatingFilter: true, comparator: numComparator, valueFormatter: params => params.value ? parseFloat(params.value).toFixed(2) : '0.00' },
+        { headerName: 'xA Total', field: 'expected_assists', filter: true, floatingFilter: true, comparator: numComparator, valueFormatter: params => params.value ? parseFloat(params.value).toFixed(2) : '0.00' }
     ];
 
     expectedGridOptions = {
@@ -211,12 +291,16 @@ function renderTopTransfers() {
 
     const inDefs = [
         { headerName: 'Player', field: 'web_name', filter: true, floatingFilter: true, cellRenderer: params => '<div class="player-name-cell"><img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_' + getTeamCode(params.data.team) + '-66.webp" alt="shirt" style="width:25px;margin-right:5px;">' + params.value + '</div>' },
-        { headerName: 'Transfers In', field: 'transfers_in_event', filter: true, floatingFilter: true, cellClass: 'text-success fw-bold', cellRenderer: params => '+' + (params.value || 0).toLocaleString() }
+        { headerName: 'Transfers In', field: 'transfers_in_event', filter: true, floatingFilter: true, cellClass: 'text-success fw-bold', cellRenderer: params => '+' + (params.value || 0).toLocaleString() },
+        { headerName: 'Price Target %', colId: 'price_change_percent', filter: true, floatingFilter: true, valueGetter: params => params.data.price_change_percent ? parseFloat(params.data.price_change_percent) : 0, valueFormatter: params => params.value.toFixed(1) + '%' },
+        { headerName: 'Hourly Rate', field: 'price_change_hourly_rate', filter: true, floatingFilter: true, valueFormatter: params => (params.value || 0).toLocaleString() + '/hr' }
     ];
     
     const outDefs = [
         { headerName: 'Player', field: 'web_name', filter: true, floatingFilter: true, cellRenderer: params => '<div class="player-name-cell"><img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_' + getTeamCode(params.data.team) + '-66.webp" alt="shirt" style="width:25px;margin-right:5px;">' + params.value + '</div>' },
-        { headerName: 'Transfers Out', field: 'transfers_out_event', filter: true, floatingFilter: true, cellClass: 'text-danger fw-bold', cellRenderer: params => '-' + (params.value || 0).toLocaleString() }
+        { headerName: 'Transfers Out', field: 'transfers_out_event', filter: true, floatingFilter: true, cellClass: 'text-danger fw-bold', cellRenderer: params => '-' + (params.value || 0).toLocaleString() },
+        { headerName: 'Price Target %', colId: 'price_change_percent', filter: true, floatingFilter: true, valueGetter: params => params.data.price_change_percent ? parseFloat(params.data.price_change_percent) : 0, valueFormatter: params => params.value.toFixed(1) + '%' },
+        { headerName: 'Hourly Rate', field: 'price_change_hourly_rate', filter: true, floatingFilter: true, valueFormatter: params => (params.value || 0).toLocaleString() + '/hr' }
     ];
 
     transfersInGridOptions = {
