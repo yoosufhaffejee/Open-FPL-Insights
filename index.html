@@ -668,12 +668,34 @@
         </div>
     </div>
 
+        <!-- Suggested Transfers Modal -->
+    <div class="modal fade" id="suggestedTransfersModal" tabindex="-1" aria-labelledby="suggestedTransfersModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content bg-dark text-white">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title" id="suggestedTransfersModalLabel">Suggested Transfers <i class="fas fa-magic text-warning"></i></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body border-secondary">
+                    <p class="text-muted">Top recommended transfers based on predicted points over the next 3 gameweeks using your current budget.</p>
+                    <div id="suggestedTransfersContent" class="table-responsive">
+                        <!-- Content dynamically injected here -->
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Action Buttons -->
     <div class="button-container text-center">
+        <button id="suggestedTransfersButton" class="btn btn-success" style="display: none;" onclick="openSuggestedTransfersModal()">Suggested Transfers</button>
         <button id="recalculateButton" class="btn btn-warning" onclick="calculateAllPredictions()" disabled>Recalculate Predictions</button>
-        <button id="resetButton" class="btn btn-danger" onclick="resetPlayers()">Reset</button>
-        <button id="saveButton" class="btn btn-primary" onclick="savePlayers()">Save</button>
-        <button id="autoPickButton" class="btn btn-success" onclick="autoPickPlayers()">Auto Pick</button>
+        <button id="resetButton" class="btn btn-danger" style="display: none;" onclick="resetPlayers()">Reset</button>
+        <button id="saveButton" class="btn btn-primary" style="display: none;" onclick="savePlayers()">Save</button>
+        <button id="autoPickButton" class="btn btn-secondary" onclick="autoPickPlayers()">Auto Pick</button>
         <button id="importScreenshotButton" class="btn btn-info" onclick="openScreenshotImportModal()">Import Screenshot</button>
     </div>
 
@@ -683,7 +705,7 @@
             <label>Position:</label>
             &nbsp;
             <div class="position-buttons">
-                <button class="position-button" data-position="0">All</button>
+                <button class="position-button active" data-position="0">All</button>
                 <button class="position-button" data-position="1">GK</button>
                 <button class="position-button" data-position="2">DEF</button>
                 <button class="position-button" data-position="3">MID</button>
@@ -737,6 +759,7 @@
     <script src="algorithms/autoPick.js"></script>
     <script src="algorithms/historicStats.js"></script>
     <script src="constants/gridConfig.js"></script>
+    <script src="algorithms/suggestedTransfers.js"></script>
     <script src="algorithms/predictPoints_v1.js"></script>
     <script src="algorithms/predictPoints_gpt.js"></script>
     <script src="algorithms/predictPoints_claude.js"></script>
@@ -755,4 +778,9 @@
 </body>
 
 </html>
+
+
+
+
+
 

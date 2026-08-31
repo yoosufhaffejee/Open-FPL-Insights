@@ -187,8 +187,8 @@ if (teamSelectElement) {
 
 document.querySelectorAll('.position-button').forEach(button => {
     button.addEventListener('click', function() {
-        document.querySelectorAll('.position-button').forEach(btn => btn.classList.remove('selected'));
-        this.classList.add('selected');
+        document.querySelectorAll('.position-button').forEach(btn => btn.classList.remove('active'));
+        this.classList.add('active');
         filterByPosition(this.getAttribute('data-position'));
     });
 });
@@ -275,7 +275,7 @@ function filterByPrice(maxPrice) {
 // Function to apply combined filters (position and price)
 function applyFilters() {
     const teamId = document.getElementById('team-select').value;
-    const position = document.querySelector('.position-button[data-position].selected')?.getAttribute('data-position') || '0';
+    const position = document.querySelector('.position-button[data-position].active')?.getAttribute('data-position') || '0';
     const maxPrice = document.getElementById('price-range').value;
 
     let result = filteredPlayers;
@@ -479,7 +479,7 @@ function updateTeamUI() {
     // Clear existing players from rows
     document.querySelectorAll('.row').forEach(row => row.innerHTML = '');
 
-    let bankBalance = 100.0;
+    bankBalance = 100.0;
     if (managerId > 0 && managerPicks && managerPicks.entry_history) {
         let bank = managerPicks.entry_history.bank / 10;
         let originalCost = 0;
@@ -562,6 +562,7 @@ function updateTeamUI() {
 
     // Handle missing players/ghost players
     fillMissingPlayers(filledPositions, subs);
+    updateActionButtonsVisibility();
 }
 
 async function calculateSeasonPoints() {
@@ -1067,7 +1068,7 @@ function swapPlayer(player) {
             }
         }
 
-        document.getElementById('saveButton').disabled = false;
+        document.getElementById('saveButton').style.display = 'inline-block';
 
         // After swapping, update the UI to reflect the new positions and statuses
         updateTeamUI();
@@ -1119,7 +1120,7 @@ function captainPlayer(player) {
     player.isCaptain = true;
 
     // Enable save button
-    document.getElementById('saveButton').disabled = false;
+    document.getElementById('saveButton').style.display = 'inline-block';
 
     // Update the UI to reflect the change
     updateTeamUI();
@@ -1140,7 +1141,7 @@ function vicePlayer(player) {
     player.isVice = true;
 
     // Enable save button
-    document.getElementById('saveButton').disabled = false;
+    document.getElementById('saveButton').style.display = 'inline-block';
     
     // Update the UI to reflect the change
     updateTeamUI();
@@ -1589,7 +1590,7 @@ function loadPlayers(gameweek = selectedGameweek) {
 
 function savePlayers() {
     // Disable the Save button
-    document.getElementById('saveButton').disabled = true;
+    document.getElementById('saveButton').style.display = 'none';
 
     // Extract player IDs, slotIds, and isSub from the myPlayers array
     const playerData = myPlayers.map(player => ({
@@ -1632,7 +1633,7 @@ function resetPlayers() {
     }
 
     // Enable the Save and Auto Pick buttons again
-    document.getElementById('saveButton').disabled = false;
+    document.getElementById('saveButton').style.display = 'inline-block';
     document.getElementById('autoPickButton').disabled = false;
 
     updateTeamUI();
@@ -1772,3 +1773,121 @@ function getPredictedPointsForGW(player, gwId) {
     window.predictedPointsCache[gwId][player.id] = pts;
     return pts;
 }
+
+// ======== SUGGESTED TRANSFERS LOGIC ========
+function openSuggestedTransfersModal() {
+    const modalContent = document.getElementById('suggestedTransfersContent');
+    modalContent.innerHTML = '<div class="text-center"><div class="spinner-border text-light" role="status"></div><p>Calculating best transfers...</p></div>';
+    
+    const modal = new bootstrap.Modal(document.getElementById('suggestedTransfersModal'));
+    modal.show();
+    
+    setTimeout(() => {
+        try {
+            let currentTeamIds = myPlayers.map(p => p.id);
+            if (currentTeamIds.length === 0) {
+                modalContent.innerHTML = '<p class="text-warning p-3">Please add players to your team first.</p>';
+                return;
+            }
+            
+            let suggestions = calculateSuggestedTransfers(currentTeamIds, allPlayers, fixtures, selectedGameweek, bankBalance);
+            
+            if (suggestions.length === 0) {
+                modalContent.innerHTML = '<p class="text-info p-3">No transfers are currently worth making. It is highly recommended to roll your free transfer and keep your team as is!</p>';
+                return;
+            }
+            
+            let html = `
+                <table class="table table-dark table-striped align-middle text-center">
+                    <thead>
+                        <tr>
+                            <th>Sell</th>
+                            <th>Buy</th>
+                            <th>xP Gain (5 GWs)</th>
+                            <th>Cost Change</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            suggestions.forEach(s => {
+                let sellHtml = '';
+                s.outs.forEach(p => {
+                    const img = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${p.team_code}-110.webp`;
+                    sellHtml += `
+                        <div class="d-inline-block mx-2">
+                            <img src="${img}" width="40" alt="shirt"><br>
+                            <strong>${p.web_name}</strong><br>
+                            <span class="text-danger">£${(p.now_cost / 10).toFixed(1)}m</span>
+                        </div>
+                    `;
+                });
+                
+                let buyHtml = '';
+                s.ins.forEach(p => {
+                    const img = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${p.team_code}-110.webp`;
+                    buyHtml += `
+                        <div class="d-inline-block mx-2">
+                            <img src="${img}" width="40" alt="shirt"><br>
+                            <strong>${p.web_name}</strong><br>
+                            <span class="text-success">£${(p.now_cost / 10).toFixed(1)}m</span>
+                        </div>
+                    `;
+                });
+
+                let costDiff = s.costDiff;
+                html += `
+                    <tr>
+                        <td>
+                            ${sellHtml}<br>
+                            <small class="text-muted">Total xP: ${s.outXp.toFixed(1)}</small>
+                        </td>
+                        <td>
+                            ${buyHtml}<br>
+                            <small class="text-muted">Total xP: ${s.inXp.toFixed(1)}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-success">+${s.xpDiff.toFixed(1)}</span>
+                            ${s.type > 1 ? '<br><small class="text-danger">(-' + ((s.type - 1) * 4) + ' hit)</small>' : ''}
+                        </td>
+                        <td>
+                            <span class="${costDiff >= 0 ? 'text-success' : 'text-danger'}">
+                                ${costDiff >= 0 ? '+' : ''}£${costDiff.toFixed(1)}m
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `</tbody></table>`;
+            modalContent.innerHTML = html;
+            
+        } catch(e) {
+            console.error(e);
+            modalContent.innerHTML = '<p class="text-danger p-3">Error calculating transfers.</p>';
+        }
+    }, 100);
+}
+
+// ======== BUTTON VISIBILITY LOGIC ========
+function updateActionButtonsVisibility() {
+    const realPlayersCount = myPlayers ? myPlayers.filter(p => p.now_cost > 0).length : 0;
+    const hasPlayers = realPlayersCount > 0;
+    
+    const resetButton = document.getElementById('resetButton');
+    if (resetButton) resetButton.style.display = hasPlayers ? 'inline-block' : 'none';
+    
+    const importBtn = document.getElementById('importScreenshotButton');
+    if (importBtn) importBtn.style.display = hasPlayers ? 'none' : 'inline-block';
+    
+    const autoPickBtn = document.getElementById('autoPickButton');
+    if (autoPickBtn) autoPickBtn.style.display = hasPlayers ? 'none' : 'inline-block';
+    
+    const suggestBtn = document.getElementById('suggestedTransfersButton');
+    if (suggestBtn) suggestBtn.style.display = hasPlayers ? 'inline-block' : 'none';
+}
+
+
+
+
+
