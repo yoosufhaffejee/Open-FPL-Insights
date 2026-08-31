@@ -29,10 +29,9 @@ async function Initialize() {
                     const player = allPlayers.find(p => p.id === pick.element);
                     if (player) {
                         let p = { ...player, slotId: pick.position, isSub: pick.position > 11, isCaptain: pick.is_captain, isVice: pick.is_vice_captain };
-                        if (pick.purchase_price !== undefined) p.purchase_price = pick.purchase_price;
-                        if (pick.selling_price !== undefined) p.selling_price = pick.selling_price;
-                        if (pick.purchase_value !== undefined) p.purchase_price = pick.purchase_value;
-                        if (pick.selling_value !== undefined) p.selling_price = pick.selling_value;
+                        // purchase_value = what you paid; selling_value = what you get back (FPL keeps 50% of profit)
+                        p.purchase_price = pick.purchase_value ?? pick.purchase_price ?? player.now_cost;
+                        p.selling_price  = pick.selling_value  ?? pick.selling_price  ?? player.now_cost;
                         return p;
                     }
                     return null;
@@ -170,7 +169,11 @@ function recalculateState() {
                 const pOutIndex = newSquad.findIndex(p => p.slotId === t.slotId);
                 const pIn = allPlayers.find(p => p.id === t.playerInId);
                 if(pOutIndex !== -1 && pIn) {
-                    newBank += (newSquad[pOutIndex].now_cost / 10) - (pIn.now_cost / 10);
+                    // Use selling_price if available (FPL applies 50% profit split rule)
+                    const sellValue = newSquad[pOutIndex].selling_price !== undefined
+                        ? newSquad[pOutIndex].selling_price / 10
+                        : newSquad[pOutIndex].now_cost / 10;
+                    newBank += sellValue - (pIn.now_cost / 10);
                     newSquad[pOutIndex] = { ...pIn, slotId: t.slotId, isSub: newSquad[pOutIndex].isSub, isCaptain: newSquad[pOutIndex].isCaptain, isVice: newSquad[pOutIndex].isVice };
                 }
             });

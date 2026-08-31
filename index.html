@@ -670,20 +670,24 @@
 
         <!-- Suggested Transfers Modal -->
     <div class="modal fade" id="suggestedTransfersModal" tabindex="-1" aria-labelledby="suggestedTransfersModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content bg-dark text-white">
-                <div class="modal-header border-secondary">
-                    <h5 class="modal-title" id="suggestedTransfersModalLabel">Suggested Transfers <i class="fas fa-magic text-warning"></i></h5>
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content bg-dark text-white border border-secondary">
+                <div class="modal-header border-secondary" style="background: #111;">
+                    <div>
+                        <h5 class="modal-title mb-0" id="suggestedTransfersModalLabel">
+                            <i class="fas fa-exchange-alt text-success me-2"></i>Suggested Transfers
+                        </h5>
+                        <small class="text-muted">Optimised over a 5-gameweek horizon using your current budget</small>
+                    </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body border-secondary">
-                    <p class="text-muted">Top recommended transfers based on predicted points over the next 3 gameweeks using your current budget.</p>
-                    <div id="suggestedTransfersContent" class="table-responsive">
+                <div class="modal-body" style="background: #161616; padding: 1rem 1.25rem;">
+                    <div id="suggestedTransfersContent">
                         <!-- Content dynamically injected here -->
                     </div>
                 </div>
-                <div class="modal-footer border-secondary">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <div class="modal-footer border-secondary" style="background: #111;">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
