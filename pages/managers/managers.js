@@ -47,10 +47,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 function addPlayers(picks) {
     myPlayers = [];
     picks.forEach((pick, index) => {
-        let player = allPlayers.find(p => p.id == pick.element);
+        let basePlayer = allPlayers.find(p => p.id == pick.element);
+        if (!basePlayer) return;
+        
+        let player = { ...basePlayer }; // Create a copy so we don't mutate the global object
 
         player.isCaptain = pick.is_captain;
         player.isVice = pick.is_vice_captain;
+
+        if (pick.purchase_price !== undefined) player.purchase_price = pick.purchase_price;
+        if (pick.selling_price !== undefined) player.selling_price = pick.selling_price;
+        
+        if (pick.purchase_value !== undefined) player.purchase_price = pick.purchase_value;
+        if (pick.selling_value !== undefined) player.selling_price = pick.selling_value;
 
         if (index <= 10) {
             player.isSub = false;
@@ -89,7 +98,7 @@ if (nextGameweekElement) {
 }
 
 // Function to handle next and previous gameweek navigation
-function navigateGameweek(direction) {
+async function navigateGameweek(direction) {
     // Update selectedGameweek based on direction
     if (direction === 'next') {
         selectedGameweek++;
@@ -105,10 +114,7 @@ function navigateGameweek(direction) {
     }
 
     // Update gameweek info and deadline
-    updateGameweekInfo();
-
-    // Call your update function to refresh UI
-    updateTeamUI();
+    await updateGameweekInfo();
 }
 
 // Function to update the gameweek info and deadline display
@@ -135,22 +141,33 @@ async function updateGameweekInfo() {
 }
 
 async function getLatestPicks(gameweek) {
-    managerPicks = [];
     currentLiveData = null;
     document.getElementById("points").hidden = true;
 
-    if (gameweek <= getLastGameweekId() && managerId > 0) {
-        managerPicks = await getManagerPicks(managerId, gameweek);
-        currentLiveData = await getGameweek(gameweek);
+    if (managerId > 0) {
+        let gwToFetch = gameweek <= getLastGameweekId() ? gameweek : getLastGameweekId();
+        if (gwToFetch > 0) {
+            managerPicks = await getManagerPicks(managerId, gwToFetch) || [];
+            if (gameweek <= getLastGameweekId()) {
+                currentLiveData = await getGameweek(gameweek);
+            }
+        } else {
+            managerPicks = [];
+        }
+    } else {
+        managerPicks = [];
+    }
+
+    if (managerPicks.picks) {
+        addPlayers(managerPicks.picks);
     }
 
     rating = 0;
     points = 0;
-    if (managerPicks.entry_history) {
+    if (managerPicks.entry_history && gameweek <= getLastGameweekId()) {
         document.getElementById("points").hidden = false;
         points = managerPicks.entry_history.points;
         updateTeamInfo("Points", points);
-        updateTeamInfo("Bank Balance", (managerPicks.entry_history.bank / 10) + 'm');
         rating = 100 - managerPicks.entry_history.percentile_rank;
         updateTeamInfo("GW Rating", rating + '%');
     }
@@ -159,36 +176,30 @@ async function getLatestPicks(gameweek) {
         rating = (predictedPoints / 70) * 100;
         updateTeamInfo("GW Rating", parseInt(rating) + '%');
     }
-
-    if (managerPicks.picks) {
-        addPlayers(managerPicks.picks);
-    }
 }
 
 async function calculateSeasonPoints() {
     let seasonPoints = 0;
-    let overallRating = 0;
     let totalIdealPoints = 0;
 
-    // Normal for loop to handle async operations correctly
+    let history = null;
+    if (managerId > 0) {
+        history = await getManagerHistory(managerId);
+    }
+
     for (let i = 0; i < gameweeks.length; i++) {
         const gw = gameweeks[i];
-
         let gwPoints = 0;
-        let gwRating = 0;
 
-        points = 0;
-        await getLatestPicks(gw.id); // Will wait for this promise to resolve before continuing
+        let histEvent = history ? history.current.find(e => e.event === gw.id) : null;
 
-        if (points > 0) {
-            gwPoints += points;
+        if (histEvent && histEvent.points > 0) {
+            gwPoints += histEvent.points - histEvent.event_transfers_cost;
         }
-        else {
+        else if (gw.id >= getUpcomingGameweek().id) {
             myPlayers.forEach(player => {
-                // Update fixtures and predicted points
                 let fixture = getPlayerFixture(player, gw.id);
                 player.predicted_points = calculatePlayerPredictedPoints(player, fixture, gw.id);
-                //gwPoints += player.predicted_points;
             });
 
             const bestPlayers = optimizeTeam(myPlayers);
@@ -198,21 +209,15 @@ async function calculateSeasonPoints() {
         }
 
         let maxIdeal = getIdealMaxPointsForGW(gw.id, calculatePlayerPredictedPoints, allPlayers, fixtures);
-        if (gwRating <= 0) {
-            gwRating = Math.min(100, (gwPoints / maxIdeal) * 100);
-        }
-
+        
         seasonPoints += gwPoints;
         totalIdealPoints += maxIdeal;
-    };
+    }
 
-    overallRating = Math.min(100, (seasonPoints / totalIdealPoints) * 100);
-    updateTeamInfo("Overall Rating", Math.round(overallRating) + '%');
-    updateTeamInfo("Season Points", parseInt(seasonPoints));
+    let overallRating = Math.min(100, (seasonPoints / totalIdealPoints) * 100);
+    updateTeamInfo('Overall Rating', Math.round(overallRating) + '%');
+    updateTeamInfo('Season Points', parseInt(seasonPoints));
 }
-
-// Define a mapping of element types to position prefixes
-
 
 // Global object to track the number of players per position
 const filledSlots = {
@@ -246,7 +251,18 @@ function updateTeamUI() {
     document.querySelectorAll('.row').forEach(row => row.innerHTML = '');
 
     predictedPoints = 0;
-    let bankBalance = 100;
+    let bankBalance = 100.0;
+    if (managerId > 0 && managerPicks && managerPicks.entry_history) {
+        let bank = managerPicks.entry_history.bank / 10;
+        let originalCost = 0;
+        if (managerPicks.picks) {
+            managerPicks.picks.forEach(pick => {
+                let p = allPlayers.find(x => x.id == pick.element);
+                if (p) originalCost += p.now_cost / 10;
+            });
+        }
+        bankBalance = bank + originalCost;
+    }
     let subs = 0;
     const filledPositions = {
         gk: 0,
@@ -318,12 +334,24 @@ function renderPlayerElement(player) {
     const shirtUrl = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${player.team_code}${isGK ? '_1' : ''}-110.webp`;
     const image = `<img src="${shirtUrl}" alt="${player.web_name}" onerror="playerImgOnerror(this, ${player.team_code}, ${player.element_type})">`;
 
+    let priceDisplay = `£${(player.now_cost / 10).toFixed(1)}`;
+    if (player.selling_price !== undefined && player.purchase_price !== undefined) {
+        let cp = (player.now_cost / 10).toFixed(1);
+        let sp = (player.selling_price / 10).toFixed(1);
+        let pp = (player.purchase_price / 10).toFixed(1);
+        if (sp !== cp || pp !== cp) {
+            priceDisplay = `<span title="Current: £${cp}m | Bought: £${pp}m">£${sp}</span>`;
+        }
+    } else if (player.selling_price !== undefined) {
+        priceDisplay = `£${(player.selling_price / 10).toFixed(1)}`;
+    }
+
     playerElement.innerHTML = `
         ${image}
         <div class="player-info-card">
             <div class="player-header">
                 <span class="player-name">${player.web_name} ${player.isCaptain ? '(C)' : player.isVice ? '(V)' : ''}</span>
-                <span class="player-price">£${(player.now_cost / 10).toFixed(1)}</span>
+                <span class="player-price">${priceDisplay}</span>
             </div>
             <div class="fixtures">
                 ${Array.from({ length: 3 }, (_, i) => `

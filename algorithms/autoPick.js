@@ -1,5 +1,4 @@
-function selectBestTeam(allPlayers, currentTeam = []) {
-    let budget = 100.0;
+function selectBestTeam(allPlayers, currentTeam = [], budget = 100.0) {
     const requiredTeam = {
         GK: 2,
         DEF: 5,

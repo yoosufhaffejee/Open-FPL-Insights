@@ -83,11 +83,23 @@ document.addEventListener('DOMContentLoaded', () => {
         document.cookie = `${name}=${encodeURIComponent(value)};${expires};path=/`;
     };
 
-    // Fetch and display leagues from cookies
+    const getStoredLeagues = () => {
+        let leagues = localStorage.getItem('playerLeagues');
+        if (leagues) return JSON.parse(leagues);
+        
+        let cookieLeagues = getCookie('playerLeagues');
+        if (cookieLeagues) {
+            let parsed = JSON.parse(cookieLeagues);
+            localStorage.setItem('playerLeagues', JSON.stringify(parsed));
+            return parsed;
+        }
+        return null;
+    };
+
+    // Fetch and display leagues from storage
     const loadPlayerLeagues = () => {
-        const playerLeagues = getCookie('playerLeagues');
-        if (playerLeagues) {
-            const leagues = JSON.parse(playerLeagues); // Deserialize from JSON format
+        const leagues = getStoredLeagues();
+        if (leagues && leagues.length > 0) {
             leagueGrid.updateGridOptions({
                 rowData: leagues
             });
@@ -164,23 +176,13 @@ document.addEventListener('DOMContentLoaded', () => {
     async function addLeague(leagueId) {
         if (leagueId) {
             let league = await fetchLeague(leagueId);
-            let playerLeagues = getCookie('playerLeagues');
-            if (playerLeagues) {
-                const leagues = JSON.parse(playerLeagues); // Deserialize from JSON format
-                if (!leagues.some(league => league.id === leagueId)) {
-                    // Only add if the league isn't already stored
-                    leagues.push({ id: leagueId, name: league.name }); // Temporary name until data is fetched
-                    setCookie('playerLeagues', JSON.stringify(leagues), 30);
-
+            if (league) {
+                let leagues = getStoredLeagues() || [];
+                if (!leagues.some(l => l.id == leagueId)) {
+                    leagues.push({ id: leagueId, name: league.name });
+                    localStorage.setItem('playerLeagues', JSON.stringify(leagues));
                     leagueGrid.updateGridOptions({
                         rowData: leagues
-                    });
-                }
-            } else {
-                if (league) {
-                    setCookie('playerLeagues', JSON.stringify([{ id: leagueId, name: league.name }]), 30); // Serialize to JSON format
-                    leagueGrid.updateGridOptions({
-                        rowData: [league]
                     });
                 }
             }

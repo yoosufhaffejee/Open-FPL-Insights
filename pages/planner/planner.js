@@ -28,7 +28,12 @@ async function Initialize() {
                 baseSquad = picksData.picks.map(pick => {
                     const player = allPlayers.find(p => p.id === pick.element);
                     if (player) {
-                        return { ...player, slotId: pick.position, isSub: pick.position > 11, isCaptain: pick.is_captain, isVice: pick.is_vice_captain };
+                        let p = { ...player, slotId: pick.position, isSub: pick.position > 11, isCaptain: pick.is_captain, isVice: pick.is_vice_captain };
+                        if (pick.purchase_price !== undefined) p.purchase_price = pick.purchase_price;
+                        if (pick.selling_price !== undefined) p.selling_price = pick.selling_price;
+                        if (pick.purchase_value !== undefined) p.purchase_price = pick.purchase_value;
+                        if (pick.selling_value !== undefined) p.selling_price = pick.selling_value;
+                        return p;
                     }
                     return null;
                 }).filter(p => p !== null);
@@ -92,6 +97,7 @@ async function Initialize() {
         };
     });
     
+    loadPlannerState();
     recalculateState();
 
     
@@ -100,7 +106,10 @@ async function Initialize() {
         plannerState.forEach(state => {
             state.plannedTransfers = [];
             state.activeChip = null;
+            state.captainOverride = null;
+            state.viceOverride = null;
         });
+        localStorage.removeItem('fpl_planner_save');
         recalculateState();
         renderPlannerGrid();
     });
@@ -142,6 +151,28 @@ function recalculateState() {
             }
         });
         
+        // Handle per-GW captain override
+        if (state.captainOverride) {
+            newSquad.forEach(p => {
+                if (p.slotId === state.captainOverride) {
+                    p.isCaptain = true;
+                    p.isVice = false;
+                } else if (p.isCaptain) {
+                    p.isCaptain = false;
+                }
+            });
+        }
+        if (state.viceOverride) {
+            newSquad.forEach(p => {
+                if (p.slotId === state.viceOverride) {
+                    p.isVice = true;
+                    p.isCaptain = false;
+                } else if (p.isVice) {
+                    p.isVice = false;
+                }
+            });
+        }
+        
         let hits = 0;
         let pointsHit = 0;
         let nextFTs = currentFTs;
@@ -174,6 +205,11 @@ function recalculateState() {
             currentBank = newBank;
         }
         currentFTs = nextFTs;
+    }
+    
+    // Auto-save whenever state recalculates
+    if (typeof savePlannerState === 'function') {
+        savePlannerState();
     }
 }
 
@@ -322,6 +358,9 @@ function renderPlannerGrid() {
             
             let ptsDisplay = pts.toFixed(1);
             if(playerInSlot.isSub && state.activeChip !== 'BB') ptsDisplay = `<span class="text-white-50">(${ptsDisplay})</span>`;
+            
+            let cellCapClass = playerInSlot.isCaptain ? 'text-warning fw-bold' : 'text-white-50 opacity-50';
+            let cellViceClass = playerInSlot.isVice ? 'text-info fw-bold' : 'text-white-50 opacity-50';
 
             gwsHTML += `
                 <td style="${outline} cursor: pointer; vertical-align: top;" onclick="selectTransferOut('${slotId}', ${gwIndex})">
@@ -329,6 +368,10 @@ function renderPlannerGrid() {
                         ${changedPlayerHtml}
                         <div class="opp lh-sm mb-1" style="font-size: 0.75rem;">${oppText}</div>
                         <div class="pts">${ptsDisplay} pts</div>
+                        <div class="d-flex justify-content-center gap-2 mt-1" style="font-size: 0.65rem;">
+                            <span class="cursor-pointer ${cellCapClass}" onclick="event.stopPropagation(); setCaptain('${slotId}', true, ${gwIndex})" title="Set Captain">[C]</span>
+                            <span class="cursor-pointer ${cellViceClass}" onclick="event.stopPropagation(); setCaptain('${slotId}', false, ${gwIndex})" title="Set Vice Captain">[V]</span>
+                        </div>
                     </div>
                 </td>
             `;
@@ -341,11 +384,43 @@ function renderPlannerGrid() {
     let footerHTML = '<tr><td style="text-align: right;"><strong>Expected Points</strong><br><span class="text-white-50">Transfers | Bank</span></td>';
     plannerState.forEach((state, gwIndex) => {
         let totalPts = 0;
-        state.squad.forEach(p => {
-            if(!p.isSub || state.activeChip === 'BB') {
+        
+        if (state.activeChip === 'BB') {
+            state.squad.forEach(p => {
                 totalPts += calcPlayerGwPoints(p, upcomingGWs[gwIndex].id, state);
+            });
+        } else {
+            let playersWithPts = state.squad.map(p => ({
+                ...p,
+                gwPts: calcPlayerGwPoints(p, upcomingGWs[gwIndex].id, state)
+            }));
+            
+            const gk = playersWithPts.filter(p => p.element_type === 1).sort((a, b) => b.gwPts - a.gwPts);
+            const def = playersWithPts.filter(p => p.element_type === 2).sort((a, b) => b.gwPts - a.gwPts);
+            const mid = playersWithPts.filter(p => p.element_type === 3).sort((a, b) => b.gwPts - a.gwPts);
+            const fwd = playersWithPts.filter(p => p.element_type === 4).sort((a, b) => b.gwPts - a.gwPts);
+            
+            let maxPoints = -999;
+            
+            for (let defCount = 3; defCount <= 5; defCount++) {
+                for (let midCount = 2; midCount <= 5; midCount++) {
+                    for (let fwdCount = 1; fwdCount <= 3; fwdCount++) {
+                        if (1 + defCount + midCount + fwdCount === 11) {
+                            let pts = 0;
+                            if (gk.length > 0) pts += gk[0].gwPts;
+                            for (let i = 0; i < defCount; i++) if (def[i]) pts += def[i].gwPts;
+                            for (let i = 0; i < midCount; i++) if (mid[i]) pts += mid[i].gwPts;
+                            for (let i = 0; i < fwdCount; i++) if (fwd[i]) pts += fwd[i].gwPts;
+                            
+                            if (pts > maxPoints) {
+                                maxPoints = pts;
+                            }
+                        }
+                    }
+                }
             }
-        });
+            totalPts = maxPoints !== -999 ? maxPoints : 0;
+        }
         
         let hitText = state.pointsHit > 0 ? ` <span class="text-danger">(-${state.pointsHit})</span>` : '';
         let finalPts = (totalPts - state.pointsHit).toFixed(1);
@@ -362,21 +437,11 @@ function renderPlannerGrid() {
     footer.innerHTML = footerHTML;
 }
 
-function setCaptain(slotId, isCaptain) {
-    baseSquadCache.forEach(p => {
-        if(isCaptain) {
-            if(p.slotId === slotId) { p.isCaptain = true; p.isVice = false; }
-            else { p.isCaptain = false; }
-        } else {
-            if(p.slotId === slotId) { p.isVice = true; p.isCaptain = false; }
-            else { p.isVice = false; }
-        }
-    });
-    
-    // Apply to current plannerState squad recursively
-    plannerState.forEach(state => {
-        state.squad.forEach(p => {
-            if(isCaptain) {
+function setCaptain(slotId, isCaptain, gwIndex = null) {
+    if (gwIndex === null) {
+        // Global update via left sidebar
+        baseSquadCache.forEach(p => {
+            if (isCaptain) {
                 if(p.slotId === slotId) { p.isCaptain = true; p.isVice = false; }
                 else { p.isCaptain = false; }
             } else {
@@ -384,10 +449,26 @@ function setCaptain(slotId, isCaptain) {
                 else { p.isVice = false; }
             }
         });
-    });
+        // Clear all future overrides so the base takes over
+        plannerState.forEach(state => {
+            if (isCaptain) state.captainOverride = null;
+            else state.viceOverride = null;
+        });
+    } else {
+        // Per-gameweek update
+        let state = plannerState[gwIndex];
+        if (isCaptain) {
+            state.captainOverride = slotId;
+            if (state.viceOverride === slotId) state.viceOverride = null;
+        } else {
+            state.viceOverride = slotId;
+            if (state.captainOverride === slotId) state.captainOverride = null;
+        }
+    }
     
     recalculateState();
     renderPlannerGrid();
+    if (typeof savePlannerState === 'function') savePlannerState();
 }
 
 function selectTransferOut(slotId, gwIndex = 0) {
@@ -1039,5 +1120,53 @@ function calculatePlayerPredictedPoints(player, fixture, upcomingGameweek) {
 
     // FPL Model averaging removed
     return playerPredictedPoints;
+}
+
+
+function savePlannerState() {
+    if (!plannerState || plannerState.length === 0) return;
+    
+    let savedData = {
+        startingFTs: parseInt(document.getElementById('startFts')?.value || 0),
+        baseSquadIds: baseSquadCache.map(p => p.id).sort().join(','),
+        weeks: plannerState.map(state => ({
+            gwId: state.gwId,
+            activeChip: state.activeChip,
+            plannedTransfers: state.plannedTransfers.map(t => ({...t})),
+            captainOverride: state.captainOverride || null,
+            viceOverride: state.viceOverride || null
+        }))
+    };
+    
+    localStorage.setItem('fpl_planner_save', JSON.stringify(savedData));
+}
+
+function loadPlannerState() {
+    let raw = localStorage.getItem('fpl_planner_save');
+    if (!raw) return false;
+    
+    try {
+        let savedData = JSON.parse(raw);
+        let currentBaseIds = baseSquadCache.map(p => p.id).sort().join(',');
+        
+        // If the squad fundamentally changed, don't load the plan
+        if (savedData.baseSquadIds !== currentBaseIds) return false;
+        
+        let startFtsInput = document.getElementById('startFts');
+        if (startFtsInput) startFtsInput.value = savedData.startingFTs;
+        
+        savedData.weeks.forEach((savedWeek, index) => {
+            if (index < plannerState.length && plannerState[index].gwId === savedWeek.gwId) {
+                plannerState[index].activeChip = savedWeek.activeChip;
+                plannerState[index].plannedTransfers = savedWeek.plannedTransfers;
+                plannerState[index].captainOverride = savedWeek.captainOverride;
+                plannerState[index].viceOverride = savedWeek.viceOverride;
+            }
+        });
+        return true;
+    } catch(e) {
+        console.error('Failed to load planner state', e);
+        return false;
+    }
 }
 
