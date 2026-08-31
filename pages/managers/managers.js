@@ -10,39 +10,7 @@ let points = 0;
 let seasonPoints = 0;
 let overallRating = 0;
 
-document.addEventListener('DOMContentLoaded', async () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    let entryId = urlParams.get('entry');
 
-    if (!entryId) {
-        const match = document.cookie.match(new RegExp('(^| )managerId=([^;]+)'));
-        if (match) {
-            entryId = match[2];
-        }
-    }
-
-    if (entryId) {
-        try {
-            managerId = entryId;
-            const manager = await getManager(entryId);
-            const managerTransfers = await getManagerTransfers(entryId);
-            const managerHistory = await getManagerHistory(entryId);
-        } catch (error) {
-            console.error('Error fetching player data:', error);
-        }
-    } else {
-        alert('No player ID provided.');
-    }
-
-    const rows = document.querySelectorAll('.row');
-
-    rows.forEach(row => {
-        const playerCount = row.children.length;
-
-        // Dynamic column layout for each row based on the number of filteredPlayers
-        row.style.gridTemplateColumns = `repeat(${playerCount}, 1fr)`;
-    });
-});
 
 function addPlayers(picks) {
     myPlayers = [];
@@ -314,6 +282,10 @@ function updateTeamUI() {
 
     // Handle missing players/ghost players
     fillMissingPlayers(filledPositions, subs);
+
+    document.querySelectorAll('.row').forEach(row => {
+        row.style.gridTemplateColumns = `repeat(${row.children.length}, 1fr)`;
+    });
 }
 
 // Function to assign the next available slot to the player
@@ -772,6 +744,15 @@ function updateTeamInfo(label, newValue) {
 }
 
 async function Initialize() {
+    const urlParams = new URLSearchParams(window.location.search);
+    let entryId = urlParams.get('entry');
+    if (!entryId) {
+        const match = document.cookie.match(new RegExp('(^| )managerId=([^;]+)'));
+        if (match) entryId = match[2];
+    }
+    if (entryId) managerId = parseInt(entryId, 10);
+    else alert('No player ID provided.');
+
     if (!gameweeks || gameweeks.length === 0) {
         document.body.innerHTML = `
             <div class="container mt-5 text-center text-white p-5 border border-danger rounded bg-dark">
@@ -788,7 +769,7 @@ async function Initialize() {
     filteredPlayers = allPlayers;
 
     selectedGameweek = getLastGameweekId();
-    updateGameweekInfo();
+    await updateGameweekInfo();
 }
 
 // Function to fetch and show player info

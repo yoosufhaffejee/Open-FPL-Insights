@@ -228,30 +228,30 @@ function renderTopTransfers() {
     transfersOutGridApi = agGrid.createGrid(document.getElementById('transfersOutGrid'), transfersOutGridOptions);
 }
 
-// Template Team (Top 50) Scraper
+// Template Team (Top 20) Scraper
 async function loadTemplateTeam() {
     templateLoaded = true; // Prevent re-running
     
     // Check session storage cache
-    const cached = sessionStorage.getItem('templateTeam_v2');
+    const cached = sessionStorage.getItem('templateTeam_v3');
     if (cached) {
         renderTemplatePitch(JSON.parse(cached));
         return;
     }
 
     try {
-        // 1. Fetch Top 50 Managers from Overall League (314)
+        // 1. Fetch Top 20 Managers from Overall League (314)
         const standingsRes = await fetch('https://gh-pages-cors.haffejeeyoosuf1.workers.dev/?https://fantasy.premierleague.com/api/leagues-classic/314/standings/');
         const standingsData = await standingsRes.json();
         
-        const top50 = standingsData.standings.results.slice(0, 50);
+        const top20 = standingsData.standings.results.slice(0, 20);
         
         // Find current Gameweek
         const currentEvent = gameweeks.find(e => e.is_current) || gameweeks.find(e => e.is_next);
         if (!currentEvent) throw new Error("No active gameweek found.");
         
-        // 2. Fetch picks for all 50 managers in parallel
-        const pickPromises = top50.map(manager => 
+        // 2. Fetch picks for all 20 managers in parallel
+        const pickPromises = top20.map(manager => 
             fetch(`https://gh-pages-cors.haffejeeyoosuf1.workers.dev/?https://fantasy.premierleague.com/api/entry/${manager.entry}/event/${currentEvent.id}/picks/`)
                 .then(res => res.json())
                 .catch(err => null) // Ignore failed fetches
@@ -295,7 +295,7 @@ async function loadTemplateTeam() {
         }
         
         // Cache and Render
-        sessionStorage.setItem('templateTeam_v2', JSON.stringify(squad));
+        sessionStorage.setItem('templateTeam_v3', JSON.stringify(squad));
         renderTemplatePitch(squad);
 
     } catch (error) {

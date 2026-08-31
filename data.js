@@ -140,7 +140,11 @@ const setupPage = async () => {
 };
 
 // Start the process
-setupPage();
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupPage);
+} else {
+    setupPage();
+}
 let isCalculating = false;
 
 window.calculateAllPredictions = async () => {
