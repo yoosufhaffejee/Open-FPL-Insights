@@ -476,6 +476,19 @@ function selectTransferOut(slotId, gwIndex = 0) {
         selectedTransferOut = null; 
     } else {
         selectedTransferOut = { slotId, gwIndex };
+        
+        // Auto-filter player selection grid by position
+        const state = plannerState[gwIndex] || plannerState[0];
+        if (state && state.squad) {
+            const playerInSlot = state.squad.find(p => p.slotId === slotId);
+            if (playerInSlot) {
+                const filterDropdown = document.getElementById('plannerViewFilter');
+                if (filterDropdown) {
+                    filterDropdown.value = 'pos_' + playerInSlot.element_type;
+                    renderPlannerPlayers(); // Re-render the sidebar list
+                }
+            }
+        }
     }
     renderPlannerGrid();
     renderPlannerPlayers();
@@ -512,13 +525,6 @@ function initPlannerSidebar() {
         let el = document.getElementById(id);
         if (el) {
             el.addEventListener('change', () => {
-                if(id === 'plannerSortBy') {
-                    let lbl = document.getElementById('plannerSortLabel');
-                    if(lbl) {
-                        let text = el.options[el.selectedIndex].text;
-                        lbl.textContent = text.length > 5 ? text.substring(0, 4) : text;
-                    }
-                }
                 renderPlannerPlayers();
             });
             if(id === 'plannerSearch') {
@@ -532,10 +538,10 @@ function initPlannerSidebar() {
         resetBtn.addEventListener('click', () => {
             document.getElementById('plannerSearch').value = '';
             document.getElementById('plannerViewFilter').value = 'all';
-            document.getElementById('plannerSortBy').value = 'total_points';
+            document.getElementById('plannerSortBy').value = 'predicted_pts';
             document.getElementById('plannerMaxPrice').value = '999';
-            let lbl = document.getElementById('plannerSortLabel');
-            if(lbl) lbl.textContent = 'Pts';
+            selectedTransferOut = null;
+            renderPlannerGrid();
             renderPlannerPlayers();
         });
     }
@@ -553,7 +559,7 @@ function renderPlannerPlayers() {
     
     let query = searchInput ? searchInput.value.toLowerCase() : '';
     let view = viewFilter ? viewFilter.value : 'all';
-    let sort = sortBy ? sortBy.value : 'total_points';
+    let sort = sortBy ? sortBy.value : 'predicted_pts';
     let max = maxPrice ? parseFloat(maxPrice.value) : 999;
 
     let filtered = allPlayers;
@@ -561,6 +567,11 @@ function renderPlannerPlayers() {
     let selectedGwId = upcomingGWs[0] ? upcomingGWs[0].id : 1;
     if (selectedTransferOut && upcomingGWs[selectedTransferOut.gwIndex]) {
         selectedGwId = upcomingGWs[selectedTransferOut.gwIndex].id;
+    }
+
+    let lbl = document.getElementById('plannerSortLabel');
+    if (lbl) {
+        lbl.innerHTML = `Exp<br><span style="font-size: 0.65rem;" class="text-white-50">GW${selectedGwId}</span>`;
     }
 
     // Assign predicted pts and fix formatting for form
