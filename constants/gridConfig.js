@@ -128,6 +128,7 @@ function setupGridOptions(filteredPlayers) {
                 field: 'form',
                 width: 100,
                 valueGetter: (params) => parseFloat(params.data.form),
+                valueFormatter: params => typeof params.value === 'number' ? params.value.toFixed(1) : "0.0",
                 cellClass: params => params.value >= 5 ? 'text-success fw-bold' : (params.value >= 3 ? 'text-warning' : '')
             },
             {
@@ -158,13 +159,15 @@ function setupGridOptions(filteredPlayers) {
                 headerName: 'DC per 90',
                 field: 'defensive_contribution_per_90',
                 width: 150,
-                valueGetter: (params) => parseFloat(params.data.defensive_contribution_per_90) || 0
+                valueGetter: (params) => parseFloat(params.data.defensive_contribution_per_90) || 0,
+                valueFormatter: params => typeof params.value === 'number' ? params.value.toFixed(2) : "0.00"
             },
             {
                 headerName: 'FPL Pred Pts',
                 field: 'ep_this',
                 width: 140,
                 valueGetter: (params) => isNaN(parseFloat(params.data.ep_this)) ? 0 : parseFloat(params.data.ep_this),
+                valueFormatter: params => typeof params.value === 'number' ? params.value.toFixed(2) : "0.00",
                 cellClass: params => params.value >= 6 ? 'text-success fw-bold' : (params.value >= 4 ? 'text-warning' : '')
             },
             {
@@ -172,13 +175,15 @@ function setupGridOptions(filteredPlayers) {
                 field: 'ep_next',
                 width: 170,
                 valueGetter: (params) => isNaN(parseFloat(params.data.ep_next)) ? 0 : parseFloat(params.data.ep_next),
+                valueFormatter: params => typeof params.value === 'number' ? params.value.toFixed(2) : "0.00",
                 cellClass: params => params.value >= 6 ? 'text-success fw-bold' : (params.value >= 4 ? 'text-warning' : '')
             },
 
             {
                 headerName: 'Value Season',
                 field: 'value_season',
-                valueGetter: (params) => isNaN(parseFloat(params.data.value_season)) ? 0 : parseFloat(params.data.value_season)
+                valueGetter: (params) => isNaN(parseFloat(params.data.value_season)) ? 0 : parseFloat(params.data.value_season),
+                valueFormatter: params => typeof params.value === 'number' ? params.value.toFixed(2) : "0.00"
             },
             { headerName: 'Minutes', field: 'minutes' },
             { headerName: 'Goals Scored', field: 'goals_scored' },
@@ -196,43 +201,51 @@ function setupGridOptions(filteredPlayers) {
             {
                 headerName: 'Influence',
                 field: 'influence',
-                valueGetter: (params) => isNaN(parseFloat(params.data.influence)) ? 0 : parseFloat(params.data.influence)
+                valueGetter: (params) => isNaN(parseFloat(params.data.influence)) ? 0 : parseFloat(params.data.influence),
+                valueFormatter: params => typeof params.value === 'number' ? params.value.toFixed(2) : "0.00"
             },
             {
                 headerName: 'Creativity',
                 field: 'creativity',
-                valueGetter: (params) => isNaN(parseFloat(params.data.creativity)) ? 0 : parseFloat(params.data.creativity)
+                valueGetter: (params) => isNaN(parseFloat(params.data.creativity)) ? 0 : parseFloat(params.data.creativity),
+                valueFormatter: params => typeof params.value === 'number' ? params.value.toFixed(2) : "0.00"
             },
             {
                 headerName: 'Threat',
                 field: 'threat',
-                valueGetter: (params) => isNaN(parseFloat(params.data.threat)) ? 0 : parseFloat(params.data.threat)
+                valueGetter: (params) => isNaN(parseFloat(params.data.threat)) ? 0 : parseFloat(params.data.threat),
+                valueFormatter: params => typeof params.value === 'number' ? params.value.toFixed(2) : "0.00"
             },
             {
                 headerName: 'ICT Index',
                 field: 'ict_index',
-                valueGetter: (params) => isNaN(parseFloat(params.data.ict_index)) ? 0 : parseFloat(params.data.ict_index)
+                valueGetter: (params) => isNaN(parseFloat(params.data.ict_index)) ? 0 : parseFloat(params.data.ict_index),
+                valueFormatter: params => typeof params.value === 'number' ? params.value.toFixed(2) : "0.00"
             },
             { headerName: 'Starts', field: 'starts' },
             {
                 headerName: 'Expected Goals',
                 field: 'expected_goals',
-                valueGetter: (params) => isNaN(parseFloat(params.data.expected_goals)) ? 0 : parseFloat(params.data.expected_goals)
+                valueGetter: (params) => isNaN(parseFloat(params.data.expected_goals)) ? 0 : parseFloat(params.data.expected_goals),
+                valueFormatter: params => typeof params.value === 'number' ? params.value.toFixed(2) : "0.00"
             },
             {
                 headerName: 'Expected Assists',
                 field: 'expected_assists',
-                valueGetter: (params) => isNaN(parseFloat(params.data.expected_assists)) ? 0 : parseFloat(params.data.expected_assists)
+                valueGetter: (params) => isNaN(parseFloat(params.data.expected_assists)) ? 0 : parseFloat(params.data.expected_assists),
+                valueFormatter: params => typeof params.value === 'number' ? params.value.toFixed(2) : "0.00"
             },
             {
                 headerName: 'Expected Goal Involvements',
                 field: 'expected_goal_involvements',
-                valueGetter: (params) => isNaN(parseFloat(params.data.expected_goal_involvements)) ? 0 : parseFloat(params.data.expected_goal_involvements)
+                valueGetter: (params) => isNaN(parseFloat(params.data.expected_goal_involvements)) ? 0 : parseFloat(params.data.expected_goal_involvements),
+                valueFormatter: params => typeof params.value === 'number' ? params.value.toFixed(2) : "0.00"
             },
             {
                 headerName: 'Expected Goals Conceded',
                 field: 'expected_goals_conceded',
-                valueGetter: (params) => isNaN(parseFloat(params.data.expected_goals_conceded)) ? 0 : parseFloat(params.data.expected_goals_conceded)
+                valueGetter: (params) => isNaN(parseFloat(params.data.expected_goals_conceded)) ? 0 : parseFloat(params.data.expected_goals_conceded),
+                valueFormatter: params => typeof params.value === 'number' ? params.value.toFixed(2) : "0.00"
             },
             { headerName: 'Influence Rank', field: 'influence_rank' },
             { headerName: 'Influence Rank Type', field: 'influence_rank_type' },
@@ -272,29 +285,39 @@ function setupGridOptions(filteredPlayers) {
             {
                 headerName: 'Expected Goals per 90',
                 field: 'expected_goals_per_90',
-                valueGetter: (params) => isNaN(parseFloat(params.data.expected_goals_per_90)) ? 0 : parseFloat(params.data.expected_goals_per_90)
+                valueGetter: (params) => isNaN(parseFloat(params.data.expected_goals_per_90)) ? 0 : parseFloat(params.data.expected_goals_per_90),
+                valueFormatter: params => typeof params.value === 'number' ? params.value.toFixed(2) : "0.00"
             },
             {
                 headerName: 'Saves per 90',
                 field: 'saves_per_90',
-                valueGetter: (params) => isNaN(parseFloat(params.data.saves_per_90)) ? 0 : parseFloat(params.data.saves_per_90)
+                valueGetter: (params) => isNaN(parseFloat(params.data.saves_per_90)) ? 0 : parseFloat(params.data.saves_per_90),
+                valueFormatter: params => typeof params.value === 'number' ? params.value.toFixed(2) : "0.00"
             },
             {
                 headerName: 'Expected Assists per 90',
                 field: 'expected_assists_per_90',
-                valueGetter: (params) => isNaN(parseFloat(params.data.expected_assists_per_90)) ? 0 : parseFloat(params.data.expected_assists_per_90)
+                valueGetter: (params) => isNaN(parseFloat(params.data.expected_assists_per_90)) ? 0 : parseFloat(params.data.expected_assists_per_90),
+                valueFormatter: params => typeof params.value === 'number' ? params.value.toFixed(2) : "0.00"
             },
             {
                 headerName: 'Expected Goal Involvements per 90',
                 field: 'expected_goal_involvements_per_90',
-                valueGetter: (params) => isNaN(parseFloat(params.data.expected_goal_involvements_per_90)) ? 0 : parseFloat(params.data.expected_goal_involvements_per_90)
+                valueGetter: (params) => isNaN(parseFloat(params.data.expected_goal_involvements_per_90)) ? 0 : parseFloat(params.data.expected_goal_involvements_per_90),
+                valueFormatter: params => typeof params.value === 'number' ? params.value.toFixed(2) : "0.00"
             },
             {
                 headerName: 'Expected Goals Conceded per 90',
                 field: 'expected_goals_conceded_per_90',
-                valueGetter: (params) => isNaN(parseFloat(params.data.expected_goals_conceded_per_90)) ? 0 : parseFloat(params.data.expected_goals_conceded_per_90)
+                valueGetter: (params) => isNaN(parseFloat(params.data.expected_goals_conceded_per_90)) ? 0 : parseFloat(params.data.expected_goals_conceded_per_90),
+                valueFormatter: params => typeof params.value === 'number' ? params.value.toFixed(2) : "0.00"
             },
-            { headerName: 'Goals Conceded per 90', field: 'goals_conceded_per_90' },
+            { 
+                headerName: 'Goals Conceded per 90', 
+                field: 'goals_conceded_per_90',
+                valueGetter: (params) => isNaN(parseFloat(params.data.goals_conceded_per_90)) ? 0 : parseFloat(params.data.goals_conceded_per_90),
+                valueFormatter: params => typeof params.value === 'number' ? params.value.toFixed(2) : "0.00"
+            },
             { field: 'now_cost_rank', headerName: "Now Cost Rank" },
             { field: 'now_cost_rank_type', headerName: "Now Cost Rank Type" },
             {
@@ -324,10 +347,14 @@ function setupGridOptions(filteredPlayers) {
             {
                 field: 'starts_per_90',
                 headerName: "Starts per 90",
+                valueGetter: (params) => isNaN(parseFloat(params.data.starts_per_90)) ? 0 : parseFloat(params.data.starts_per_90),
+                valueFormatter: params => typeof params.value === 'number' ? params.value.toFixed(2) : "0.00"
             },
             {
                 field: 'clean_sheets_per_90',
                 headerName: "Clean Sheets per 90",
+                valueGetter: (params) => isNaN(parseFloat(params.data.clean_sheets_per_90)) ? 0 : parseFloat(params.data.clean_sheets_per_90),
+                valueFormatter: params => typeof params.value === 'number' ? params.value.toFixed(2) : "0.00"
             },
             {
                 field: 'news',
