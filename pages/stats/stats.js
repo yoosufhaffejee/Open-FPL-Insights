@@ -503,6 +503,9 @@ async function renderStandings() {
 
 // --- Advanced Visualizations Logic ---
 let scatterChart = null;
+let xaScatterChart = null;
+let xgcScatterChart = null;
+let defconScatterChart = null;
 
 const renderScatterChart = () => {
     const ctx = document.getElementById('xgScatterChart').getContext('2d');
@@ -577,6 +580,241 @@ const renderScatterChart = () => {
     });
 };
 
+const renderXAScatterChart = () => {
+    const ctx = document.getElementById('xaScatterChart').getContext('2d');
+    
+    const dataPoints = allPlayers.filter(p => p.minutes > 90)
+        .map(p => ({
+            x: parseFloat(p.expected_assists) || 0,
+            y: parseFloat(p.assists) || 0,
+            player: p
+        }));
+
+    if (xaScatterChart) xaScatterChart.destroy();
+
+    xaScatterChart = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Assists vs xA',
+                data: dataPoints,
+                backgroundColor: 'rgba(255, 193, 7, 0.6)',
+                borderColor: '#ffc107',
+                pointRadius: 5,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const p = context.raw.player;
+                            return `${p.web_name} | Assists: ${context.raw.y}, xA: ${context.raw.x.toFixed(2)}`;
+                        }
+                    }
+                },
+                legend: { display: false }
+            },
+            scales: {
+                x: {
+                    title: { display: true, text: 'Expected Assists (xA)', color: '#fff' },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    ticks: { color: '#adb5bd' }
+                },
+                y: {
+                    title: { display: true, text: 'Actual Assists', color: '#fff' },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    ticks: { color: '#adb5bd' }
+                }
+            }
+        },
+        plugins: [{
+            id: 'diagonalLineXA',
+            beforeDraw: chart => {
+                const { ctx, chartArea: { top, right, bottom, left }, scales: { x, y } } = chart;
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(x.getPixelForValue(0), y.getPixelForValue(0));
+                const maxVal = Math.min(x.max, y.max);
+                ctx.lineTo(x.getPixelForValue(maxVal), y.getPixelForValue(maxVal));
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.restore();
+            }
+        }]
+    });
+};
+
+const renderXGCScatterChart = () => {
+    const ctx = document.getElementById('xgcScatterChart').getContext('2d');
+    
+    // GKs and DEFs only
+    const dataPoints = allPlayers.filter(p => (p.element_type === 1 || p.element_type === 2) && p.minutes > 90)
+        .map(p => ({
+            x: parseFloat(p.expected_goals_conceded) || 0,
+            y: parseFloat(p.goals_conceded) || 0,
+            player: p
+        }));
+
+    if (xgcScatterChart) xgcScatterChart.destroy();
+
+    xgcScatterChart = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Goals Conceded vs xGC',
+                data: dataPoints,
+                backgroundColor: 'rgba(220, 53, 69, 0.6)',
+                borderColor: '#dc3545',
+                pointRadius: 5,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const p = context.raw.player;
+                            return `${p.web_name} | Conceded: ${context.raw.y}, xGC: ${context.raw.x.toFixed(2)}`;
+                        }
+                    }
+                },
+                legend: { display: false }
+            },
+            scales: {
+                x: {
+                    title: { display: true, text: 'Expected Goals Conceded (xGC)', color: '#fff' },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    ticks: { color: '#adb5bd' }
+                },
+                y: {
+                    title: { display: true, text: 'Actual Goals Conceded', color: '#fff' },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    ticks: { color: '#adb5bd' }
+                }
+            }
+        },
+        plugins: [{
+            id: 'diagonalLineXGC',
+            beforeDraw: chart => {
+                const { ctx, chartArea: { top, right, bottom, left }, scales: { x, y } } = chart;
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(x.getPixelForValue(0), y.getPixelForValue(0));
+                const maxVal = Math.min(x.max, y.max);
+                ctx.lineTo(x.getPixelForValue(maxVal), y.getPixelForValue(maxVal));
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.restore();
+            }
+        }]
+    });
+};
+
+const renderDefconScatterChart = () => {
+    const ctx = document.getElementById('defconScatterChart').getContext('2d');
+    
+    const dataPoints = allPlayers.filter(p => p.minutes > 90)
+        .map(p => ({
+            x: parseFloat(p.defensive_contribution_per_90) || 0,
+            y: parseFloat(p.points_per_game) || 0,
+            player: p
+        }));
+
+    if (defconScatterChart) defconScatterChart.destroy();
+
+    defconScatterChart = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: [
+                {
+                    label: 'Defenders (Threshold 10)',
+                    data: dataPoints.filter(dp => dp.player.element_type === 2),
+                    backgroundColor: 'rgba(25, 135, 84, 0.6)',
+                    borderColor: '#198754',
+                    pointRadius: 5,
+                    pointHoverRadius: 8
+                },
+                {
+                    label: 'Others (Threshold 12)',
+                    data: dataPoints.filter(dp => dp.player.element_type !== 2),
+                    backgroundColor: 'rgba(13, 110, 253, 0.6)',
+                    borderColor: '#0d6efd',
+                    pointRadius: 5,
+                    pointHoverRadius: 8
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const p = context.raw.player;
+                            return `${p.web_name} | DEFCON/90: ${context.raw.x.toFixed(2)}, PPG: ${context.raw.y}`;
+                        }
+                    }
+                },
+                legend: { display: true, labels: { color: '#fff' } }
+            },
+            scales: {
+                x: {
+                    title: { display: true, text: 'Defensive Contribution per 90', color: '#fff' },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    ticks: { color: '#adb5bd' }
+                },
+                y: {
+                    title: { display: true, text: 'Points Per Game', color: '#fff' },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    ticks: { color: '#adb5bd' }
+                }
+            }
+        },
+        plugins: [{
+            id: 'verticalLines',
+            beforeDraw: chart => {
+                const { ctx, chartArea: { top, right, bottom, left }, scales: { x, y } } = chart;
+                ctx.save();
+                
+                // Line at 10 (Defenders)
+                const x10 = x.getPixelForValue(10);
+                if (x10 >= left && x10 <= right) {
+                    ctx.beginPath();
+                    ctx.moveTo(x10, top);
+                    ctx.lineTo(x10, bottom);
+                    ctx.lineWidth = 1;
+                    ctx.strokeStyle = '#198754';
+                    ctx.setLineDash([5, 5]);
+                    ctx.stroke();
+                }
+
+                // Line at 12 (Others)
+                const x12 = x.getPixelForValue(12);
+                if (x12 >= left && x12 <= right) {
+                    ctx.beginPath();
+                    ctx.moveTo(x12, top);
+                    ctx.lineTo(x12, bottom);
+                    ctx.lineWidth = 1;
+                    ctx.strokeStyle = '#0d6efd';
+                    ctx.setLineDash([5, 5]);
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+        }]
+    });
+};
+
 const renderTeamDefense = () => {
     const teamStats = teams.map(team => {
         // Find all goalkeepers for this team
@@ -631,6 +869,9 @@ window.addEventListener('DOMContentLoaded', () => {
             setupSearch('player2-search', 'player2-results', false);
             renderStandings();
             renderScatterChart();
+            renderXAScatterChart();
+            renderXGCScatterChart();
+            renderDefconScatterChart();
             renderTeamDefense();
             
             // Live refresh for the league table

@@ -175,6 +175,24 @@
             <p class="text-muted text-center mt-3 small">Players in the top left are overperforming their xG. Players in the bottom right are underperforming (due for goals).</p>
         </div>
 
+        <h2 class="mb-4">Advanced Analytics: Assists vs Expected Assists (xA)</h2>
+        <div class="card bg-dark border-secondary p-4 mb-5">
+            <canvas id="xaScatterChart" width="100%" height="40"></canvas>
+            <p class="text-muted text-center mt-3 small">Players in the top left are overperforming their xA. Players in the bottom right are underperforming (due for assists).</p>
+        </div>
+
+        <h2 class="mb-4">Advanced Analytics: Goals Conceded vs Expected Goals Conceded (xGC)</h2>
+        <div class="card bg-dark border-secondary p-4 mb-5">
+            <canvas id="xgcScatterChart" width="100%" height="40"></canvas>
+            <p class="text-muted text-center mt-3 small">Goalkeepers and Defenders. Players above the line are conceding more than expected. Players below are conceding less than expected.</p>
+        </div>
+
+        <h2 class="mb-4">Advanced Analytics: Defensive Contribution (DEFCON) per 90</h2>
+        <div class="card bg-dark border-secondary p-4 mb-5">
+            <canvas id="defconScatterChart" width="100%" height="40"></canvas>
+            <p class="text-muted text-center mt-3 small">Vertical lines indicate thresholds for points (10 for defenders, 12 for others). Target players who consistently score just below or above the threshold.</p>
+        </div>
+
         <h2 class="mb-4">Team Defense Targets (Who to Captain)</h2>
         <div class="card bg-dark border-secondary p-4">
             <p class="text-muted mb-3">Ranked by Expected Goals Conceded (xGC). Target teams at the top when selecting your captain.</p>
