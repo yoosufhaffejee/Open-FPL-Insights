@@ -561,7 +561,7 @@ function updateTeamUI() {
     });
     
     if (rating <= 0) {
-        let maxPoints = getIdealMaxPointsForGW(gameweek, getExpectedPoints, allPlayers, fixtures);
+        let maxPoints = getIdealMaxPointsForGW(selectedGameweek, getExpectedPoints, allPlayers, fixtures);
         if (maxPoints === 0 || maxPoints == null) maxPoints = 70;
         rating = (predictedPoints / maxPoints) * 100;
         rating = Math.min(100, Math.max(0, rating));
