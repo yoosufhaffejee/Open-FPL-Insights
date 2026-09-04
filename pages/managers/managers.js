@@ -148,7 +148,10 @@ async function getLatestPicks(gameweek) {
     else
     {
         document.getElementById("points").hidden = true;
-        rating = (predictedPoints / 70) * 100;
+        let maxPoints = getIdealMaxPointsForGW(gameweek, getExpectedPoints, allPlayers, fixtures);
+        if (maxPoints === 0 || maxPoints == null) maxPoints = 70;
+        rating = (predictedPoints / maxPoints) * 100;
+        rating = Math.min(100, Math.max(0, rating));
         updateTeamInfo("GW Rating", parseInt(rating) + '%');
     }
 }
