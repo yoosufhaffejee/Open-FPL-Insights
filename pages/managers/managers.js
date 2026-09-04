@@ -9,6 +9,7 @@ let rating = 0;
 let points = 0;
 let seasonPoints = 0;
 let overallRating = 0;
+let isPreviewMode = false;
 
 
 
@@ -126,13 +127,18 @@ async function getLatestPicks(gameweek) {
         managerPicks = [];
     }
 
-    if (managerPicks.picks) {
-        addPlayers(managerPicks.picks);
+    if (!isPreviewMode) {
+        if (managerPicks.picks) {
+            addPlayers(managerPicks.picks);
+        }
+    } else {
+        autoSelectStartingXI(gameweek);
+        updateTeamUI();
     }
 
     rating = 0;
     points = 0;
-    if (managerPicks.entry_history && gameweek <= getLastGameweekId()) {
+    if (managerPicks.entry_history && gameweek <= getLastGameweekId() && !isPreviewMode) {
         document.getElementById("points").hidden = false;
         points = managerPicks.entry_history.points;
         updateTeamInfo("Points", points);
@@ -141,6 +147,7 @@ async function getLatestPicks(gameweek) {
     }
     else
     {
+        document.getElementById("points").hidden = true;
         rating = (predictedPoints / 70) * 100;
         updateTeamInfo("GW Rating", parseInt(rating) + '%');
     }
@@ -219,7 +226,7 @@ function updateTeamUI() {
     document.querySelectorAll('.row').forEach(row => row.innerHTML = '');
 
     predictedPoints = 0;
-    let bankBalance = 100.0;
+    bankBalance = 100.0;
     if (managerId > 0 && managerPicks && managerPicks.entry_history) {
         let bank = managerPicks.entry_history.bank / 10;
         let originalCost = 0;
@@ -991,3 +998,337 @@ function copyPlayers() {
     alert('Team copied to your main Team view for Gameweek ' + selectedGameweek + '!');
 }
 
+
+function applyTransfer(suggestion) {
+    // Close modal
+    const modalEl = document.getElementById('suggestedTransfersModal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+
+    // Remove outs and add ins
+    suggestion.outs.forEach(pOut => {
+        const idx = myPlayers.findIndex(p => p.id === pOut.id);
+        if (idx !== -1) {
+            myPlayers[idx] = {
+                web_name: 'Player',
+                now_cost: 0,
+                element_type: pOut.element_type,
+                isSub: myPlayers[idx].isSub,
+                slotId: myPlayers[idx].slotId,
+                isCaptain: false,
+                isVice: false
+            };
+        }
+    });
+
+    suggestion.ins.forEach(inId => {
+        const pIn = allPlayers.find(p => p.id === inId);
+        if (pIn) {
+            // Find a placeholder in myPlayers of the same element_type and replace it
+            const placeholderIdx = myPlayers.findIndex(p => p.element_type === pIn.element_type && p.now_cost === 0);
+            if (placeholderIdx !== -1) {
+                const placeholder = myPlayers[placeholderIdx];
+                myPlayers[placeholderIdx] = { ...pIn, isSub: placeholder.isSub, slotId: placeholder.slotId, isCaptain: false, isVice: false };
+            } else {
+                myPlayers.push({ ...pIn, isSub: true, isCaptain: false, isVice: false });
+            }
+        }
+    });
+
+    updateTeamUI();
+}
+
+function openSuggestedTransfersModal() {
+    const modalContent = document.getElementById('suggestedTransfersContent');
+    modalContent.innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-success mb-3" role="status" style="width: 2.5rem; height: 2.5rem;"></div>
+            <p class="text-muted mb-0">Analysing your squad over the next 5 gameweeks...</p>
+        </div>
+    `;
+
+    const modal = new bootstrap.Modal(document.getElementById('suggestedTransfersModal'));
+    modal.show();
+
+    setTimeout(() => {
+        try {
+            let currentTeamIds = myPlayers.filter(p => p.now_cost > 0).map(p => p.id);
+            if (currentTeamIds.length === 0) {
+                modalContent.innerHTML = '<p class="text-warning p-3">Please add players to your team first.</p>';
+                return;
+            }
+
+            let suggestions = calculateSuggestedTransfers(currentTeamIds, allPlayers, fixtures, selectedGameweek, bankBalance);
+
+            if (suggestions.length === 0) {
+                modalContent.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-check-circle text-success mb-3" style="font-size: 3rem;"></i>
+                        <h5 class="text-white mb-2">Hold Your Transfers</h5>
+                        <p class="text-muted">No transfers are currently worth making. Roll your free transfer — your squad looks strong for the next 5 gameweeks.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const positionLabels = { 1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD' };
+
+            let html = `<div class="transfer-list d-flex flex-column gap-3 pb-2">`;
+
+            suggestions.forEach((s, idx) => {
+                const isHit = s.type > 1;
+                const hitPoints = (s.type - 1) * 4;
+                const typeLabel = s.type === 1 ? 'Free Transfer' : s.type === 2 ? '2 Transfers' : '3 Transfers';
+                const typeBadgeCls = s.type === 1 ? 'bg-success' : s.type === 2 ? 'bg-warning text-dark' : 'bg-danger';
+                const costDiff = s.costDiff;
+                const costStr = (costDiff >= 0 ? '+' : '') + '£' + costDiff.toFixed(1) + 'm';
+                const costCls = costDiff >= 0 ? 'text-success' : 'text-danger';
+
+                const renderPlayer = (p, isSell) => {
+                    const img = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${p.team_code}-110.webp`;
+                    const pos = positionLabels[p.element_type] || '';
+                    const priceCls = isSell ? 'text-danger' : 'text-success';
+                    return `
+                        <div class="transfer-player text-center">
+                            <img src="${img}" width="44" height="auto" onerror="this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-110.webp'" alt="">
+                            <div class="mt-1 fw-semibold text-white" style="font-size:0.82rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:80px;">${p.web_name}</div>
+                            <div class="text-muted" style="font-size:0.72rem;">${pos}</div>
+                            <div class="${priceCls} fw-bold" style="font-size:0.78rem;">£${(p.now_cost / 10).toFixed(1)}m</div>
+                        </div>
+                    `;
+                };
+
+                const sellPlayers = s.outs.map(p => renderPlayer(p, true)).join('');
+                const buyPlayers = s.ins.map(p => renderPlayer(p, false)).join('');
+
+                html += `
+                    <div class="transfer-card border border-secondary rounded-3 p-3" style="background: #1a1a1a;">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="badge ${typeBadgeCls} px-2 py-1" style="font-size:0.75rem;">${typeLabel}</span>
+                            ${isHit ? `<span class="badge bg-danger bg-opacity-25 text-danger border border-danger px-2 py-1" style="font-size:0.72rem;">? -${hitPoints} point hit</span>` : '<span class="badge bg-success bg-opacity-25 text-success border border-success px-2 py-1" style="font-size:0.72rem;">? No hit</span>'}
+                            <span class="fw-bold text-success" style="font-size:1rem;">+${s.xpDiff.toFixed(1)} <span class="text-muted fw-normal" style="font-size:0.75rem;">xP</span></span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="transfer-section d-flex gap-2 justify-content-end flex-wrap" style="flex:1;">
+                                ${sellPlayers}
+                            </div>
+                            <div class="transfer-arrow text-muted px-2" style="font-size:1.4rem;">?</div>
+                            <div class="transfer-section d-flex gap-2 justify-content-start flex-wrap" style="flex:1;">
+                                ${buyPlayers}
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-secondary">
+                            <div class="d-flex gap-3 text-muted" style="font-size:0.78rem;">
+                                <span>Out xP: <strong class="text-white">${s.outXp.toFixed(1)}</strong></span>
+                                <span>In xP: <strong class="text-success">${s.inXp.toFixed(1)}</strong></span>
+                                <span>Cost: <strong class="${costCls}">${costStr}</strong></span>
+                            </div>
+                            <button class="btn btn-sm btn-outline-success" onclick='applyTransfer(${JSON.stringify({
+                                type: s.type,
+                                outs: s.outs.map(p => ({ id: p.id, element_type: p.element_type, web_name: p.web_name })),
+                                ins: s.ins.map(p => p.id)
+                            })})' style="font-size:0.78rem; padding: 4px 12px;">
+                                Preview Transfer
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+            modalContent.innerHTML = html;
+
+        } catch(e) {
+            console.error(e);
+            modalContent.innerHTML = '<p class="text-danger p-3">Error calculating transfers. Please try recalculating predictions first.</p>';
+        }
+    }, 100);
+}
+
+
+function applyTransfer(suggestion) {
+    // Close modal
+    const modalEl = document.getElementById('suggestedTransfersModal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+
+    // Remove outs and add ins
+    suggestion.outs.forEach(pOut => {
+        const idx = myPlayers.findIndex(p => p.id === pOut.id);
+        if (idx !== -1) {
+            myPlayers[idx] = {
+                web_name: 'Player',
+                now_cost: 0,
+                element_type: pOut.element_type,
+                isSub: myPlayers[idx].isSub,
+                slotId: myPlayers[idx].slotId,
+                isCaptain: false,
+                isVice: false
+            };
+        }
+    });
+
+    suggestion.ins.forEach(inId => {
+        const pIn = allPlayers.find(p => p.id === inId);
+        if (pIn) {
+            // Find a placeholder in myPlayers of the same element_type and replace it
+            const placeholderIdx = myPlayers.findIndex(p => p.element_type === pIn.element_type && p.now_cost === 0);
+            if (placeholderIdx !== -1) {
+                const placeholder = myPlayers[placeholderIdx];
+                myPlayers[placeholderIdx] = { ...pIn, isSub: placeholder.isSub, slotId: placeholder.slotId, isCaptain: false, isVice: false };
+            } else {
+                myPlayers.push({ ...pIn, isSub: true, isCaptain: false, isVice: false });
+            }
+        }
+    });
+
+    isPreviewMode = true;
+    updateTeamUI();
+}
+
+function openSuggestedTransfersModal() {
+    const modalContent = document.getElementById('suggestedTransfersContent');
+    modalContent.innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-success mb-3" role="status" style="width: 2.5rem; height: 2.5rem;"></div>
+            <p class="text-muted mb-0">Analysing your squad over the next 5 gameweeks...</p>
+        </div>
+    `;
+
+    const modal = new bootstrap.Modal(document.getElementById('suggestedTransfersModal'));
+    modal.show();
+
+    setTimeout(() => {
+        try {
+            let currentTeamIds = myPlayers.filter(p => p.now_cost > 0).map(p => p.id);
+            if (currentTeamIds.length === 0) {
+                modalContent.innerHTML = '<p class="text-warning p-3">Please add players to your team first.</p>';
+                return;
+            }
+
+            let suggestions = calculateSuggestedTransfers(currentTeamIds, allPlayers, fixtures, selectedGameweek, bankBalance);
+
+            if (suggestions.length === 0) {
+                modalContent.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-check-circle text-success mb-3" style="font-size: 3rem;"></i>
+                        <h5 class="text-white mb-2">Hold Your Transfers</h5>
+                        <p class="text-muted">No transfers are currently worth making. Roll your free transfer — your squad looks strong for the next 5 gameweeks.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const positionLabels = { 1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD' };
+
+            let html = `<div class="transfer-list d-flex flex-column gap-3 pb-2">`;
+
+            suggestions.forEach((s, idx) => {
+                const isHit = s.type > 1;
+                const hitPoints = (s.type - 1) * 4;
+                const typeLabel = s.type === 1 ? 'Free Transfer' : s.type === 2 ? '2 Transfers' : '3 Transfers';
+                const typeBadgeCls = s.type === 1 ? 'bg-success' : s.type === 2 ? 'bg-warning text-dark' : 'bg-danger';
+                const costDiff = s.costDiff;
+                const costStr = (costDiff >= 0 ? '+' : '') + '£' + costDiff.toFixed(1) + 'm';
+                const costCls = costDiff >= 0 ? 'text-success' : 'text-danger';
+
+                const renderPlayer = (p, isSell) => {
+                    const isGK = p.element_type === 1;
+                    const img = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${p.team_code}${isGK ? '_1' : ''}-110.webp`;
+                    const pos = positionLabels[p.element_type] || '';
+                    const priceCls = isSell ? 'text-danger' : 'text-success';
+                    return `
+                        <div class="transfer-player text-center">
+                            <img src="${img}" width="44" height="auto" onerror="this.src='https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_0-110.webp'" alt="">
+                            <div class="mt-1 fw-semibold text-white" style="font-size:0.82rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:80px;">${p.web_name}</div>
+                            <div class="text-muted" style="font-size:0.72rem;">${pos}</div>
+                            <div class="${priceCls} fw-bold" style="font-size:0.78rem;">£${(p.now_cost / 10).toFixed(1)}m</div>
+                        </div>
+                    `;
+                };
+
+                const sellPlayers = s.outs.map(p => renderPlayer(p, true)).join('');
+                const buyPlayers = s.ins.map(p => renderPlayer(p, false)).join('');
+
+                html += `
+                    <div class="transfer-card border border-secondary rounded-3 p-3" style="background: #1a1a1a;">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="badge ${typeBadgeCls} px-2 py-1" style="font-size:0.75rem;">${typeLabel}</span>
+                            ${isHit ? `<span class="badge bg-danger bg-opacity-25 text-danger border border-danger px-2 py-1" style="font-size:0.72rem;">⚠ -${hitPoints} point hit</span>` : '<span class="badge bg-success bg-opacity-25 text-success border border-success px-2 py-1" style="font-size:0.72rem;">✓ No hit</span>'}
+                            <span class="fw-bold text-success" style="font-size:1rem;">+${s.xpDiff.toFixed(1)} <span class="text-muted fw-normal" style="font-size:0.75rem;">xP</span></span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="transfer-section d-flex gap-2 justify-content-end flex-wrap" style="flex:1;">
+                                ${sellPlayers}
+                            </div>
+                            <div class="transfer-arrow text-muted px-2" style="font-size:1.4rem;">→</div>
+                            <div class="transfer-section d-flex gap-2 justify-content-start flex-wrap" style="flex:1;">
+                                ${buyPlayers}
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-secondary">
+                            <div class="d-flex gap-3 text-muted" style="font-size:0.78rem;">
+                                <span>Out xP: <strong class="text-white">${s.outXp.toFixed(1)}</strong></span>
+                                <span>In xP: <strong class="text-success">${s.inXp.toFixed(1)}</strong></span>
+                                <span>Cost: <strong class="${costCls}">${costStr}</strong></span>
+                            </div>
+                            <button class="btn btn-sm btn-outline-success" onclick='applyTransfer(${JSON.stringify({
+                                type: s.type,
+                                outs: s.outs.map(p => ({ id: p.id, element_type: p.element_type, web_name: p.web_name })),
+                                ins: s.ins.map(p => p.id)
+                            })})' style="font-size:0.78rem; padding: 4px 12px;">
+                                Preview Transfer
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+            modalContent.innerHTML = html;
+
+        } catch(e) {
+            console.error(e);
+            modalContent.innerHTML = '<p class="text-danger p-3">Error calculating transfers. Please try recalculating predictions first.</p>';
+        }
+    }, 100);
+}
+
+
+function autoSelectStartingXI(gwId) {
+    const gwData = gameweeks.find(g => g.id === gwId);
+    if (!gwData) return;
+
+    // 1. Calculate predicted_points for myPlayers
+    myPlayers.forEach(p => {
+        const fix = getPlayerFixture(p, gwId);
+        if (fix) {
+            let pts = calculatePlayerPredictedPoints(p, fix, gwData);
+            p.predicted_points = pts !== '?' ? parseFloat(pts) : 0;
+        } else {
+            p.predicted_points = 0;
+        }
+    });
+
+    // 2. Pass to optimizeTeam to get best 11
+    const best11 = optimizeTeam(myPlayers);
+    
+    // 3. Mark isSub
+    myPlayers.forEach(p => {
+        p.isSub = !best11.some(b => b.id === p.id);
+        p.isCaptain = false;
+        p.isVice = false;
+    });
+
+    // 4. Mark Captain & Vice
+    if (best11.length > 0) {
+        let sortedBest = [...best11].sort((a, b) => b.predicted_points - a.predicted_points);
+        const captainId = sortedBest[0].id;
+        const viceId = sortedBest.length > 1 ? sortedBest[1].id : null;
+        
+        myPlayers.forEach(p => {
+            if (p.id === captainId) p.isCaptain = true;
+            if (viceId && p.id === viceId) p.isVice = true;
+        });
+    }
+}

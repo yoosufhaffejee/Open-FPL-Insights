@@ -1699,6 +1699,7 @@ function autoPickPlayers() {
         if (grid) { grid.updateGridOptions({ rowData: filteredPlayers }); }
 
         updateTeamUI();
+        document.getElementById('saveButton').style.display = 'inline-block';
     }
 }
 
@@ -1857,7 +1858,8 @@ function openSuggestedTransfersModal() {
                 const costCls = costDiff >= 0 ? 'text-success' : 'text-danger';
 
                 const renderPlayer = (p, isSell) => {
-                    const img = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${p.team_code}-110.webp`;
+                    const isGK = p.element_type === 1;
+                    const img = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${p.team_code}${isGK ? '_1' : ''}-110.webp`;
                     const pos = positionLabels[p.element_type] || '';
                     const priceCls = isSell ? 'text-danger' : 'text-success';
                     return `
