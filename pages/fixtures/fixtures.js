@@ -1101,54 +1101,94 @@ async function loadTeamStats(fplFixtureId) {
     };
 
     const statsConfig = [
-        { key: 'possession_percentage', label: 'Possession %', formatter: v => v + '%' },
-        { key: 'total_scoring_att', label: 'Total Shots' },
-        { key: 'ontarget_scoring_att', label: 'Shots on Target' },
-        { key: 'total_pass', label: 'Passes' },
-        { key: 'accurate_pass', label: 'Accurate Passes' },
-        { key: 'won_corners', label: 'Corners' },
-        { key: 'total_offside', label: 'Offsides' },
-        { key: 'total_tackle', label: 'Tackles' },
-        { key: 'fk_foul_lost', label: 'Fouls' },
-        { key: 'total_yel_card', label: 'Yellow Cards' },
-        { key: 'total_red_card', label: 'Red Cards' }
+        { key: 'possession_percentage', label: 'Possession',  icon: 'fa-circle-dot',    formatter: v => v.toFixed(1) + '%', group: 'Attacking' },
+        { key: 'total_scoring_att',     label: 'Total Shots', icon: 'fa-futbol',         group: 'Attacking' },
+        { key: 'ontarget_scoring_att',  label: 'On Target',   icon: 'fa-crosshairs',     group: 'Attacking' },
+        { key: 'big_chance_created',    label: 'Big Chances', icon: 'fa-star',           group: 'Attacking' },
+        { key: 'won_corners',           label: 'Corners',     icon: 'fa-flag',           group: 'Attacking' },
+        { key: 'total_pass',            label: 'Passes',      icon: 'fa-arrows-turn-right', group: 'Passing' },
+        { key: 'accurate_pass',         label: 'Accurate',    icon: 'fa-check',          group: 'Passing' },
+        { key: 'total_long_balls',      label: 'Long Balls',  icon: 'fa-arrow-up-long',  group: 'Passing' },
+        { key: 'total_tackle',          label: 'Tackles',     icon: 'fa-shield-halved',  group: 'Defending' },
+        { key: 'interception_won',      label: 'Interceptions',icon: 'fa-hand',          group: 'Defending' },
+        { key: 'effective_clearance',   label: 'Clearances',  icon: 'fa-ban',            group: 'Defending' },
+        { key: 'total_offside',         label: 'Offsides',    icon: 'fa-flag',           group: 'Discipline', lowerBetter: true },
+        { key: 'fk_foul_lost',          label: 'Fouls',       icon: 'fa-person-falling', group: 'Discipline', lowerBetter: true },
+        { key: 'total_yel_card',        label: 'Yellow Cards', icon: 'fa-square',        iconStyle: 'color:#ffd700',        group: 'Discipline', lowerBetter: true },
+        { key: 'total_red_card',        label: 'Red Cards',   icon: 'fa-square',         iconStyle: 'color:#e90052',        group: 'Discipline', lowerBetter: true },
     ];
 
+    const groups = ['Attacking', 'Passing', 'Defending', 'Discipline'];
+
     let html = '';
-    statsConfig.forEach(cfg => {
-        const hVal = getStat(homeTeamData, cfg.key);
-        const aVal = getStat(awayTeamData, cfg.key);
-        
-        if (hVal === 0 && aVal === 0 && cfg.key !== 'possession_percentage') return; // Skip if both 0
+    // Legend header
+    html += `
+        <div class="d-flex align-items-center justify-content-between mb-3 px-1" style="border-bottom: 1px solid #2b2b2b; padding-bottom: 8px;">
+            <span style="color:#00ff85; font-size:0.8rem; font-weight:600;">
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#00ff85;margin-right:5px;"></span>
+                ${homeTeam.short_name || homeTeam.name}
+            </span>
+            <span style="color:#888; font-size:0.7rem; letter-spacing:1px;">MATCH STATS</span>
+            <span style="color:#e90052; font-size:0.8rem; font-weight:600;">
+                ${awayTeam.short_name || awayTeam.name}
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#e90052;margin-left:5px;"></span>
+            </span>
+        </div>
+    `;
 
-        const total = hVal + aVal;
-        const hPct = total > 0 ? (hVal / total) * 100 : 50;
-        const aPct = total > 0 ? (aVal / total) * 100 : 50;
-        
-        const hDisplay = cfg.formatter ? cfg.formatter(hVal) : hVal;
-        const aDisplay = cfg.formatter ? cfg.formatter(aVal) : aVal;
+    groups.forEach(group => {
+        const groupStats = statsConfig.filter(c => c.group === group);
+        const validStats = groupStats.filter(cfg => {
+            const hV = getStat(homeTeamData, cfg.key);
+            const aV = getStat(awayTeamData, cfg.key);
+            return !(hV === 0 && aV === 0);
+        });
+        if (validStats.length === 0) return;
 
-        const isLowerBetter = ['fk_foul_lost', 'total_yel_card', 'total_red_card', 'total_offside'].includes(cfg.key);
-        
-        let hWinner = isLowerBetter ? (hVal < aVal) : (hVal > aVal);
-        let aWinner = isLowerBetter ? (aVal < hVal) : (aVal > hVal);
-        
-        const hTextStyle = hWinner ? 'color: #00ff85; font-weight: bold;' : (hVal === aVal ? 'color: #ffffff; font-weight: bold;' : 'color: #888888;');
-        const aTextStyle = aWinner ? 'color: #e90052; font-weight: bold;' : (hVal === aVal ? 'color: #ffffff; font-weight: bold;' : 'color: #888888;');
+        html += `<div class="mb-1" style="font-size:0.65rem;text-transform:uppercase;letter-spacing:2px;color:#555;font-weight:600;margin-bottom:6px!important;">${group}</div>`;
 
-        html += `
-            <div class="mb-3">
-                <div class="d-flex justify-content-between mb-1 px-1" style="font-size: 0.85rem;">
-                    <span style="${hTextStyle}">${hDisplay}</span>
-                    <span class="text-muted text-uppercase" style="letter-spacing: 1px; font-size: 0.75rem; font-weight: 500;">${cfg.label}</span>
-                    <span style="${aTextStyle}">${aDisplay}</span>
+        validStats.forEach(cfg => {
+            const hVal = getStat(homeTeamData, cfg.key);
+            const aVal = getStat(awayTeamData, cfg.key);
+
+            const total = hVal + aVal;
+            const hPct = total > 0 ? (hVal / total) * 100 : 50;
+            const aPct = total > 0 ? (aVal / total) * 100 : 50;
+
+            const hDisplay = cfg.formatter ? cfg.formatter(hVal) : hVal;
+            const aDisplay = cfg.formatter ? cfg.formatter(aVal) : aVal;
+
+            const isLowerBetter = cfg.lowerBetter || false;
+            const hWinner = isLowerBetter ? (hVal < aVal) : (hVal > aVal);
+            const aWinner = isLowerBetter ? (aVal < hVal) : (aVal > hVal);
+
+            const hTextStyle = hWinner ? 'color:#00ff85;font-weight:700;' : (hVal === aVal ? 'color:#ffffff;font-weight:600;' : 'color:#666;');
+            const aTextStyle = aWinner ? 'color:#e90052;font-weight:700;' : (hVal === aVal ? 'color:#ffffff;font-weight:600;' : 'color:#666;');
+
+            const iconStyle = cfg.iconStyle ? ` style="${cfg.iconStyle}"` : ' class="text-muted"';
+            const iconHtml = `<i class="fas ${cfg.icon} fa-xs"${iconStyle}></i>`;
+
+            const hBarGlow = hWinner ? 'box-shadow:0 0 4px #00ff85;' : '';
+            const aBarGlow = aWinner ? 'box-shadow:0 0 4px #e90052;' : '';
+
+            html += `
+                <div class="mb-3">
+                    <div class="d-flex align-items-center mb-1 px-1" style="font-size:0.82rem;">
+                        <span style="${hTextStyle} flex:1; text-align:left;">${hDisplay}</span>
+                        <span style="flex:1; text-align:center; color:#777; font-size:0.72rem; letter-spacing:0.5px; display:flex; align-items:center; justify-content:center; gap:5px;">
+                            ${iconHtml} ${cfg.label}
+                        </span>
+                        <span style="${aTextStyle} flex:1; text-align:right;">${aDisplay}</span>
+                    </div>
+                    <div class="progress" style="height:5px; background-color:#1e1e1e; border-radius:3px;">
+                        <div class="progress-bar" role="progressbar" style="width:${hPct}%; background-color:#00ff85; ${hBarGlow} border-right:${hPct > 0 && aPct > 0 ? '1px solid #121212' : 'none'};" aria-valuenow="${hPct}" aria-valuemin="0" aria-valuemax="100"></div>
+                        <div class="progress-bar" role="progressbar" style="width:${aPct}%; background-color:#e90052; ${aBarGlow}" aria-valuenow="${aPct}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
                 </div>
-                <div class="progress" style="height: 6px; background-color: #2b2b2b; border-radius: 3px;">
-                    <div class="progress-bar" role="progressbar" style="width: ${hPct}%; background-color: #00ff85; border-right: ${hPct > 0 && aPct > 0 ? '2px solid #2b2b2b' : 'none'};" aria-valuenow="${hPct}" aria-valuemin="0" aria-valuemax="100"></div>
-                    <div class="progress-bar" role="progressbar" style="width: ${aPct}%; background-color: #e90052;" aria-valuenow="${aPct}" aria-valuemin="0" aria-valuemax="100"></div>
-                </div>
-            </div>
-        `;
+            `;
+        });
+
+        html += `<div style="border-top:1px solid #1e1e1e; margin-bottom:12px;"></div>`;
     });
 
     container.innerHTML = html;
