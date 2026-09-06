@@ -57,6 +57,18 @@ function startLiveRefresh() {
                                 `<span class="badge bg-secondary mt-1" style="font-size:0.7rem;">FT</span>`}
                         `;
                     }
+                    const statsTbody = document.querySelector(`#stats-tbody-${fixture.code}`);
+                    if (statsTbody) {
+                        statsTbody.innerHTML = `
+                            ${renderStatRow(fixture, 'goals_scored', 'Goals Scored')}
+                            ${renderStatRow(fixture, 'assists', 'Assists')}
+                            ${renderStatRow(fixture, 'yellow_cards', 'Yellow Cards')}
+                            ${renderStatRow(fixture, 'saves', 'Saves')}
+                            ${renderStatRow(fixture, 'bonus', 'Bonus')}
+                            ${renderStatRow(fixture, 'bps', 'BPS (Ranking)')}
+                            ${renderStatRow(fixture, 'defensive_contribution', 'Defensive Contributions')}
+                        `;
+                    }
                 }
             });
             
