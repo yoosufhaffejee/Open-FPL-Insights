@@ -479,6 +479,13 @@ function validateAndFixFormation() {
 }
 
 function updateTeamUI() {
+    const saveBtn = document.getElementById('saveButton');
+    if (saveBtn && saveBtn.style.display === 'inline-block') {
+        rating = 0;
+        const ptsEl = document.getElementById("points");
+        if (ptsEl) ptsEl.hidden = true;
+    }
+
     validateAndFixFormation();
 
     // Clear existing players from rows
@@ -1562,6 +1569,10 @@ function loadPlayers(gameweek = selectedGameweek) {
     }
 
     if (myPlayersCookie) {
+        rating = 0;
+        const ptsEl = document.getElementById("points");
+        if (ptsEl) ptsEl.hidden = true;
+
         // Parse the JSON string
         const { players } = JSON.parse(myPlayersCookie);
 
