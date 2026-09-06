@@ -297,6 +297,16 @@ const getPulseLiveLineup = async (matchId) => {
     }
 }
 
+const getPulseLiveEvents = async (matchId) => {
+    try {
+        const data = await doRawCORSRequest(`https://footballapi.pulselive.com/football/fixtures/${matchId}/textstream/EN?pageSize=100&page=0`);
+        return data.events ? data.events.content : [];
+    } catch (e) {
+        console.error("Error fetching Pulse Live events for match", matchId, e);
+        return [];
+    }
+}
+
 const getPulseLiveStandings = async (bypassCache = false) => {
     const cacheKey = 'pulseLiveStandingsCache';
     if (!bypassCache) {

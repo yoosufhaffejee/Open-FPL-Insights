@@ -69,6 +69,11 @@ function startLiveRefresh() {
                             ${renderStatRow(fixture, 'defensive_contribution', 'Defensive Contributions')}
                         `;
                     }
+                    
+                    const eventsTabPane = document.getElementById(`events-${fixture.code}`);
+                    if (eventsTabPane && eventsTabPane.classList.contains('active')) {
+                        loadLiveEvents(fixture.id);
+                    }
                 }
             });
             
@@ -160,6 +165,9 @@ function renderFixtures() {
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="lineups-tab-${fixture.code}" data-bs-toggle="tab" data-bs-target="#lineups-${fixture.code}" type="button" role="tab" aria-controls="lineups-${fixture.code}" aria-selected="false" onclick="loadLineups(${fixture.id})">Lineups</button>
                             </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="events-tab-${fixture.code}" data-bs-toggle="tab" data-bs-target="#events-${fixture.code}" type="button" role="tab" aria-controls="events-${fixture.code}" aria-selected="false" onclick="loadLiveEvents(${fixture.id})">Live Events</button>
+                            </li>
                         </ul>
                         <div class="tab-content mt-3" id="myTabContent${fixture.code}">
                             <div class="tab-pane fade show active" id="stats-${fixture.code}" role="tabpanel" aria-labelledby="stats-tab-${fixture.code}">
@@ -188,6 +196,16 @@ function renderFixtures() {
                                         <span class="visually-hidden">Loading lineups...</span>
                                     </div>
                                     <p class="mt-2 text-muted">Fetching live lineups...</p>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="events-${fixture.code}" role="tabpanel" aria-labelledby="events-tab-${fixture.code}">
+                                <div id="events-container-${fixture.id}" class="text-start p-2" style="max-height: 400px; overflow-y: auto;">
+                                    <div class="text-center p-4">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading events...</span>
+                                        </div>
+                                        <p class="mt-2 text-muted">Fetching live events...</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -866,6 +884,67 @@ function renderTeamLineup(plPlayers, plSubstitutes, fplTeamId, startingContainer
 
     startingContainer.innerHTML = starting.map(p => buildPlayerHtml(p, false)).join('');
     benchContainer.innerHTML = bench.map(p => buildPlayerHtml(p, true)).join('');
+}
+
+async function loadLiveEvents(fplFixtureId) {
+    const container = document.getElementById(`events-container-${fplFixtureId}`);
+    if (!container) return;
+
+    if (!window.pulseLiveFixturesData) {
+        window.pulseLiveFixturesData = await getPulseLiveFixtures();
+    }
+    
+    const fplFixture = fixtures.find(f => f.id === fplFixtureId);
+    if (!fplFixture) return;
+
+    const homeTeam = teams.find(t => t.id === fplFixture.team_h);
+    const fplKickoff = new Date(fplFixture.kickoff_time).getTime();
+
+    const plMatch = window.pulseLiveFixturesData.find(pl => {
+        const plHomeTeam = pl.teams[0].team.club ? pl.teams[0].team.club.abbr : pl.teams[0].team.abbr;
+        return plHomeTeam === homeTeam.short_name && Math.abs(pl.kickoff.millis - fplKickoff) < 86400000;
+    });
+
+    if (!plMatch) {
+        container.innerHTML = '<div class="alert alert-warning">Events not available for this match.</div>';
+        return;
+    }
+
+    const events = await getPulseLiveEvents(plMatch.id);
+    
+    if (!events || events.length === 0) {
+        container.innerHTML = '<div class="alert alert-info">No live events reported yet.</div>';
+        return;
+    }
+
+    // Map events to HTML
+    let eventsHtml = '<ul class="list-group list-group-flush">';
+    events.forEach(ev => {
+        const timeLabel = ev.time ? `<span class="badge bg-secondary me-2">${ev.time.label}'</span>` : '';
+        let iconHtml = '<i class="fas fa-info-circle text-muted me-2"></i>';
+        
+        const typeMatch = (ev.type || '').toLowerCase();
+        if (typeMatch.includes('goal')) iconHtml = '<i class="fas fa-futbol text-success me-2"></i>';
+        else if (typeMatch.includes('yellow card')) iconHtml = '<i class="fas fa-square text-warning me-2"></i>';
+        else if (typeMatch.includes('red card')) iconHtml = '<i class="fas fa-square text-danger me-2"></i>';
+        else if (typeMatch.includes('substitution')) iconHtml = '<i class="fas fa-exchange-alt text-info me-2"></i>';
+        else if (typeMatch.includes('foul')) iconHtml = '<i class="fas fa-exclamation-triangle text-warning me-2"></i>';
+        else if (typeMatch.includes('corner')) iconHtml = '<i class="fas fa-flag text-primary me-2"></i>';
+        else if (typeMatch.includes('start') || typeMatch.includes('end') || typeMatch.includes('half')) iconHtml = '<i class="fas fa-clock text-secondary me-2"></i>';
+        
+        eventsHtml += `
+            <li class="list-group-item bg-transparent text-light border-secondary d-flex align-items-start">
+                <div class="mt-1">${timeLabel}${iconHtml}</div>
+                <div>
+                    <div class="small fw-bold text-uppercase text-muted" style="font-size: 0.65rem;">${ev.type || 'Event'}</div>
+                    <div style="font-size: 0.85rem;">${ev.text || ''}</div>
+                </div>
+            </li>
+        `;
+    });
+    eventsHtml += '</ul>';
+    
+    container.innerHTML = eventsHtml;
 }
 
 function matchPlayer(plPlayer, teamPlayers) {
