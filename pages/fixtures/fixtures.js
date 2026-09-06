@@ -38,7 +38,7 @@ function startLiveRefresh() {
     
     liveRefreshInterval = setInterval(async () => {
         try {
-            const data = await getFixtures();
+            const data = await getFixtures(true);
             fixtures = data; // Update global
             
             // Only update DOM for live games
@@ -61,7 +61,7 @@ function startLiveRefresh() {
             });
             
             // Also refresh the league table live
-            await renderStandings();
+            await renderStandings(true);
         } catch (e) {
             console.error("Live refresh failed", e);
         }
@@ -928,9 +928,9 @@ function levenshtein(a, b) {
     return matrix[b.length][a.length];
 }
 
-async function renderStandings() {
+async function renderStandings(bypassCache = false) {
     const container = document.getElementById('league-table-container');
-    const standingsData = await getPulseLiveStandings();
+    const standingsData = await getPulseLiveStandings(bypassCache);
     
     if (!standingsData || !standingsData.tables || !standingsData.tables[0]) {
         if(container) container.innerHTML = '<div class="alert alert-warning">Could not load the league table.</div>';

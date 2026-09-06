@@ -382,9 +382,9 @@ const comparePlayers = async () => {
 };
 
 // --- League Table Logic ---
-async function renderStandings() {
+async function renderStandings(bypassCache = false) {
     const container = document.getElementById('league-table-container');
-    const standingsData = await getPulseLiveStandings();
+    const standingsData = await getPulseLiveStandings(bypassCache);
     
     if (!standingsData || !standingsData.tables || !standingsData.tables[0]) {
         if(container) container.innerHTML = '<div class="alert alert-warning">Could not load the league table.</div>';
@@ -880,9 +880,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (!hasLiveGames) return;
                 
                 try {
-                    const data = await getFixtures();
+                    const data = await getFixtures(true);
                     fixtures = data; // Update global
-                    await renderStandings();
+                    await renderStandings(true);
                 } catch (e) {
                     console.error("Live table refresh failed", e);
                 }

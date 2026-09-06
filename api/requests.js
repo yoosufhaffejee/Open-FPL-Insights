@@ -26,35 +26,37 @@ let currentProxyIndex = 0;
 
 const CACHE_EXPIRY = 15 * 60 * 1000; // 15 minutes
 
-const doCORSRequest = async (url) => {
+const doCORSRequest = async (url, bypassCache = false) => {
     let endpointUrl = baseURL + url;
     
     // Check cache first
-    try {
-        const cachedStr = sessionStorage.getItem(`fpl_cache_${url}`);
-        if (cachedStr) {
-            const cachedData = JSON.parse(cachedStr);
-            // Validate integrity of cached data
-            let isValid = true;
-            if (url === 'bootstrap-static/' && (!cachedData.data || !cachedData.data.elements)) isValid = false;
-            
-            // Check expiry and validity
-            if (isValid && Date.now() - cachedData.timestamp < CACHE_EXPIRY) {
-                // Instantly update progress bar if it's a main request so the UI doesn't hang waiting for it
-                if (['bootstrap-static/', 'fixtures/', 'events/'].includes(url) && window.globalFplLoadedBytes !== undefined) {
-                    let estimatedTotal = url === 'bootstrap-static/' ? 1594800 : (url === 'fixtures/' ? 131500 : 27000);
-                    window.globalFplLoadedBytes += estimatedTotal;
-                    let percent = Math.min(Math.round((window.globalFplLoadedBytes / window.globalFplTotalBytes) * 100), 100);
-                    const progressEl = document.getElementById('global-progress-bar');
-                    if (progressEl) progressEl.style.width = percent + '%';
+    if (!bypassCache) {
+        try {
+            const cachedStr = sessionStorage.getItem(`fpl_cache_${url}`);
+            if (cachedStr) {
+                const cachedData = JSON.parse(cachedStr);
+                // Validate integrity of cached data
+                let isValid = true;
+                if (url === 'bootstrap-static/' && (!cachedData.data || !cachedData.data.elements)) isValid = false;
+                
+                // Check expiry and validity
+                if (isValid && Date.now() - cachedData.timestamp < CACHE_EXPIRY) {
+                    // Instantly update progress bar if it's a main request so the UI doesn't hang waiting for it
+                    if (['bootstrap-static/', 'fixtures/', 'events/'].includes(url) && window.globalFplLoadedBytes !== undefined) {
+                        let estimatedTotal = url === 'bootstrap-static/' ? 1594800 : (url === 'fixtures/' ? 131500 : 27000);
+                        window.globalFplLoadedBytes += estimatedTotal;
+                        let percent = Math.min(Math.round((window.globalFplLoadedBytes / window.globalFplTotalBytes) * 100), 100);
+                        const progressEl = document.getElementById('global-progress-bar');
+                        if (progressEl) progressEl.style.width = percent + '%';
+                    }
+                    return cachedData.data;
+                } else {
+                    sessionStorage.removeItem(`fpl_cache_${url}`);
                 }
-                return cachedData.data;
-            } else {
-                sessionStorage.removeItem(`fpl_cache_${url}`);
             }
+        } catch (e) {
+            console.warn('Cache read error:', e);
         }
-    } catch (e) {
-        console.warn('Cache read error:', e);
     }
 
     let lastError = null;
@@ -175,8 +177,8 @@ const getGameweek = async (id) => {
     return data;
 }
 
-const getFixtures = async () => {
-    const data = await doCORSRequest(reqType.fixtures);
+const getFixtures = async (bypassCache = false) => {
+    const data = await doCORSRequest(reqType.fixtures, bypassCache);
     return data;
 }
 
@@ -293,13 +295,15 @@ const getPulseLiveLineup = async (matchId) => {
     }
 }
 
-const getPulseLiveStandings = async () => {
+const getPulseLiveStandings = async (bypassCache = false) => {
     const cacheKey = 'pulseLiveStandingsCache';
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) {
-        const { timestamp, data } = JSON.parse(cached);
-        if (Date.now() - timestamp < 60 * 1000) {
-            return data;
+    if (!bypassCache) {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+            const { timestamp, data } = JSON.parse(cached);
+            if (Date.now() - timestamp < 60 * 1000) {
+                return data;
+            }
         }
     }
 
