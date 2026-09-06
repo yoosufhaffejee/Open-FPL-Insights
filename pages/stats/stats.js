@@ -886,7 +886,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 } catch (e) {
                     console.error("Live table refresh failed", e);
                 }
-            }, 60000);
+            }, 120000);
         }
     }, 100);
 });

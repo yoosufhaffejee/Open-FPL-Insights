@@ -65,7 +65,7 @@ function startLiveRefresh() {
         } catch (e) {
             console.error("Live refresh failed", e);
         }
-    }, 60000); // 60 seconds
+    }, 120000); // 2 minutes
 }
 
 function renderFixtures() {
@@ -159,7 +159,7 @@ function renderFixtures() {
                                             <th>${awayTeam.short_name}</th>
                                         </tr>
                                     </thead>
-                                                                        <tbody>
+                                                                        <tbody id="stats-tbody-${fixture.code}">
                                         ${renderStatRow(fixture, 'goals_scored', 'Goals Scored')}
                                         ${renderStatRow(fixture, 'assists', 'Assists')}
                                         ${renderStatRow(fixture, 'yellow_cards', 'Yellow Cards')}
@@ -762,20 +762,22 @@ async function loadLineups(fplFixtureId) {
     container.innerHTML = `
         <div class="row text-start">
             <div class="col-12 col-md-6 border-md-end mb-4 mb-md-0">
-                <h5 class="text-center mb-3">
+                <h5 class="text-center mb-0">
                     <img src="https://resources.premierleague.com/premierleague/badges/100/t${homeTeam.code}.png" style="width:30px;">
                     ${homeTeam.short_name}
                 </h5>
+                ${lineupData.home_team.formation ? `<div class="text-center text-muted small mb-3">${lineupData.home_team.formation}</div>` : '<div class="mb-3"></div>'}
                 <h6 class="text-muted border-bottom pb-1">Starting XI</h6>
                 <div id="home-starting-${fplFixtureId}" class="mb-3"></div>
                 <h6 class="text-muted border-bottom pb-1">Bench</h6>
                 <div id="home-bench-${fplFixtureId}"></div>
             </div>
             <div class="col-12 col-md-6">
-                <h5 class="text-center mb-3">
+                <h5 class="text-center mb-0">
                     <img src="https://resources.premierleague.com/premierleague/badges/100/t${awayTeam.code}.png" style="width:30px;">
                     ${awayTeam.short_name}
                 </h5>
+                ${lineupData.away_team.formation ? `<div class="text-center text-muted small mb-3">${lineupData.away_team.formation}</div>` : '<div class="mb-3"></div>'}
                 <h6 class="text-muted border-bottom pb-1">Starting XI</h6>
                 <div id="away-starting-${fplFixtureId}" class="mb-3"></div>
                 <h6 class="text-muted border-bottom pb-1">Bench</h6>
@@ -791,9 +793,22 @@ async function loadLineups(fplFixtureId) {
 function renderTeamLineup(plPlayers, plSubstitutes, fplTeamId, startingContainer, benchContainer) {
     const teamPlayers = allPlayers.filter(p => p.team === fplTeamId);
 
-        const buildPlayerHtml = (plPlayer, isBench) => {
-        const fplPlayer = matchPlayer(plPlayer, teamPlayers);
+    const enrichPlayer = (p) => {
+        const fplPlayer = matchPlayer(p, teamPlayers);
+        const shirtNum = parseInt(p.matchShirtNumber || p.shirtNum) || 999;
+        const posType = fplPlayer ? fplPlayer.element_type : 5; // 1:GK, 2:DEF, 3:MID, 4:FWD, 5:Unknown
+        return { plPlayer, fplPlayer, shirtNum, posType };
+    };
 
+    const sortFn = (a, b) => {
+        if (a.posType !== b.posType) return a.posType - b.posType;
+        return a.shirtNum - b.shirtNum;
+    };
+
+    const starting = (plPlayers || []).map(enrichPlayer).sort(sortFn);
+    const bench = (plSubstitutes || []).map(enrichPlayer).sort(sortFn);
+
+    const buildPlayerHtml = ({ plPlayer, fplPlayer }, isBench) => {
         const displayName = plPlayer.name ? plPlayer.name.display : (plPlayer.knownName || plPlayer.lastName || '?');
         const shirtNum = plPlayer.matchShirtNumber || plPlayer.shirtNum || '-';
         const isCaptain = plPlayer.captain || plPlayer.isCaptain || false;
@@ -837,8 +852,8 @@ function renderTeamLineup(plPlayers, plSubstitutes, fplTeamId, startingContainer
         `;
     };
 
-    startingContainer.innerHTML = (plPlayers || []).map(p => buildPlayerHtml(p, false)).join('');
-    benchContainer.innerHTML = (plSubstitutes || []).map(p => buildPlayerHtml(p, true)).join('');
+    startingContainer.innerHTML = starting.map(p => buildPlayerHtml(p, false)).join('');
+    benchContainer.innerHTML = bench.map(p => buildPlayerHtml(p, true)).join('');
 }
 
 function matchPlayer(plPlayer, teamPlayers) {

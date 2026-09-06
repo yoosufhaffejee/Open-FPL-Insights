@@ -282,11 +282,13 @@ const getPulseLiveLineup = async (matchId) => {
         return {
             home_team: {
                 players: homeList.lineup || [],
-                substitutes: homeList.substitutes || []
+                substitutes: homeList.substitutes || [],
+                formation: homeList.formation ? homeList.formation.label : null
             },
             away_team: {
                 players: awayList.lineup || [],
-                substitutes: awayList.substitutes || []
+                substitutes: awayList.substitutes || [],
+                formation: awayList.formation ? awayList.formation.label : null
             }
         };
     } catch (e) {
