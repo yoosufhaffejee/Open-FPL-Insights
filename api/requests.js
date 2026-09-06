@@ -297,13 +297,23 @@ const getPulseLiveLineup = async (matchId) => {
     }
 }
 
-const getPulseLiveEvents = async (matchId) => {
+const getPulseLiveEvents = async (matchId, page = 0, pageSize = 20) => {
     try {
-        const data = await doRawCORSRequest(`https://footballapi.pulselive.com/football/fixtures/${matchId}/textstream/EN?pageSize=100&page=0`);
-        return data.events ? data.events.content : [];
+        const data = await doRawCORSRequest(`https://footballapi.pulselive.com/football/fixtures/${matchId}/textstream/EN?pageSize=${pageSize}&page=${page}`);
+        return data.events ? data.events : { content: [], pageInfo: { numPages: 0 } };
     } catch (e) {
         console.error("Error fetching Pulse Live events for match", matchId, e);
-        return [];
+        return { content: [], pageInfo: { numPages: 0 } };
+    }
+}
+
+const getPulseLiveMatchStats = async (matchId) => {
+    try {
+        const data = await doRawCORSRequest(`https://footballapi.pulselive.com/football/stats/match/${matchId}`);
+        return data.entity ? data.entity : null;
+    } catch (e) {
+        console.error("Error fetching Pulse Live match stats", matchId, e);
+        return null;
     }
 }
 

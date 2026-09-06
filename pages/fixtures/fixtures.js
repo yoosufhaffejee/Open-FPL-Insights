@@ -74,6 +74,11 @@ function startLiveRefresh() {
                     if (eventsTabPane && eventsTabPane.classList.contains('active')) {
                         loadLiveEvents(fixture.id);
                     }
+                    
+                    const teamStatsTabPane = document.getElementById(`teamstats-${fixture.code}`);
+                    if (teamStatsTabPane && teamStatsTabPane.classList.contains('active')) {
+                        loadTeamStats(fixture.id);
+                    }
                 }
             });
             
@@ -163,6 +168,9 @@ function renderFixtures() {
                                 <button class="nav-link active" id="stats-tab-${fixture.code}" data-bs-toggle="tab" data-bs-target="#stats-${fixture.code}" type="button" role="tab" aria-controls="stats-${fixture.code}" aria-selected="true">Player Stats</button>
                             </li>
                             <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="teamstats-tab-${fixture.code}" data-bs-toggle="tab" data-bs-target="#teamstats-${fixture.code}" type="button" role="tab" aria-controls="teamstats-${fixture.code}" aria-selected="false" onclick="loadTeamStats(${fixture.id})">Team Stats</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="lineups-tab-${fixture.code}" data-bs-toggle="tab" data-bs-target="#lineups-${fixture.code}" type="button" role="tab" aria-controls="lineups-${fixture.code}" aria-selected="false" onclick="loadLineups(${fixture.id})">Lineups</button>
                             </li>
                             <li class="nav-item" role="presentation">
@@ -189,6 +197,16 @@ function renderFixtures() {
                                         ${renderStatRow(fixture, 'defensive_contribution', 'Defensive Contributions')}
                                     </tbody>
                                 </table>
+                            </div>
+                            <div class="tab-pane fade" id="teamstats-${fixture.code}" role="tabpanel" aria-labelledby="teamstats-tab-${fixture.code}">
+                                <div id="teamstats-container-${fixture.id}" class="p-3">
+                                    <div class="text-center p-4">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading team stats...</span>
+                                        </div>
+                                        <p class="mt-2 text-muted">Fetching match stats...</p>
+                                    </div>
+                                </div>
                             </div>
                             <div class="tab-pane fade" id="lineups-${fixture.code}" role="tabpanel" aria-labelledby="lineups-tab-${fixture.code}">
                                 <div id="lineups-container-${fixture.id}" class="text-center p-4">
@@ -886,16 +904,42 @@ function renderTeamLineup(plPlayers, plSubstitutes, fplTeamId, startingContainer
     benchContainer.innerHTML = bench.map(p => buildPlayerHtml(p, true)).join('');
 }
 
-async function loadLiveEvents(fplFixtureId) {
+window.liveEventsState = window.liveEventsState || {};
+
+async function loadLiveEvents(fplFixtureId, loadMore = false) {
     const container = document.getElementById(`events-container-${fplFixtureId}`);
     if (!container) return;
+
+    if (!window.liveEventsState[fplFixtureId]) {
+        window.liveEventsState[fplFixtureId] = { page: 0, events: [], hasMore: true, isFetching: false };
+    }
+    const state = window.liveEventsState[fplFixtureId];
+
+    if (state.isFetching) return;
+    state.isFetching = true;
+
+    // Show loading spinner if it's the very first load
+    if (state.events.length === 0 && !loadMore) {
+        container.innerHTML = `
+            <div class="text-center p-4">
+                <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading events...</span></div>
+                <p class="mt-2 text-muted">Fetching live events...</p>
+            </div>
+        `;
+    } else if (loadMore) {
+        const loadMoreBtn = document.getElementById(`load-more-events-${fplFixtureId}`);
+        if (loadMoreBtn) loadMoreBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
+    }
 
     if (!window.pulseLiveFixturesData) {
         window.pulseLiveFixturesData = await getPulseLiveFixtures();
     }
     
     const fplFixture = fixtures.find(f => f.id === fplFixtureId);
-    if (!fplFixture) return;
+    if (!fplFixture) {
+        state.isFetching = false;
+        return;
+    }
 
     const homeTeam = teams.find(t => t.id === fplFixture.team_h);
     const fplKickoff = new Date(fplFixture.kickoff_time).getTime();
@@ -907,44 +951,180 @@ async function loadLiveEvents(fplFixtureId) {
 
     if (!plMatch) {
         container.innerHTML = '<div class="alert alert-warning">Events not available for this match.</div>';
+        state.isFetching = false;
         return;
     }
 
-    const events = await getPulseLiveEvents(plMatch.id);
+    const pageToFetch = loadMore ? state.page + 1 : 0;
+    const eventsData = await getPulseLiveEvents(plMatch.id, pageToFetch, 20);
+    const fetchedEvents = eventsData.content || [];
     
-    if (!events || events.length === 0) {
+    if (fetchedEvents.length === 0 && state.events.length === 0) {
         container.innerHTML = '<div class="alert alert-info">No live events reported yet.</div>';
+        state.isFetching = false;
         return;
+    }
+
+    if (!loadMore) {
+        // Replace events
+        state.events = fetchedEvents;
+        state.page = 0;
+    } else {
+        // Append older events
+        state.events = [...state.events, ...fetchedEvents];
+        state.page = pageToFetch;
+    }
+
+    if (eventsData.pageInfo && state.page >= eventsData.pageInfo.numPages - 1) {
+        state.hasMore = false;
     }
 
     // Map events to HTML
     let eventsHtml = '<ul class="list-group list-group-flush">';
-    events.forEach(ev => {
-        const timeLabel = ev.time ? `<span class="badge bg-secondary me-2">${ev.time.label}'</span>` : '';
-        let iconHtml = '<i class="fas fa-info-circle text-muted me-2"></i>';
+    state.events.forEach(ev => {
+        const timeLabel = ev.time ? `<span class="badge bg-secondary me-3" style="width: 45px;">${ev.time.label}'</span>` : '';
+        let iconHtml = '<i class="fas fa-info-circle text-muted me-3 fs-5" style="width: 20px; text-align: center;"></i>';
         
         const typeMatch = (ev.type || '').toLowerCase();
-        if (typeMatch.includes('goal')) iconHtml = '<i class="fas fa-futbol text-success me-2"></i>';
-        else if (typeMatch.includes('yellow card')) iconHtml = '<i class="fas fa-square text-warning me-2"></i>';
-        else if (typeMatch.includes('red card')) iconHtml = '<i class="fas fa-square text-danger me-2"></i>';
-        else if (typeMatch.includes('substitution')) iconHtml = '<i class="fas fa-exchange-alt text-info me-2"></i>';
-        else if (typeMatch.includes('foul')) iconHtml = '<i class="fas fa-exclamation-triangle text-warning me-2"></i>';
-        else if (typeMatch.includes('corner')) iconHtml = '<i class="fas fa-flag text-primary me-2"></i>';
-        else if (typeMatch.includes('start') || typeMatch.includes('end') || typeMatch.includes('half')) iconHtml = '<i class="fas fa-clock text-secondary me-2"></i>';
+        if (typeMatch.includes('goal')) iconHtml = '<i class="fas fa-futbol text-success me-3 fs-5" style="width: 20px; text-align: center;"></i>';
+        else if (typeMatch.includes('yellow card')) iconHtml = '<span class="me-3" style="display:inline-block; width:14px; height:18px; background-color:gold; border-radius:2px; margin-left:3px; margin-right:3px;"></span>';
+        else if (typeMatch.includes('red card')) iconHtml = '<span class="me-3" style="display:inline-block; width:14px; height:18px; background-color:red; border-radius:2px; margin-left:3px; margin-right:3px;"></span>';
+        else if (typeMatch.includes('substitution')) iconHtml = '<i class="fas fa-exchange-alt text-info me-3 fs-5" style="width: 20px; text-align: center;"></i>';
+        else if (typeMatch.includes('foul')) iconHtml = '<i class="fas fa-exclamation-circle text-warning me-3 fs-5" style="width: 20px; text-align: center;"></i>';
+        else if (typeMatch.includes('corner')) iconHtml = '<i class="fas fa-flag text-light me-3 fs-5" style="width: 20px; text-align: center;"></i>';
+        else if (typeMatch.includes('free kick')) iconHtml = '<i class="fas fa-shoe-prints text-info me-3 fs-5" style="width: 20px; text-align: center;"></i>';
+        else if (typeMatch.includes('save') || typeMatch.includes('attempt')) iconHtml = '<i class="fas fa-hand-paper text-primary me-3 fs-5" style="width: 20px; text-align: center;"></i>';
+        else if (typeMatch.includes('miss')) iconHtml = '<i class="fas fa-times text-danger me-3 fs-5" style="width: 20px; text-align: center;"></i>';
+        else if (typeMatch.includes('offside')) iconHtml = '<i class="fas fa-flag-checkered text-warning me-3 fs-5" style="width: 20px; text-align: center;"></i>';
+        else if (typeMatch.includes('post') || typeMatch.includes('woodwork')) iconHtml = '<i class="fas fa-arrows-alt-v text-light me-3 fs-5" style="width: 20px; text-align: center;"></i>';
+        else if (typeMatch.includes('start') || typeMatch.includes('end') || typeMatch.includes('half') || typeMatch.includes('time')) iconHtml = '<i class="fas fa-stopwatch text-secondary me-3 fs-5" style="width: 20px; text-align: center;"></i>';
+        
+        let textContent = ev.text || '';
+        
+        // Highlight player names using Regex: Name (Team)
+        textContent = textContent.replace(/([A-ZÀ-ÿ][a-zA-ZÀ-ÿ\s'-]+)\s\((.*?)\)/g, (match, p1, p2) => {
+            let prefix = '';
+            if (p1.startsWith('Foul by ')) {
+                prefix = 'Foul by ';
+                p1 = p1.substring(8);
+            }
+            return `${prefix}<strong class="text-white">${p1}</strong> <span class="text-muted" style="font-size:0.75rem;">(${p2})</span>`;
+        });
         
         eventsHtml += `
-            <li class="list-group-item bg-transparent text-light border-secondary d-flex align-items-start">
-                <div class="mt-1">${timeLabel}${iconHtml}</div>
-                <div>
-                    <div class="small fw-bold text-uppercase text-muted" style="font-size: 0.65rem;">${ev.type || 'Event'}</div>
-                    <div style="font-size: 0.85rem;">${ev.text || ''}</div>
+            <li class="list-group-item bg-transparent text-light border-secondary d-flex align-items-center py-3 px-1">
+                <div class="d-flex align-items-center flex-shrink-0">${timeLabel}${iconHtml}</div>
+                <div class="flex-grow-1">
+                    <div class="small fw-bold text-uppercase text-muted mb-1" style="font-size: 0.65rem; letter-spacing: 0.5px;">${ev.type || 'Event'}</div>
+                    <div style="font-size: 0.9rem; line-height: 1.3;">${textContent}</div>
                 </div>
             </li>
         `;
     });
     eventsHtml += '</ul>';
     
+    if (state.hasMore) {
+        eventsHtml += `
+            <div class="text-center mt-3 mb-2">
+                <button id="load-more-events-${fplFixtureId}" class="btn btn-outline-secondary btn-sm" onclick="loadLiveEvents(${fplFixtureId}, true)">Load Older Events</button>
+            </div>
+        `;
+    }
+    
+    // Save current scroll position
+    const previousScroll = container.scrollTop;
+    const previousHeight = container.scrollHeight;
+    
     container.innerHTML = eventsHtml;
+    
+    // Restore scroll position if loading more
+    if (loadMore) {
+        container.scrollTop = previousScroll + (container.scrollHeight - previousHeight);
+    }
+    
+    state.isFetching = false;
+}
+
+async function loadTeamStats(fplFixtureId) {
+    const container = document.getElementById(`teamstats-container-${fplFixtureId}`);
+    if (!container) return;
+
+    if (!window.pulseLiveFixturesData) {
+        window.pulseLiveFixturesData = await getPulseLiveFixtures();
+    }
+    
+    const fplFixture = fixtures.find(f => f.id === fplFixtureId);
+    if (!fplFixture) return;
+
+    const homeTeam = teams.find(t => t.id === fplFixture.team_h);
+    const awayTeam = teams.find(t => t.id === fplFixture.team_a);
+    const fplKickoff = new Date(fplFixture.kickoff_time).getTime();
+
+    const plMatch = window.pulseLiveFixturesData.find(pl => {
+        const plHomeTeam = pl.teams[0].team.club ? pl.teams[0].team.club.abbr : pl.teams[0].team.abbr;
+        return plHomeTeam === homeTeam.short_name && Math.abs(pl.kickoff.millis - fplKickoff) < 86400000;
+    });
+
+    if (!plMatch) {
+        container.innerHTML = '<div class="alert alert-warning">Stats not available for this match.</div>';
+        return;
+    }
+
+    const matchStats = await getPulseLiveMatchStats(plMatch.id);
+    if (!matchStats || !matchStats.team_h || !matchStats.team_h.stats) {
+        container.innerHTML = '<div class="alert alert-info">Match stats are not available yet.</div>';
+        return;
+    }
+
+    const getStat = (teamData, name) => {
+        const stat = teamData.stats.find(s => s.name === name);
+        return stat ? stat.value : 0;
+    };
+
+    const statsConfig = [
+        { key: 'possession_percentage', label: 'Possession %', formatter: v => v + '%' },
+        { key: 'total_scoring_att', label: 'Total Shots' },
+        { key: 'ontarget_scoring_att', label: 'Shots on Target' },
+        { key: 'total_pass', label: 'Passes' },
+        { key: 'accurate_pass', label: 'Accurate Passes' },
+        { key: 'won_corners', label: 'Corners' },
+        { key: 'total_offside', label: 'Offsides' },
+        { key: 'total_tackle', label: 'Tackles' },
+        { key: 'fouls', label: 'Fouls' },
+        { key: 'yellow_card', label: 'Yellow Cards' },
+        { key: 'red_card', label: 'Red Cards' }
+    ];
+
+    let html = '';
+    statsConfig.forEach(cfg => {
+        const hVal = getStat(matchStats.team_h, cfg.key);
+        const aVal = getStat(matchStats.team_a, cfg.key);
+        
+        if (hVal === 0 && aVal === 0 && cfg.key !== 'possession_percentage') return; // Skip if both 0
+
+        const total = hVal + aVal;
+        const hPct = total > 0 ? (hVal / total) * 100 : 50;
+        const aPct = total > 0 ? (aVal / total) * 100 : 50;
+        
+        const hDisplay = cfg.formatter ? cfg.formatter(hVal) : hVal;
+        const aDisplay = cfg.formatter ? cfg.formatter(aVal) : aVal;
+
+        html += `
+            <div class="mb-3">
+                <div class="d-flex justify-content-between text-light mb-1 px-1" style="font-size: 0.85rem;">
+                    <span class="fw-bold">${hDisplay}</span>
+                    <span class="text-muted text-uppercase" style="letter-spacing: 1px; font-size: 0.75rem;">${cfg.label}</span>
+                    <span class="fw-bold">${aDisplay}</span>
+                </div>
+                <div class="progress" style="height: 6px; background-color: #2b2b2b; border-radius: 3px;">
+                    <div class="progress-bar" role="progressbar" style="width: ${hPct}%; background-color: #0dcaf0;" aria-valuenow="${hPct}" aria-valuemin="0" aria-valuemax="100"></div>
+                    <div class="progress-bar" role="progressbar" style="width: ${aPct}%; background-color: #fd7e14;" aria-valuenow="${aPct}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
 }
 
 function matchPlayer(plPlayer, teamPlayers) {
