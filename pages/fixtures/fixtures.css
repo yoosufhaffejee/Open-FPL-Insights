@@ -95,3 +95,20 @@
 }
 
 @media (min-width: 768px) { .border-md-end { border-right: 1px solid var(--bs-border-color) !important; } }
+
+/* Player Stats clickable name links */
+.player-stat-link {
+    color: #cbd5e1;
+    font-weight: 500;
+    font-size: 0.875rem;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-color: rgba(255,255,255,0.2);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 0.15s ease, text-decoration-color 0.15s ease;
+}
+.player-stat-link:hover {
+    color: #ffffff;
+    text-decoration-color: rgba(255,255,255,0.7);
+}

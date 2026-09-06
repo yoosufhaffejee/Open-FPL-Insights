@@ -60,13 +60,13 @@ function startLiveRefresh() {
                     const statsTbody = document.querySelector(`#stats-tbody-${fixture.code}`);
                     if (statsTbody) {
                         statsTbody.innerHTML = `
-                            ${renderStatRow(fixture, 'goals_scored', 'Goals Scored')}
-                            ${renderStatRow(fixture, 'assists', 'Assists')}
-                            ${renderStatRow(fixture, 'yellow_cards', 'Yellow Cards')}
-                            ${renderStatRow(fixture, 'saves', 'Saves')}
-                            ${renderStatRow(fixture, 'bonus', 'Bonus')}
-                            ${renderStatRow(fixture, 'bps', 'BPS (Ranking)')}
-                            ${renderStatRow(fixture, 'defensive_contribution', 'Defensive Contributions')}
+                            ${renderStatRow(fixture, 'goals_scored', 'Goals Scored', 'fa-futbol', '#4ade80')}
+                            ${renderStatRow(fixture, 'assists', 'Assists', 'fa-hands-helping', '#38bdf8')}
+                            ${renderStatRow(fixture, 'yellow_cards', 'Yellow Cards', 'fa-square', '#facc15')}
+                            ${renderStatRow(fixture, 'saves', 'Saves', 'fa-hand', '#a78bfa')}
+                            ${renderStatRow(fixture, 'bonus', 'Bonus Points', 'fa-star', '#fb923c')}
+                            ${renderStatRow(fixture, 'bps', 'BPS (Ranking)', 'fa-ranking-star', '#94a3b8')}
+                            ${renderStatRow(fixture, 'defensive_contribution', 'Defensive Contributions', 'fa-shield-halved', '#34d399')}
                         `;
                     }
                     
@@ -179,24 +179,28 @@ function renderFixtures() {
                         </ul>
                         <div class="tab-content mt-3" id="myTabContent${fixture.code}">
                             <div class="tab-pane fade show active" id="stats-${fixture.code}" role="tabpanel" aria-labelledby="stats-tab-${fixture.code}">
-                                <table class="table table-dark table-bordered">
-                                    <thead>
-                                        <tr>
-                                            <th>Stat</th>
-                                            <th>${homeTeam.short_name}</th>
-                                            <th>${awayTeam.short_name}</th>
-                                        </tr>
-                                    </thead>
-                                                                        <tbody id="stats-tbody-${fixture.code}">
-                                        ${renderStatRow(fixture, 'goals_scored', 'Goals Scored')}
-                                        ${renderStatRow(fixture, 'assists', 'Assists')}
-                                        ${renderStatRow(fixture, 'yellow_cards', 'Yellow Cards')}
-                                        ${renderStatRow(fixture, 'saves', 'Saves')}
-                                        ${renderStatRow(fixture, 'bonus', 'Bonus')}
-                                        ${renderStatRow(fixture, 'bps', 'BPS (Ranking)')}
-                                        ${renderStatRow(fixture, 'defensive_contribution', 'Defensive Contributions')}
-                                    </tbody>
-                                </table>
+                                <div class="p-2">
+                                    <div class="d-flex align-items-center justify-content-between mb-3 px-1" style="border-bottom:1px solid #2b2b2b; padding-bottom:8px;">
+                                        <span style="color:#0dcaf0; font-size:0.8rem; font-weight:600;">
+                                            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#0dcaf0;margin-right:5px;"></span>
+                                            ${homeTeam.short_name} <span style="color:#555; font-size:0.65rem; font-weight:400;">(Home)</span>
+                                        </span>
+                                        <span style="color:#555; font-size:0.7rem; letter-spacing:1px;">PLAYER STATS</span>
+                                        <span style="color:#fb923c; font-size:0.8rem; font-weight:600;">
+                                            <span style="color:#555; font-size:0.65rem; font-weight:400;">(Away)</span> ${awayTeam.short_name}
+                                            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#fb923c;margin-left:5px;"></span>
+                                        </span>
+                                    </div>
+                                    <div id="stats-tbody-${fixture.code}">
+                                        ${renderStatRow(fixture, 'goals_scored', 'Goals Scored', 'fa-futbol', '#4ade80')}
+                                        ${renderStatRow(fixture, 'assists', 'Assists', 'fa-hands-helping', '#38bdf8')}
+                                        ${renderStatRow(fixture, 'yellow_cards', 'Yellow Cards', 'fa-square', '#facc15')}
+                                        ${renderStatRow(fixture, 'saves', 'Saves', 'fa-hand', '#a78bfa')}
+                                        ${renderStatRow(fixture, 'bonus', 'Bonus Points', 'fa-star', '#fb923c')}
+                                        ${renderStatRow(fixture, 'bps', 'BPS (Ranking)', 'fa-ranking-star', '#94a3b8')}
+                                        ${renderStatRow(fixture, 'defensive_contribution', 'Defensive Contributions', 'fa-shield-halved', '#34d399')}
+                                    </div>
+                                </div>
                             </div>
                             <div class="tab-pane fade" id="teamstats-${fixture.code}" role="tabpanel" aria-labelledby="teamstats-tab-${fixture.code}">
                                 <div id="teamstats-container-${fixture.id}" class="p-3">
@@ -236,31 +240,68 @@ function renderFixtures() {
     startLiveRefresh();
 }
 
-function renderStatRow(fixture, identifier, label) {
-    const h = getStatDetails(fixture, identifier, 'h');
-    const a = getStatDetails(fixture, identifier, 'a');
-    const hasData = h !== 'None' || a !== 'None';
-    const bgClass = '';
+function renderStatRow(fixture, identifier, label, icon = 'fa-chart-bar', iconColor = '#888') {
+    const h = getStatPlayers(fixture, identifier, 'h');
+    const a = getStatPlayers(fixture, identifier, 'a');
+    const hasData = h.length > 0 || a.length > 0;
+    if (!hasData) return '';
+
+    const HOME_COLOR = '#0dcaf0';
+    const AWAY_COLOR = '#fb923c';
+
+    const renderPlayers = (players, color, align) => {
+        if (players.length === 0) return '';
+        return players.map(p => {
+            const badgeStyle = `display:inline-block; background:${color}18; color:${color}; font-size:0.72rem; font-weight:700; padding:1px 7px; border-radius:10px; border:1px solid ${color}40; flex-shrink:0;`;
+            const link = p.id
+                ? `<a href="javascript:void(0)" onclick="showPlayerInfo(${p.id})" class="player-stat-link">${p.name}</a>`
+                : `<span style="color:#888; font-size:0.8rem;">${p.name}</span>`;
+            const badge = `<span style="${badgeStyle}">${p.value}</span>`;
+            // Home: name → badge (left to right). Away: badge → name (badge first, hugs divider)
+            const row = align === 'right'
+                ? `${link}<span style="margin-left:5px;">${badge}</span>`
+                : `${badge}<span style="margin-left:5px;">${link}</span>`;
+            return `<div style="display:flex; align-items:center; justify-content:${align === 'right' ? 'flex-end' : 'flex-start'}; margin-bottom:3px;">${row}</div>`;
+        }).join('');
+    };
+
     return `
-        <tr class="${bgClass}">
-            <td class="${hasData ? 'fw-bold' : ''}">${label}</td>
-            <td>${h}</td>
-            <td>${a}</td>
-        </tr>
+        <div style="border-bottom:1px solid #1e1e1e; padding:8px 4px;">
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:7px;">
+                <i class="fas ${icon} fa-sm" style="color:${iconColor}; width:14px; text-align:center; flex-shrink:0;"></i>
+                <span style="color:#555; font-size:0.73rem; text-transform:uppercase; letter-spacing:1.2px; font-weight:600;">${label}</span>
+            </div>
+            <div class="row g-0">
+                <div class="col-6" style="padding-right:10px; text-align:right; border-right:1px solid #252525;">
+                    ${renderPlayers(h, HOME_COLOR, 'right')}
+                </div>
+                <div class="col-6" style="padding-left:10px;">
+                    ${renderPlayers(a, AWAY_COLOR, 'left')}
+                </div>
+            </div>
+        </div>
     `;
 }
 
-function getStatDetails(fixture, identifier, teamName) {
+function getStatPlayers(fixture, identifier, teamName) {
     const stats = fixture.stats.find(stat => stat.identifier === identifier);
-    if (!stats) return 'None';
-
+    if (!stats || !stats[teamName]) return [];
     return stats[teamName].map(stat => {
         const player = allPlayers.find(p => p.id === stat.element);
-        if (player) {
-            // Pass player ID as an argument to showPlayerInfo
-            return `<a href="javascript:void(0)" onclick="showPlayerInfo(${player.id})">${player.web_name}</a> (${stat.value})`;
-        }
-        return `Unknown (${stat.value})`;
+        return {
+            id: player ? player.id : null,
+            name: player ? player.web_name : 'Unknown',
+            value: stat.value
+        };
+    });
+}
+
+function getStatDetails(fixture, identifier, teamName) {
+    const players = getStatPlayers(fixture, identifier, teamName);
+    if (players.length === 0) return 'None';
+    return players.map(p => {
+        if (p.id) return `<a href="javascript:void(0)" onclick="showPlayerInfo(${p.id})">${p.name}</a> (${p.value})`;
+        return `${p.name} (${p.value})`;
     }).join('<br>');
 }
 
