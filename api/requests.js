@@ -216,11 +216,9 @@ const getLeague = async (id, pageId = 1) => {
 
 const doRawCORSRequest = async (fullUrl) => {
     let lastError = null;
-    const encodedUrl = encodeURIComponent(fullUrl);
     for (let i = currentProxyIndex; i < proxies.length; i++) {
         try {
-            const urlToFetch = proxies[i].includes('?') ? proxies[i] + encodedUrl : proxies[i] + fullUrl;
-            const response = await fetch(urlToFetch);
+            const response = await fetch(proxies[i] + fullUrl);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const myJson = await response.json();
             currentProxyIndex = i;
@@ -232,8 +230,7 @@ const doRawCORSRequest = async (fullUrl) => {
     }
     for (let i = 0; i < currentProxyIndex; i++) {
         try {
-            const urlToFetch = proxies[i].includes('?') ? proxies[i] + encodedUrl : proxies[i] + fullUrl;
-            const response = await fetch(urlToFetch);
+            const response = await fetch(proxies[i] + fullUrl);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const myJson = await response.json();
             currentProxyIndex = i;
@@ -243,7 +240,8 @@ const doRawCORSRequest = async (fullUrl) => {
             console.warn(`Proxy ${proxies[i]} failed for raw url. Try next...`);
         }
     }
-    throw new Error('All proxies failed for raw request.');
+    // Explicitly return null if all proxies fail
+    return null;
 }
 
 const getPulseLiveFixtures = async () => {
