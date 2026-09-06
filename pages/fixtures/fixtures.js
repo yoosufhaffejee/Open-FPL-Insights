@@ -1078,14 +1078,25 @@ async function loadTeamStats(fplFixtureId) {
         return;
     }
 
-    const matchStats = await getPulseLiveMatchStats(plMatch.id);
-    if (!matchStats || !matchStats.team_h || !matchStats.team_h.stats) {
+    const matchStatsData = await getPulseLiveMatchStats(plMatch.id);
+    if (!matchStatsData || !matchStatsData.data || !matchStatsData.entity) {
         container.innerHTML = '<div class="alert alert-info">Match stats are not available yet.</div>';
         return;
     }
 
-    const getStat = (teamData, name) => {
-        const stat = teamData.stats.find(s => s.name === name);
+    const plHomeTeamId = matchStatsData.entity.teams[0].team.id;
+    const plAwayTeamId = matchStatsData.entity.teams[1].team.id;
+
+    const homeTeamData = matchStatsData.data[plHomeTeamId]?.M;
+    const awayTeamData = matchStatsData.data[plAwayTeamId]?.M;
+
+    if (!homeTeamData || !awayTeamData) {
+        container.innerHTML = '<div class="alert alert-info">Match stats are not available yet.</div>';
+        return;
+    }
+
+    const getStat = (teamStatsArray, name) => {
+        const stat = teamStatsArray.find(s => s.name === name);
         return stat ? stat.value : 0;
     };
 
@@ -1098,15 +1109,15 @@ async function loadTeamStats(fplFixtureId) {
         { key: 'won_corners', label: 'Corners' },
         { key: 'total_offside', label: 'Offsides' },
         { key: 'total_tackle', label: 'Tackles' },
-        { key: 'fouls', label: 'Fouls' },
-        { key: 'yellow_card', label: 'Yellow Cards' },
-        { key: 'red_card', label: 'Red Cards' }
+        { key: 'fk_foul_lost', label: 'Fouls' },
+        { key: 'total_yel_card', label: 'Yellow Cards' },
+        { key: 'total_red_card', label: 'Red Cards' }
     ];
 
     let html = '';
     statsConfig.forEach(cfg => {
-        const hVal = getStat(matchStats.team_h, cfg.key);
-        const aVal = getStat(matchStats.team_a, cfg.key);
+        const hVal = getStat(homeTeamData, cfg.key);
+        const aVal = getStat(awayTeamData, cfg.key);
         
         if (hVal === 0 && aVal === 0 && cfg.key !== 'possession_percentage') return; // Skip if both 0
 

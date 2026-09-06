@@ -311,7 +311,7 @@ const getPulseLiveEvents = async (matchId, page = 0, pageSize = 20) => {
 const getPulseLiveMatchStats = async (matchId) => {
     try {
         const data = await doRawCORSRequest(`https://footballapi.pulselive.com/football/stats/match/${matchId}`);
-        return data.entity ? data.entity : null;
+        return data;
     } catch (e) {
         console.error("Error fetching Pulse Live match stats", matchId, e);
         return null;
