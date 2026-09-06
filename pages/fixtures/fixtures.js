@@ -1128,16 +1128,24 @@ async function loadTeamStats(fplFixtureId) {
         const hDisplay = cfg.formatter ? cfg.formatter(hVal) : hVal;
         const aDisplay = cfg.formatter ? cfg.formatter(aVal) : aVal;
 
+        const isLowerBetter = ['fk_foul_lost', 'total_yel_card', 'total_red_card', 'total_offside'].includes(cfg.key);
+        
+        let hWinner = isLowerBetter ? (hVal < aVal) : (hVal > aVal);
+        let aWinner = isLowerBetter ? (aVal < hVal) : (aVal > hVal);
+        
+        const hTextStyle = hWinner ? 'color: #00ff85; font-weight: bold;' : (hVal === aVal ? 'color: #ffffff; font-weight: bold;' : 'color: #888888;');
+        const aTextStyle = aWinner ? 'color: #e90052; font-weight: bold;' : (hVal === aVal ? 'color: #ffffff; font-weight: bold;' : 'color: #888888;');
+
         html += `
             <div class="mb-3">
-                <div class="d-flex justify-content-between text-light mb-1 px-1" style="font-size: 0.85rem;">
-                    <span class="fw-bold">${hDisplay}</span>
-                    <span class="text-muted text-uppercase" style="letter-spacing: 1px; font-size: 0.75rem;">${cfg.label}</span>
-                    <span class="fw-bold">${aDisplay}</span>
+                <div class="d-flex justify-content-between mb-1 px-1" style="font-size: 0.85rem;">
+                    <span style="${hTextStyle}">${hDisplay}</span>
+                    <span class="text-muted text-uppercase" style="letter-spacing: 1px; font-size: 0.75rem; font-weight: 500;">${cfg.label}</span>
+                    <span style="${aTextStyle}">${aDisplay}</span>
                 </div>
                 <div class="progress" style="height: 6px; background-color: #2b2b2b; border-radius: 3px;">
-                    <div class="progress-bar" role="progressbar" style="width: ${hPct}%; background-color: #0dcaf0;" aria-valuenow="${hPct}" aria-valuemin="0" aria-valuemax="100"></div>
-                    <div class="progress-bar" role="progressbar" style="width: ${aPct}%; background-color: #fd7e14;" aria-valuenow="${aPct}" aria-valuemin="0" aria-valuemax="100"></div>
+                    <div class="progress-bar" role="progressbar" style="width: ${hPct}%; background-color: #00ff85; border-right: ${hPct > 0 && aPct > 0 ? '2px solid #2b2b2b' : 'none'};" aria-valuenow="${hPct}" aria-valuemin="0" aria-valuemax="100"></div>
+                    <div class="progress-bar" role="progressbar" style="width: ${aPct}%; background-color: #e90052;" aria-valuenow="${aPct}" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
             </div>
         `;
