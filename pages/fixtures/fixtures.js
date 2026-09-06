@@ -845,7 +845,7 @@ function renderTeamLineup(plPlayers, plSubstitutes, fplTeamId, startingContainer
         const fplPlayer = matchPlayer(p, teamPlayers);
         const shirtNum = parseInt(p.matchShirtNumber || p.shirtNum) || 999;
         const posType = fplPlayer ? fplPlayer.element_type : 5; // 1:GK, 2:DEF, 3:MID, 4:FWD, 5:Unknown
-        return { plPlayer, fplPlayer, shirtNum, posType };
+        return { plPlayer: p, fplPlayer, shirtNum, posType };
     };
 
     const sortFn = (a, b) => {
