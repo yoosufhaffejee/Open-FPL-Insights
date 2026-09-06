@@ -966,12 +966,13 @@ async function loadLiveEvents(fplFixtureId, loadMore = false) {
     }
 
     if (!loadMore) {
-        // Replace events
-        state.events = fetchedEvents;
-        state.page = 0;
+        // Prepend only new events to preserve any older events the user loaded
+        const newEvents = fetchedEvents.filter(fe => !state.events.some(se => se.id === fe.id));
+        state.events = [...newEvents, ...state.events];
     } else {
         // Append older events
-        state.events = [...state.events, ...fetchedEvents];
+        const olderEvents = fetchedEvents.filter(fe => !state.events.some(se => se.id === fe.id));
+        state.events = [...state.events, ...olderEvents];
         state.page = pageToFetch;
     }
 
@@ -982,7 +983,14 @@ async function loadLiveEvents(fplFixtureId, loadMore = false) {
     // Map events to HTML
     let eventsHtml = '<ul class="list-group list-group-flush">';
     state.events.forEach(ev => {
-        const timeLabel = ev.time ? `<span class="badge bg-secondary me-3" style="width: 45px;">${ev.time.label}'</span>` : '';
+        let displayLabel = ev.time ? ev.time.label + "'" : '';
+        if (ev.type && ev.type.toLowerCase() === 'end 14') {
+            displayLabel = 'FT'; // PulseLive weirdly sends '01' for Match Ends
+        } else if (ev.type && ev.type.toLowerCase() === 'half time') {
+            displayLabel = 'HT';
+        }
+        
+        const timeLabel = displayLabel ? `<span class="badge bg-secondary me-3" style="width: 45px;">${displayLabel}</span>` : '';
         let iconHtml = '<i class="fas fa-info-circle text-muted me-3 fs-5" style="width: 20px; text-align: center;"></i>';
         
         const typeMatch = (ev.type || '').toLowerCase();
