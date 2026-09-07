@@ -9,9 +9,9 @@ let db;
 
 
 // Fetch general data
-const fetchOverview = async () => {
+const fetchOverview = async (bypassCache = false) => {
     try {
-        const data = await getOverview();
+        const data = await getOverview(bypassCache);
         teams = data.teams;
         allPlayers = data.elements;
         

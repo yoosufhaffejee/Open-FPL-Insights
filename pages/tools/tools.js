@@ -255,6 +255,57 @@ const renderMarketTrends = () => {
     
     updateCountdown();
     setInterval(updateCountdown, 1000);
+    
+    // Secondary Timer for FPL API Data Updates (every 15 mins)
+    const setupApiUpdateTimer = () => {
+        let isFetching = false;
+        
+        const updateTimer = async () => {
+            const now = new Date();
+            const msSinceEpoch = now.getTime();
+            const msIn15Mins = 15 * 60 * 1000;
+            
+            // Calculate next 15-minute boundary based on UTC time
+            const nextBoundary = Math.ceil(msSinceEpoch / msIn15Mins) * msIn15Mins;
+            const diffMs = nextBoundary - msSinceEpoch;
+            
+            const timerEl = document.getElementById('fpl-api-timer');
+            
+            if (diffMs <= 1000 && !isFetching) { // Within 1 second of boundary
+                isFetching = true;
+                if (timerEl) timerEl.innerText = "Updating...";
+                
+                // Add a small 2 second delay to let FPL servers refresh their CDN
+                setTimeout(async () => {
+                    try {
+                        await fetchOverview(true); // Bypass cache and update allPlayers globally
+                        calculatePredictedPriceChanges();
+                        renderRisersPage();
+                        renderFallersPage();
+                    } catch (e) {
+                        console.error("Failed to refresh FPL data", e);
+                    } finally {
+                        isFetching = false;
+                    }
+                }, 2000);
+                return;
+            }
+            
+            if (isFetching) return;
+            
+            const m = Math.floor(diffMs / (1000 * 60));
+            const s = Math.floor((diffMs % (1000 * 60)) / 1000);
+            
+            if (timerEl) {
+                timerEl.innerText = `${m}m ${s.toString().padStart(2, '0')}s`;
+            }
+        };
+        
+        updateTimer();
+        setInterval(updateTimer, 1000);
+    };
+    
+    setupApiUpdateTimer();
 };
 
 

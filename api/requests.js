@@ -162,8 +162,8 @@ const doCORSRequest = async (url, bypassCache = false) => {
     throw new Error('All proxies failed. Network might be blocking requests.');
 }
 
-const getOverview = async () => {
-    const data = await doCORSRequest(reqType.overview);
+const getOverview = async (bypassCache = false) => {
+    const data = await doCORSRequest(reqType.overview, bypassCache);
     return data;
 }
 
