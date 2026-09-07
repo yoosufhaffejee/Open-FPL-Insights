@@ -226,7 +226,7 @@ let predictedPoints = 0;
  // Function to update the team UI
 function updateTeamUI() {
     // Clear existing players from rows
-    document.querySelectorAll('.row').forEach(row => row.innerHTML = '');
+    document.querySelectorAll('.pitch-container .row, .subs-container .row').forEach(row => row.innerHTML = '');
 
     predictedPoints = 0;
     bankBalance = 100.0;

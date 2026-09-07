@@ -489,7 +489,7 @@ function updateTeamUI() {
     validateAndFixFormation();
 
     // Clear existing players from rows
-    document.querySelectorAll('.row').forEach(row => row.innerHTML = '');
+    document.querySelectorAll('.pitch-container .row, .subs-container .row').forEach(row => row.innerHTML = '');
 
     bankBalance = 100.0;
     if (managerId > 0 && managerPicks && managerPicks.entry_history) {

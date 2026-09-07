@@ -46,7 +46,7 @@
     <li class="nav-item"><a class="nav-link" href="../../pages/fixtures/fixtures.html">Fixtures</a></li>
     <li class="nav-item"><a class="nav-link" href="../../pages/planner/planner.html">Planner</a></li>
     <li class="nav-item"><a class="nav-link" href="../../pages/fdr/fdr.html">FDR</a></li>
-    <li class="nav-item"><a class="nav-link" href="../../pages/stats/stats.html">Stats</a></li>
+    <li class="nav-item"><a class="nav-link active text-white fw-bold" href="../../pages/stats/stats.html">Stats</a></li>
     <li class="nav-item"><a class="nav-link" href="../../pages/tools/tools.html">Tools</a></li>
     <li class="nav-item"><a class="nav-link text-warning fw-bold" href="#" onclick="showOnboardingModal('../../', true)"><i class="fas fa-question-circle"></i> Help & Setup</a></li>
 </ul>
@@ -108,7 +108,7 @@
         <div id="comparison-results" class="mb-5 d-none">
             <ul class="nav nav-tabs mb-4 justify-content-center" id="compTab" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="season-tab" data-bs-toggle="tab" data-bs-target="#season" type="button" role="tab" aria-controls="season" aria-selected="true">Current Season</button>
+                    <button class="nav-link" id="season-tab" data-bs-toggle="tab" data-bs-target="#season" type="button" role="tab" aria-controls="season" aria-selected="true">Current Season</button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="past-tab" data-bs-toggle="tab" data-bs-target="#past" type="button" role="tab" aria-controls="past" aria-selected="false">Past Seasons</button>
@@ -264,6 +264,62 @@
 
     <!-- JavaScript Dependencies -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    
+    <!-- Footer -->
+    <footer class="site-footer bg-dark border-top border-secondary pt-5 pb-3 mt-5">
+        <div class="container">
+            <div class="row gy-4">
+                <!-- Brand & About -->
+                <div class="col-lg-5 col-md-6 text-center text-md-start">
+                    <h5 class="text-white mb-3"><i class="fas fa-chart-line text-success me-2"></i>Open FPL Insights</h5>
+                    <p class="text-white-50 small pe-lg-4 mb-0">
+                        A powerful dashboard built to supplement your Fantasy Premier League experience, containing a wide range of useful data, analytics, and real-time updates.
+                    </p>
+                </div>
+                
+                <!-- Quick Links -->
+                <div class="col-lg-3 col-md-6 text-center text-md-start">
+                    <h6 class="text-white mb-3">Links</h6>
+                    <ul class="list-unstyled mb-0 small">
+                        <li class="mb-2"><a href="../../privacy.html" class="text-white-50 text-decoration-none footer-link">Privacy Policy</a></li>
+                        <li class="mb-2"><a href="#" onclick="showOnboardingModal('../../', true)" class="text-white-50 text-decoration-none footer-link">Help & Setup</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Contact & Support -->
+                <div class="col-lg-4 col-md-12 text-center text-md-start">
+                    <h6 class="text-white mb-3">Support & Development</h6>
+                    <ul class="list-unstyled mb-0 small">
+                        <li class="mb-2">
+                            <a href="mailto:websitedesignwarehouse@gmail.com" class="text-white-50 text-decoration-none footer-link">
+                                <i class="fas fa-envelope text-secondary me-2"></i>websitedesignwarehouse@gmail.com
+                            </a>
+                        </li>
+                        <li class="mb-3">
+                            <a href="https://wa.me/27645446016" target="_blank" rel="noopener" class="text-white-50 text-decoration-none footer-link">
+                                <i class="fab fa-whatsapp text-success me-2"></i>WhatsApp +27 064 544 6016
+                            </a>
+                        </li>
+                        <li class="text-white-50">
+                            <i class="fas fa-code text-secondary me-2"></i>Developed by <a href="https://webdesignwarehouse.co.za/" target="_blank" rel="noopener" class="text-success text-decoration-none footer-link">Web Design Warehouse</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <hr class="border-secondary mt-4 mb-3">
+            
+            <!-- Bottom Footer -->
+            <div class="row align-items-center small">
+                <div class="col-md-8 text-center text-md-start text-white-50 mb-2 mb-md-0">
+                    <i class="fas fa-info-circle me-1"></i> This app is an independent tool and is not officially affiliated with Premier League or Fantasy Premier League.
+                </div>
+                <div class="col-md-4 text-center text-md-end text-white-50">
+                    &copy; 2026 Open FPL Insights.
+                </div>
+            </div>
+        </div>
+    </footer>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
