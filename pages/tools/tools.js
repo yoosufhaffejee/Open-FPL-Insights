@@ -111,27 +111,41 @@ const renderMarketTrends = () => {
         .sort((a, b) => a.cost_change_event - b.cost_change_event);
 
     const formatRecentRiser = (p) => {
+        let change = p.cost_change_event / 10;
+        let oldCost = (p.now_cost - p.cost_change_event) / 10;
+        let newCost = p.now_cost / 10;
+
         return `
             <div class="list-group-item bg-dark text-white border-secondary d-flex justify-content-between align-items-center px-3 py-2">
-                <div class="d-flex align-items-center" style="width: 40%;">
+                <div class="d-flex align-items-center text-truncate" style="width: 45%;">
                     <i class="fas fa-chevron-circle-up text-success me-2"></i>
-                    <span>${p.web_name}</span>
+                    <span class="text-truncate">${p.web_name}</span>
                 </div>
-                <div style="width: 30%;" class="text-center text-muted small">${getTeamShortName(p.team)}</div>
-                <div style="width: 30%;" class="text-end fw-bold">${(p.now_cost / 10).toFixed(1)}</div>
+                <div style="width: 20%;" class="text-center text-muted small">${getTeamShortName(p.team)}</div>
+                <div style="width: 35%;" class="text-end d-flex flex-column">
+                    <span class="fw-bold">${newCost.toFixed(1)} <span class="text-success small">(+${change.toFixed(1)})</span></span>
+                    <span class="text-muted" style="font-size: 0.7em;">Was ${oldCost.toFixed(1)}</span>
+                </div>
             </div>
         `;
     };
 
     const formatRecentFaller = (p) => {
+        let change = p.cost_change_event / 10;
+        let oldCost = (p.now_cost - p.cost_change_event) / 10;
+        let newCost = p.now_cost / 10;
+
         return `
             <div class="list-group-item bg-dark text-white border-secondary d-flex justify-content-between align-items-center px-3 py-2">
-                <div class="d-flex align-items-center" style="width: 40%;">
+                <div class="d-flex align-items-center text-truncate" style="width: 45%;">
                     <i class="fas fa-chevron-circle-down text-danger me-2"></i>
-                    <span>${p.web_name}</span>
+                    <span class="text-truncate">${p.web_name}</span>
                 </div>
-                <div style="width: 30%;" class="text-center text-muted small">${getTeamShortName(p.team)}</div>
-                <div style="width: 30%;" class="text-end fw-bold">${(p.now_cost / 10).toFixed(1)}</div>
+                <div style="width: 20%;" class="text-center text-muted small">${getTeamShortName(p.team)}</div>
+                <div style="width: 35%;" class="text-end d-flex flex-column">
+                    <span class="fw-bold">${newCost.toFixed(1)} <span class="text-danger small">(${change.toFixed(1)})</span></span>
+                    <span class="text-muted" style="font-size: 0.7em;">Was ${oldCost.toFixed(1)}</span>
+                </div>
             </div>
         `;
     };
