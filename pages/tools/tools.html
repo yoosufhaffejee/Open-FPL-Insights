@@ -50,34 +50,14 @@
     <div class="container-fluid content-container">
         <h2 class="mb-4">FPL Tools</h2>
         
-        <div class="row mb-5">
-            <div class="col-12">
-                <div class="card bg-dark border-secondary p-4">
-                    <h4 class="mb-3">Market Trends (Price Changes)</h4>
-                    <p class="text-muted small mb-4">Players likely to rise or fall in price tonight based on net transfers.</p>
-                    <div class="row">
-                        <div class="col-md-6 mb-4">
-                            <h5 class="text-success"><i class="fas fa-arrow-trend-up"></i> Approaching Rise</h5>
-                            <div class="list-group" id="price-risers">
-                                <!-- Rendered via JS -->
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-4">
-                            <h5 class="text-danger"><i class="fas fa-arrow-trend-down"></i> Approaching Fall</h5>
-                            <div class="list-group" id="price-fallers">
-                                <!-- Rendered via JS -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <div class="row">
             <!-- Sidebar Navigation -->
             <div class="col-md-3 col-lg-2 sidebar-menu mb-4">
                 <div class="list-group list-group-flush" id="tools-nav">
-                    <button class="list-group-item list-group-item-action active" data-tool="defcon">
+                    <button class="list-group-item list-group-item-action active" data-tool="market">
+                        <i class="fas fa-arrow-trend-up text-danger me-2"></i> Price Changes
+                    </button>
+                    <button class="list-group-item list-group-item-action" data-tool="defcon">
                         <i class="fas fa-shield-alt text-success me-2"></i> Def Con
                     </button>
                     <button class="list-group-item list-group-item-action" data-tool="expected">
@@ -85,9 +65,6 @@
                     </button>
                     <button class="list-group-item list-group-item-action" data-tool="setpieces">
                         <i class="fas fa-futbol text-warning me-2"></i> Set Pieces
-                    </button>
-                    <button class="list-group-item list-group-item-action" data-tool="transfers">
-                        <i class="fas fa-exchange-alt text-primary me-2"></i> Top Transfers
                     </button>
                     <button class="list-group-item list-group-item-action" data-tool="template">
                         <i class="fas fa-crown text-warning me-2"></i> Template Team (Top 20)
@@ -98,8 +75,96 @@
             <!-- Main Content Area -->
             <div class="col-md-9 col-lg-10 main-content">
                 
+                <!-- Tool: Price Changes -->
+                <div id="tool-market" class="tool-section active-tool">
+                    <h2><i class="fas fa-arrow-trend-up text-danger me-2"></i> Price Changes</h2>
+                    <p style="color: #bbb;">Predicted price changes, recent confirmed market movements, and top transfers.</p>
+
+                    <div class="card bg-dark border-secondary p-4 mt-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h4 class="mb-1">Market Trends (Predicted)</h4>
+                                <p class="text-muted small mb-0">Players likely to rise or fall in price tonight based on net transfers.</p>
+                            </div>
+                            <div class="text-end">
+                                <h5 class="text-warning mb-1" id="price-countdown">Loading...</h5>
+                                <small class="text-muted" id="price-target-time"></small>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <h5 class="text-success"><i class="fas fa-arrow-trend-up"></i> Approaching Rise</h5>
+                                <div class="list-group" id="price-risers">
+                                    <!-- Rendered via JS -->
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <h5 class="text-danger"><i class="fas fa-arrow-trend-down"></i> Approaching Fall</h5>
+                                <div class="list-group" id="price-fallers">
+                                    <!-- Rendered via JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card bg-dark border-secondary p-4 mt-4">
+                        <h4 class="mb-3 text-uppercase fw-bold">Price Change History</h4>
+                        <p class="text-muted small mb-4">Track all confirmed price rises and falls for the current Gameweek <i class="fas fa-info-circle" title="These are the changes that have already occurred since the last Gameweek deadline."></i></p>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <div class="bg-success text-center py-2 mb-3 rounded fw-bold text-white"><i class="fas fa-arrow-up"></i> PRICE RISES</div>
+                                <div class="d-flex justify-content-between text-muted small px-3 mb-2 fw-bold text-uppercase">
+                                    <span>Player</span>
+                                    <span>Team</span>
+                                    <span>Cost</span>
+                                </div>
+                                <div class="list-group" id="recent-risers">
+                                    <!-- Rendered via JS -->
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-3" id="risers-pagination" style="display: none !important;">
+                                    <button class="btn btn-sm btn-outline-secondary" id="risers-prev"><i class="fas fa-chevron-left"></i></button>
+                                    <span class="small text-muted" id="risers-page-info">Page 1</span>
+                                    <button class="btn btn-sm btn-outline-secondary" id="risers-next"><i class="fas fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <div class="bg-danger text-center py-2 mb-3 rounded fw-bold text-white"><i class="fas fa-arrow-down"></i> PRICE FALLS</div>
+                                <div class="d-flex justify-content-between text-muted small px-3 mb-2 fw-bold text-uppercase">
+                                    <span>Player</span>
+                                    <span>Team</span>
+                                    <span>Cost</span>
+                                </div>
+                                <div class="list-group" id="recent-fallers">
+                                    <!-- Rendered via JS -->
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-3" id="fallers-pagination" style="display: none !important;">
+                                    <button class="btn btn-sm btn-outline-secondary" id="fallers-prev"><i class="fas fa-chevron-left"></i></button>
+                                    <span class="small text-muted" id="fallers-page-info">Page 1</span>
+                                    <button class="btn btn-sm btn-outline-secondary" id="fallers-next"><i class="fas fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card bg-dark border-secondary p-4 mt-4">
+                        <h4 class="mb-3 text-uppercase fw-bold">Top Transfers</h4>
+                        <p class="text-muted small mb-4">Most bought and sold players for the upcoming Gameweek.</p>
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <h4 class="text-success text-center">Top Transfers In</h4>
+                                <div id="transfersInGrid" class="ag-theme-alpine-dark" style="height: 500px; width: 100%;"></div>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <h4 class="text-danger text-center">Top Transfers Out</h4>
+                                <div id="transfersOutGrid" class="ag-theme-alpine-dark" style="height: 500px; width: 100%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Tool: Def Con -->
-                <div id="tool-defcon" class="tool-section active-tool">
+                <div id="tool-defcon" class="tool-section">
                     <h2><i class="fas fa-shield-alt text-success me-2"></i> Def Con</h2>
                     <p style="color: #bbb;">Rankings based on defensive contributions (tackles, clearances, blocks, and recoveries).</p>
                     <div id="defconGrid" class="ag-theme-alpine-dark" style="height: 500px; width: 100%;"></div>
@@ -118,22 +183,6 @@
                     <p style="color: #bbb;">A cheat sheet of designated set piece takers for each team.</p>
                     <div id="setpieces-container" class="row">
                         <!-- Populated by JS -->
-                    </div>
-                </div>
-
-                <!-- Tool: Top Transfers -->
-                <div id="tool-transfers" class="tool-section">
-                    <h2><i class="fas fa-exchange-alt text-primary me-2"></i> Market Trends</h2>
-                    <p style="color: #bbb;">Most bought and sold players for the upcoming Gameweek.</p>
-                    <div class="row">
-                        <div class="col-md-6 mb-4">
-                            <h4 class="text-success text-center">Top Transfers In</h4>
-                            <div id="transfersInGrid" class="ag-theme-alpine-dark" style="height: 500px; width: 100%;"></div>
-                        </div>
-                        <div class="col-md-6 mb-4">
-                            <h4 class="text-danger text-center">Top Transfers Out</h4>
-                            <div id="transfersOutGrid" class="ag-theme-alpine-dark" style="height: 500px; width: 100%;"></div>
-                        </div>
                     </div>
                 </div>
 

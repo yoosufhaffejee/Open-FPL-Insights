@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     defconGridApi.sizeColumnsToFit();
                 } else if (toolId === 'expected' && typeof expectedGridOptions !== 'undefined' && expectedGridApi) {
                     expectedGridApi.sizeColumnsToFit();
-                } else if (toolId === 'transfers' && typeof transfersInGridOptions !== 'undefined' && transfersInGridApi) {
+                } else if (toolId === 'market' && typeof transfersInGridOptions !== 'undefined' && transfersInGridApi) {
                     transfersInGridApi.sizeColumnsToFit();
                     transfersOutGridApi.sizeColumnsToFit();
                 }
@@ -96,6 +96,137 @@ const renderMarketTrends = () => {
 
     document.getElementById('price-risers').innerHTML = risers.length > 0 ? risers.map(formatRiser).join('') : '<div class="list-group-item bg-dark text-white border-secondary text-muted">No risers</div>';
     document.getElementById('price-fallers').innerHTML = fallers.length > 0 ? fallers.map(formatFaller).join('') : '<div class="list-group-item bg-dark text-white border-secondary text-muted">No fallers</div>';
+
+    // Recent Changes with Pagination
+    const PAGE_SIZE = 10;
+    let risersPage = 1;
+    let fallersPage = 1;
+
+    const recentRisers = [...allPlayers]
+        .filter(p => p.cost_change_event > 0)
+        .sort((a, b) => b.cost_change_event - a.cost_change_event);
+        
+    const recentFallers = [...allPlayers]
+        .filter(p => p.cost_change_event < 0)
+        .sort((a, b) => a.cost_change_event - b.cost_change_event);
+
+    const formatRecentRiser = (p) => {
+        return `
+            <div class="list-group-item bg-dark text-white border-secondary d-flex justify-content-between align-items-center px-3 py-2">
+                <div class="d-flex align-items-center" style="width: 40%;">
+                    <i class="fas fa-chevron-circle-up text-success me-2"></i>
+                    <span>${p.web_name}</span>
+                </div>
+                <div style="width: 30%;" class="text-center text-muted small">${getTeamShortName(p.team)}</div>
+                <div style="width: 30%;" class="text-end fw-bold">${(p.now_cost / 10).toFixed(1)}</div>
+            </div>
+        `;
+    };
+
+    const formatRecentFaller = (p) => {
+        return `
+            <div class="list-group-item bg-dark text-white border-secondary d-flex justify-content-between align-items-center px-3 py-2">
+                <div class="d-flex align-items-center" style="width: 40%;">
+                    <i class="fas fa-chevron-circle-down text-danger me-2"></i>
+                    <span>${p.web_name}</span>
+                </div>
+                <div style="width: 30%;" class="text-center text-muted small">${getTeamShortName(p.team)}</div>
+                <div style="width: 30%;" class="text-end fw-bold">${(p.now_cost / 10).toFixed(1)}</div>
+            </div>
+        `;
+    };
+
+    const renderRisersPage = () => {
+        const start = (risersPage - 1) * PAGE_SIZE;
+        const end = start + PAGE_SIZE;
+        const paginated = recentRisers.slice(start, end);
+        
+        document.getElementById('recent-risers').innerHTML = paginated.length > 0 ? paginated.map(formatRecentRiser).join('') : '<div class="list-group-item bg-dark text-white border-secondary text-center text-muted">No recent price rises</div>';
+        
+        const totalPages = Math.ceil(recentRisers.length / PAGE_SIZE) || 1;
+        document.getElementById('risers-page-info').innerText = `Page ${risersPage} of ${totalPages}`;
+        
+        const paginationContainer = document.getElementById('risers-pagination');
+        if (recentRisers.length > PAGE_SIZE) {
+            paginationContainer.style.setProperty('display', 'flex', 'important');
+            document.getElementById('risers-prev').disabled = risersPage === 1;
+            document.getElementById('risers-next').disabled = risersPage === totalPages;
+        } else {
+            paginationContainer.style.setProperty('display', 'none', 'important');
+        }
+    };
+
+    const renderFallersPage = () => {
+        const start = (fallersPage - 1) * PAGE_SIZE;
+        const end = start + PAGE_SIZE;
+        const paginated = recentFallers.slice(start, end);
+        
+        document.getElementById('recent-fallers').innerHTML = paginated.length > 0 ? paginated.map(formatRecentFaller).join('') : '<div class="list-group-item bg-dark text-white border-secondary text-center text-muted">No recent price falls</div>';
+        
+        const totalPages = Math.ceil(recentFallers.length / PAGE_SIZE) || 1;
+        document.getElementById('fallers-page-info').innerText = `Page ${fallersPage} of ${totalPages}`;
+        
+        const paginationContainer = document.getElementById('fallers-pagination');
+        if (recentFallers.length > PAGE_SIZE) {
+            paginationContainer.style.setProperty('display', 'flex', 'important');
+            document.getElementById('fallers-prev').disabled = fallersPage === 1;
+            document.getElementById('fallers-next').disabled = fallersPage === totalPages;
+        } else {
+            paginationContainer.style.setProperty('display', 'none', 'important');
+        }
+    };
+
+    renderRisersPage();
+    renderFallersPage();
+
+    document.getElementById('risers-prev').addEventListener('click', () => { if (risersPage > 1) { risersPage--; renderRisersPage(); } });
+    document.getElementById('risers-next').addEventListener('click', () => { if (risersPage < Math.ceil(recentRisers.length / PAGE_SIZE)) { risersPage++; renderRisersPage(); } });
+    
+    document.getElementById('fallers-prev').addEventListener('click', () => { if (fallersPage > 1) { fallersPage--; renderFallersPage(); } });
+    document.getElementById('fallers-next').addEventListener('click', () => { if (fallersPage < Math.ceil(recentFallers.length / PAGE_SIZE)) { fallersPage++; renderFallersPage(); } });
+
+    // Countdown to Next Price Change (around 01:15 AM UK Time)
+    const updateCountdown = () => {
+        const now = new Date();
+        const ukTimeStr = now.toLocaleString("en-US", { timeZone: "Europe/London" });
+        const ukTime = new Date(ukTimeStr);
+        
+        let targetUKTime = new Date(ukTime);
+        targetUKTime.setHours(1, 15, 0, 0); // 1:15 AM
+        
+        if (ukTime > targetUKTime) {
+            targetUKTime.setDate(targetUKTime.getDate() + 1); // Next day
+        }
+        
+        const diffMs = targetUKTime - ukTime;
+        if (diffMs <= 0) {
+            const timerEl = document.getElementById('price-countdown');
+            if(timerEl) timerEl.innerText = "00:00:00";
+            return;
+        }
+
+        const h = Math.floor(diffMs / (1000 * 60 * 60));
+        const m = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diffMs % (1000 * 60)) / 1000);
+        
+        const formatZero = (num) => num.toString().padStart(2, '0');
+        
+        const timerEl = document.getElementById('price-countdown');
+        if (timerEl) {
+            timerEl.innerText = `Next Price Changes Happen in: ${formatZero(h)}:${formatZero(m)}:${formatZero(s)}`;
+        }
+        
+        // Calculate the local time it happens at
+        const targetTimeEl = document.getElementById('price-target-time');
+        if (targetTimeEl) {
+            const localTargetTime = new Date(now.getTime() + diffMs);
+            const options = { hour: '2-digit', minute: '2-digit' };
+            targetTimeEl.innerText = `Next Price Change at: ${localTargetTime.toLocaleTimeString([], options)} (Local Time)`;
+        }
+    };
+    
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
 };
 
 
