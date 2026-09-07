@@ -1940,6 +1940,7 @@ function openSuggestedTransfersModal() {
 function updateActionButtonsVisibility() {
     const realPlayersCount = myPlayers ? myPlayers.filter(p => p.now_cost > 0).length : 0;
     const hasPlayers = realPlayersCount > 0;
+    const isTeamFull = realPlayersCount >= 15;
     
     const resetButton = document.getElementById('resetButton');
     if (resetButton) resetButton.style.display = hasPlayers ? 'inline-block' : 'none';
@@ -1948,7 +1949,10 @@ function updateActionButtonsVisibility() {
     if (importBtn) importBtn.style.display = hasPlayers ? 'none' : 'inline-block';
     
     const autoPickBtn = document.getElementById('autoPickButton');
-    if (autoPickBtn) autoPickBtn.style.display = hasPlayers ? 'none' : 'inline-block';
+    if (autoPickBtn) {
+        autoPickBtn.style.display = isTeamFull ? 'none' : 'inline-block';
+        if (!isTeamFull) autoPickBtn.disabled = false;
+    }
     
     const suggestBtn = document.getElementById('suggestedTransfersButton');
     if (suggestBtn) suggestBtn.style.display = hasPlayers ? 'inline-block' : 'none';
