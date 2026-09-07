@@ -199,20 +199,34 @@ const renderMarketTrends = () => {
     document.getElementById('fallers-prev').addEventListener('click', () => { if (fallersPage > 1) { fallersPage--; renderFallersPage(); } });
     document.getElementById('fallers-next').addEventListener('click', () => { if (fallersPage < Math.ceil(recentFallers.length / PAGE_SIZE)) { fallersPage++; renderFallersPage(); } });
 
-    // Countdown to Next Price Change (around 01:15 AM UK Time)
+    // Countdown to Next Price Change (00:00 UK Time)
     const updateCountdown = () => {
         const now = new Date();
-        const ukTimeStr = now.toLocaleString("en-US", { timeZone: "Europe/London" });
-        const ukTime = new Date(ukTimeStr);
         
-        let targetUKTime = new Date(ukTime);
-        targetUKTime.setHours(1, 15, 0, 0); // 1:15 AM
+        // Format current UK wall-clock time
+        const formatter = new Intl.DateTimeFormat('en-GB', {
+            timeZone: 'Europe/London',
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            hour12: false
+        });
         
-        if (ukTime > targetUKTime) {
-            targetUKTime.setDate(targetUKTime.getDate() + 1); // Next day
+        const parts = formatter.formatToParts(now);
+        const vals = {};
+        parts.forEach(p => vals[p.type] = p.value);
+        
+        // Map UK wall-clock time to UTC for safe math
+        const ukWallClockUTC = Date.UTC(vals.year, parseInt(vals.month) - 1, vals.day, vals.hour, vals.minute, vals.second);
+        
+        // Target is midnight UK wall-clock time
+        let targetWallClockUTC = Date.UTC(vals.year, parseInt(vals.month) - 1, vals.day, 0, 0, 0);
+        
+        if (ukWallClockUTC >= targetWallClockUTC) {
+            targetWallClockUTC = Date.UTC(vals.year, parseInt(vals.month) - 1, parseInt(vals.day) + 1, 0, 0, 0);
         }
         
-        const diffMs = targetUKTime - ukTime;
+        const diffMs = targetWallClockUTC - ukWallClockUTC;
+        
         if (diffMs <= 0) {
             const timerEl = document.getElementById('price-countdown');
             if(timerEl) timerEl.innerText = "00:00:00";
