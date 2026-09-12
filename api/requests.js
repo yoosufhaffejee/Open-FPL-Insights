@@ -64,7 +64,16 @@ const doCORSRequest = async (url, bypassCache = false) => {
     for (let i = currentProxyIndex; i < proxies.length; i++) {
         try {
             const response = await fetch(proxies[i] + endpointUrl);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            if (!response.ok) {
+                if (response.status === 503) {
+                    const clone = response.clone();
+                    const text = await clone.text();
+                    if (text.includes('The game is being updated')) {
+                        throw new Error('FPL_GAME_UPDATING');
+                    }
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             
             const contentLength = response.headers.get('content-length');
             const actualTotal = parseInt(contentLength, 10);
@@ -142,6 +151,10 @@ const doCORSRequest = async (url, bypassCache = false) => {
             return myJson;
         } catch (e) {
             lastError = e;
+            if (e.message === 'FPL_GAME_UPDATING') {
+                window.fplGameUpdating = true;
+                throw e;
+            }
             console.warn(`Proxy ${proxies[i]} failed. Try next...`);
         }
     }
@@ -149,12 +162,25 @@ const doCORSRequest = async (url, bypassCache = false) => {
     for (let i = 0; i < currentProxyIndex; i++) {
         try {
             const response = await fetch(proxies[i] + endpointUrl);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            if (!response.ok) {
+                if (response.status === 503) {
+                    const clone = response.clone();
+                    const text = await clone.text();
+                    if (text.includes('The game is being updated')) {
+                        throw new Error('FPL_GAME_UPDATING');
+                    }
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             const myJson = await response.json();
             currentProxyIndex = i;
             return myJson;
         } catch (e) {
             lastError = e;
+            if (e.message === 'FPL_GAME_UPDATING') {
+                window.fplGameUpdating = true;
+                throw e;
+            }
             console.warn(`Proxy ${proxies[i]} failed. Try next...`);
         }
     }

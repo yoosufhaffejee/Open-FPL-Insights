@@ -111,14 +111,25 @@ const setupPage = async () => {
     await fetchGameweeks();
 
     if (!gameweeks || gameweeks.length === 0) {
-        document.body.innerHTML = `
-            <div class="container mt-5 text-center text-white p-5 border border-danger rounded bg-dark" style="z-index: 10000; position: relative;">
-                <h3 class="text-danger">Failed to load FPL Data</h3>
-                <p>Your network might be blocking the API requests.</p>
-                <p>Try switching from mobile data to Wi-Fi, or use a VPN.</p>
-                <button class="btn btn-primary mt-3" onclick="window.location.reload()">Retry</button>
-            </div>
-        `;
+        if (window.fplGameUpdating) {
+            document.body.innerHTML = `
+                <div class="container mt-5 text-center text-white p-5 border border-info rounded" style="background-color: #37003c; z-index: 10000; position: relative;">
+                    <img src="https://fantasy.premierleague.com/static/media/logo-fpl.09c86a11.svg" alt="FPL Logo" style="width: 150px; margin-bottom: 20px;">
+                    <h2 class="text-white fw-bold mb-4">The game is updating and will be available soon.</h2>
+                    <p class="fs-5">Please check back later.</p>
+                    <button class="btn btn-light fw-bold mt-4 px-4 py-2" onclick="window.location.reload()">Refresh</button>
+                </div>
+            `;
+        } else {
+            document.body.innerHTML = `
+                <div class="container mt-5 text-center text-white p-5 border border-danger rounded bg-dark" style="z-index: 10000; position: relative;">
+                    <h3 class="text-danger">Failed to load FPL Data</h3>
+                    <p>Your network might be blocking the API requests.</p>
+                    <p>Try switching from mobile data to Wi-Fi, or use a VPN.</p>
+                    <button class="btn btn-primary mt-3" onclick="window.location.reload()">Retry</button>
+                </div>
+            `;
+        }
         const loader = document.getElementById('global-loader');
         if (loader) loader.style.display = 'none';
         return;
