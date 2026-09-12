@@ -767,7 +767,7 @@ async function Initialize() {
         if (window.fplGameUpdating) {
             document.body.innerHTML = `
                 <div class="container mt-5 text-center text-white p-5 border border-info rounded" style="background-color: #37003c;">
-                    <img src="https://logo.premierleague.com/img/lion-dark.svg" alt="FPL Logo" style="width: 150px; margin-bottom: 20px;">
+                    <img src="https://logo.premierleague.com/img/lion-light.svg" alt="FPL Logo" style="width: 150px; margin-bottom: 20px;">
                     <h2 class="text-white fw-bold mb-4">The game is updating and will be available soon.</h2>
                     <p class="fs-5">Please check back later.</p>
                     <p class="text-light opacity-75">FYI: The game usually becomes available as soon as the first match of the gameweek kicks off.</p>
