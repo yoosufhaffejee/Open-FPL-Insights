@@ -695,7 +695,7 @@ function populatePlayerModal(data, player, providedGwNum = null) {
             
             // Exp Bonus
             let expectedBonus = 0;
-            const fixture = getPlayerFixture(player, upcomingGameweek.id);
+            const fixture = getPlayerFixture(player, gwNum);
             if (fixture && typeof allPlayers !== 'undefined') {
                 let oppTeamId = (player.team === fixture.team_h) ? fixture.team_a : fixture.team_h;
                 let matchPlayers = allPlayers.filter(p => p.team === player.team || p.team === oppTeamId);
