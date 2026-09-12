@@ -314,7 +314,19 @@ function renderPlayerElement(player) {
 
     const isGK = player.element_type === 1;
     const shirtUrl = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${player.team_code}${isGK ? '_1' : ''}-110.webp`;
-    const image = `<img src="${shirtUrl}" alt="${player.web_name}" onerror="playerImgOnerror(this, ${player.team_code}, ${player.element_type})">`;
+    
+    const anomaly = typeof analyzePlayerAnomalies === 'function' ? analyzePlayerAnomalies(player) : null;
+    let badgeHtml = '';
+    if (anomaly) {
+        badgeHtml = `<div class="anomaly-badge ${anomaly.type}">!<span class="tooltip-text">${anomaly.text}</span></div>`;
+    }
+
+    const image = `
+        <div style="position: relative; display: inline-block; max-width: 65px; width: 100%; margin: 0 auto;">
+            <img src="${shirtUrl}" alt="${player.web_name}" onerror="playerImgOnerror(this, ${player.team_code}, ${player.element_type})" style="width: 100%; height: auto;">
+            ${badgeHtml}
+        </div>
+    `;
 
     let priceDisplay = `£${(player.now_cost / 10).toFixed(1)}`;
     if (player.selling_price !== undefined && player.purchase_price !== undefined) {

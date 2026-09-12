@@ -105,6 +105,46 @@ function _getCookieVal(name) {
     return null;
 }
 
+// Function to analyze player stats for anomalies (lucky/unlucky)
+function analyzePlayerAnomalies(player) {
+    let mins = parseInt(player.minutes) || 0;
+    if (mins <= 180) return null; // Not enough data
+
+    let xG = parseFloat(player.expected_goals) || 0;
+    let xA = parseFloat(player.expected_assists) || 0;
+    let xGC = parseFloat(player.expected_goals_conceded) || 0;
+    
+    let goals = parseInt(player.goals_scored) || 0;
+    let assists = parseInt(player.assists) || 0;
+    let gc = parseInt(player.goals_conceded) || 0;
+
+    let isDef = player.element_type === 1 || player.element_type === 2; // GK or DEF
+
+    if (isDef) {
+        if (xGC - gc > 2.5) {
+            return { type: 'lucky', text: `Lucky Defense: Expected to concede ${xGC.toFixed(1)} goals but only conceded ${gc}. Defensive returns might regress.` };
+        }
+        if (gc - xGC > 2.5) {
+            return { type: 'unlucky', text: `Unlucky Defense: Conceded ${gc} goals but only expected to concede ${xGC.toFixed(1)}. Clean sheets should come.` };
+        }
+    } else {
+        if (xG - goals > 1.5) {
+            return { type: 'unlucky', text: `Unlucky Finisher: Expected ${xG.toFixed(1)} goals but only scored ${goals}. Due a goal.` };
+        }
+        if (goals - xG > 1.5) {
+            return { type: 'lucky', text: `Overperforming Finisher: Scored ${goals} goals from only ${xG.toFixed(1)} expected. Goalscoring rate might slow down.` };
+        }
+        if (xA - assists > 1.5) {
+            return { type: 'unlucky', text: `Unlucky Playmaker: Expected ${xA.toFixed(1)} assists but only got ${assists}. Teammates are missing chances.` };
+        }
+        if (assists - xA > 1.5) {
+            return { type: 'lucky', text: `Overperforming Playmaker: Got ${assists} assists from only ${xA.toFixed(1)} expected.` };
+        }
+    }
+    
+    return null;
+}
+
 function showOnboardingModal(assetPrefix = './', forceShow = false) {
     if (!forceShow && localStorage.getItem('fpl_onboarding_seen')) {
         return;

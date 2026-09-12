@@ -89,8 +89,28 @@
                                     <div class="card-header bg-success text-white py-1 text-nowrap"><small id="modal-our-title">Our Algorithm (GW)</small></div>
                                     <div class="card-body py-2"><h5 class="mb-0" id="modal-our-predicted">-</h5></div>
                                 </div>
-                                <div class="card text-start shadow-sm w-100 mt-3" style="display: none;" id="modal-breakdown-card">
-                                    <div class="card-header bg-secondary text-white py-1 text-center text-nowrap"><small>Algorithm Breakdown</small></div>
+                            </div>
+                            
+                            <!-- Collapsible Points Breakdown -->
+                            <div class="card text-start shadow-sm w-100 mt-3" style="display: none;" id="modal-points-breakdown-card">
+                                <div class="card-header bg-info text-white py-1 text-center" data-bs-toggle="collapse" data-bs-target="#collapsePointsBreakdownFixture" style="cursor: pointer;">
+                                    <small id="modal-points-breakdown-title">Points Breakdown</small>
+                                    <i class="fas fa-chevron-down float-end mt-1"></i>
+                                </div>
+                                <div id="collapsePointsBreakdownFixture" class="collapse show">
+                                    <div class="card-body py-2 small" id="modal-points-breakdown" style="line-height: 1.2;">
+                                        <!-- points breakdown injected here -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Collapsible Algorithm Breakdown -->
+                            <div class="card text-start shadow-sm w-100 mt-3" style="display: none;" id="modal-breakdown-card">
+                                <div class="card-header bg-secondary text-white py-1 text-center" data-bs-toggle="collapse" data-bs-target="#collapseAlgoBreakdownFixture" style="cursor: pointer;">
+                                    <small id="modal-algo-breakdown-title">Algorithm Breakdown</small>
+                                    <i class="fas fa-chevron-down float-end mt-1"></i>
+                                </div>
+                                <div id="collapseAlgoBreakdownFixture" class="collapse show">
                                     <div class="card-body py-2 small" id="modal-our-breakdown" style="line-height: 1.2;">
                                         <!-- breakdown injected here -->
                                     </div>

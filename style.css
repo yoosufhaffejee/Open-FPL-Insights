@@ -306,7 +306,7 @@ h1, h2, h3, h4, h5, h6 {
     flex-wrap: nowrap;
     justify-content: center;
     gap: 20px;
-    overflow-x: hidden;
+    overflow: visible;
 }
 
 .subs .player {
@@ -390,7 +390,7 @@ h1, h2, h3, h4, h5, h6 {
     }
 
     .subs-container { padding: 5px; }
-    .subs { flex-wrap: nowrap; overflow-x: hidden; gap: 2px; }
+    .subs { flex-wrap: nowrap; overflow: visible; gap: 2px; }
     .subs .player {
         flex: 1 1 18%;
         max-width: 75px;
@@ -662,4 +662,99 @@ h1, h2, h3, h4, h5, h6 {
 .site-footer h5, .site-footer h6 {
     font-weight: 600;
     letter-spacing: 0.5px;
+}
+/* Anomaly Badge Styles */
+.anomaly-badge {
+    position: absolute;
+    top: -5px;
+    right: 5px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 14px;
+    color: #fff;
+    cursor: help;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    border: 2px solid rgba(255,255,255,0.2);
+}
+
+.anomaly-badge.lucky {
+    background-color: #ff9800;
+}
+
+.anomaly-badge.unlucky {
+    background-color: #4caf50;
+}
+
+.anomaly-badge .tooltip-text {
+    visibility: hidden;
+    width: 160px;
+    background-color: rgba(30, 32, 35, 0.95);
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 6px;
+    position: absolute;
+    z-index: 11;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -80px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 11px;
+    line-height: 1.2;
+    border: 1px solid rgba(255,255,255,0.2);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+    pointer-events: none;
+    font-weight: normal;
+}
+
+.anomaly-badge .tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: rgba(30, 32, 35, 0.95) transparent transparent transparent;
+}
+
+.anomaly-badge:hover .tooltip-text,
+.anomaly-badge:active .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+.anomaly-badge:hover {
+    z-index: 100;
+}
+
+/* Fix bench players overflow */
+.subs .fixture-detail {
+    font-size: 0.5rem;
+    letter-spacing: -0.5px;
+    white-space: nowrap;
+}
+.subs .predicted-points {
+    font-size: 0.65rem;
+}
+.subs .fixtures {
+    gap: 1px;
+    width: 100%;
+    box-sizing: border-box;
+}
+.subs .fixture {
+    padding: 1px;
+    min-width: 0;
+    overflow: hidden;
+}
+.subs .icon-button {
+    margin: 0 2px;
+    font-size: 0.9em;
 }
