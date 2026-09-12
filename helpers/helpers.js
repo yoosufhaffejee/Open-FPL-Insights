@@ -391,6 +391,11 @@ function generatePointsBreakdown(gwHistory, elementType) {
     if (gwHistory.bonus > 0) {
         html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Bonus</span><span>' + gwHistory.bonus + '</span><span>' + gwHistory.bonus + ' pts</span></div>';
     }
+    
+    // Total Points
+    let totalPts = gwHistory.total_points !== undefined ? gwHistory.total_points : 0;
+    html += '<div class=\"d-flex justify-content-between pt-1 fw-bold text-white\" style=\"border-top: 1px solid #6c757d;\"><span>Total Points</span><span></span><span>' + totalPts + ' pts</span></div>';
+
     return html;
 }
 
