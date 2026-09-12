@@ -523,7 +523,7 @@ function sortRecentMatches(columnIndex) {
 }
 
 // Function to fetch and show player info
-function showPlayerInfo(playerId) {
+function showPlayerInfo(playerId, gwNum = typeof currentGW !== 'undefined' ? currentGW : undefined) {
     const player = allPlayers.find(p => p.id === playerId);
     if (!player) return;
 
@@ -548,7 +548,7 @@ function showPlayerInfo(playerId) {
             // Restore original HTML structure before populating
             document.getElementById('player-info-content').innerHTML = window.originalPlayerInfoModalHtml;
             // Populate the modal with the player info
-            populatePlayerModal(response, player);
+            populatePlayerModal(response, player, gwNum);
         })
         .catch(error => {
             console.log('Error fetching player info:', error);
@@ -557,7 +557,7 @@ function showPlayerInfo(playerId) {
 }
 
 // Function to populate the modal with player data
-function populatePlayerModal(data, player) {
+function populatePlayerModal(data, player, providedGwNum = null) {
     // Set the player name in the modal title
     const positionMap = { 1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD' };
     document.getElementById('playerInfoModalLabel').innerHTML = `
@@ -594,8 +594,13 @@ function populatePlayerModal(data, player) {
         fplPredictedElem.style.color = '#333';
         fplPredictedElem.style.textShadow = 'none';
         
-        const upcomingGameweek = gameweeks.find(gw => gw.id >= (typeof selectedGameweek !== 'undefined' ? selectedGameweek : getUpcomingGameweek().id));
-        const gwNum = upcomingGameweek ? upcomingGameweek.id : (typeof selectedGameweek !== 'undefined' ? selectedGameweek : getUpcomingGameweek().id);
+        let gwNum;
+        if (providedGwNum !== null && providedGwNum !== undefined) {
+            gwNum = providedGwNum;
+        } else {
+            const upcomingGameweek = gameweeks.find(gw => gw.id >= (typeof selectedGameweek !== 'undefined' ? selectedGameweek : getUpcomingGameweek().id));
+            gwNum = upcomingGameweek ? upcomingGameweek.id : (typeof selectedGameweek !== 'undefined' ? selectedGameweek : getUpcomingGameweek().id);
+        }
         
         const fplTitle = document.getElementById('modal-fpl-title');
         const ourTitle = document.getElementById('modal-our-title');
@@ -604,12 +609,9 @@ function populatePlayerModal(data, player) {
         
         let predictedPoints = player.predicted_points;
         if (predictedPoints === undefined) {
-            const upcomingGameweek = gameweeks.find(gw => gw.id >= (typeof selectedGameweek !== 'undefined' ? selectedGameweek : getUpcomingGameweek().id));
-            if (upcomingGameweek) {
-                const fixture = getPlayerFixture(player, upcomingGameweek.id);
-                if (fixture) {
-                    predictedPoints = calculatePlayerPredictedPoints(player, fixture, upcomingGameweek.id);
-                }
+            const fixture = getPlayerFixture(player, gwNum);
+            if (fixture) {
+                predictedPoints = calculatePlayerPredictedPoints(player, fixture, gwNum);
             }
         }
         
