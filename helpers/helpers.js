@@ -105,44 +105,86 @@ function _getCookieVal(name) {
     return null;
 }
 
-// Function to analyze player stats for anomalies (lucky/unlucky)
-function analyzePlayerAnomalies(player) {
-    let mins = parseInt(player.minutes) || 0;
-    if (mins <= 180) return null; // Not enough data
-
-    let xG = parseFloat(player.expected_goals) || 0;
-    let xA = parseFloat(player.expected_assists) || 0;
-    let xGC = parseFloat(player.expected_goals_conceded) || 0;
+// Function to get player insights (anomalies + recent form)
+function getPlayerInsights(player, fixturesList) {
+    if (!fixturesList || !player) return null;
+    let insights = [];
     
-    let goals = parseInt(player.goals_scored) || 0;
-    let assists = parseInt(player.assists) || 0;
-    let gc = parseInt(player.goals_conceded) || 0;
+    let mins = parseInt(player.minutes) || 0;
+    if (mins > 180) {
+        let xG = parseFloat(player.expected_goals) || 0;
+        let xA = parseFloat(player.expected_assists) || 0;
+        let xGC = parseFloat(player.expected_goals_conceded) || 0;
+        
+        let goals = parseInt(player.goals_scored) || 0;
+        let assists = parseInt(player.assists) || 0;
+        let gc = parseInt(player.goals_conceded) || 0;
 
-    let isDef = player.element_type === 1 || player.element_type === 2; // GK or DEF
+        let isDef = player.element_type === 1 || player.element_type === 2;
 
-    if (isDef) {
-        if (xGC - gc > 2.5) {
-            return { type: 'lucky', text: `Lucky Defense: Expected to concede ${xGC.toFixed(1)} goals but only conceded ${gc}. Defensive returns might regress.` };
-        }
-        if (gc - xGC > 2.5) {
-            return { type: 'unlucky', text: `Unlucky Defense: Conceded ${gc} goals but only expected to concede ${xGC.toFixed(1)}. Clean sheets should come.` };
-        }
-    } else {
-        if (xG - goals > 1.5) {
-            return { type: 'unlucky', text: `Unlucky Finisher: Expected ${xG.toFixed(1)} goals but only scored ${goals}. Due a goal.` };
-        }
-        if (goals - xG > 1.5) {
-            return { type: 'lucky', text: `Overperforming Finisher: Scored ${goals} goals from only ${xG.toFixed(1)} expected. Goalscoring rate might slow down.` };
-        }
-        if (xA - assists > 1.5) {
-            return { type: 'unlucky', text: `Unlucky Playmaker: Expected ${xA.toFixed(1)} assists but only got ${assists}. Teammates are missing chances.` };
-        }
-        if (assists - xA > 1.5) {
-            return { type: 'lucky', text: `Overperforming Playmaker: Got ${assists} assists from only ${xA.toFixed(1)} expected.` };
+        if (isDef) {
+            if (xGC - gc > 2.5) {
+                insights.push({ priority: 2, icon: '!', colorClass: 'badge-lucky', text: `Lucky Defense: Expected to concede ${xGC.toFixed(1)} goals but only conceded ${gc}.` });
+            } else if (gc - xGC > 2.5) {
+                insights.push({ priority: 2, icon: '!', colorClass: 'badge-unlucky', text: `Unlucky Defense: Conceded ${gc} goals but only expected to concede ${xGC.toFixed(1)}.` });
+            }
+        } else {
+            if (xG - goals > 1.5) {
+                insights.push({ priority: 2, icon: '!', colorClass: 'badge-unlucky', text: `Unlucky Finisher: Expected ${xG.toFixed(1)} goals but only scored ${goals}.` });
+            } else if (goals - xG > 1.5) {
+                insights.push({ priority: 2, icon: '!', colorClass: 'badge-lucky', text: `Lucky Finisher: Scored ${goals} goals from only ${xG.toFixed(1)} expected.` });
+            }
+            if (xA - assists > 1.5) {
+                insights.push({ priority: 2, icon: '!', colorClass: 'badge-unlucky', text: `Unlucky Playmaker: Expected ${xA.toFixed(1)} assists but only got ${assists}.` });
+            } else if (assists - xA > 1.5) {
+                insights.push({ priority: 2, icon: '!', colorClass: 'badge-lucky', text: `Lucky Playmaker: Got ${assists} assists from only ${xA.toFixed(1)} expected.` });
+            }
         }
     }
-    
-    return null;
+
+    let teamFixtures = fixturesList.filter(f => f.finished && (f.team_h === player.team || f.team_a === player.team));
+    teamFixtures.sort((a, b) => new Date(b.kickoff_time) - new Date(a.kickoff_time));
+    let recentFixtures = teamFixtures.slice(0, 4);
+
+    if (recentFixtures.length > 0) {
+        let recentGoals = 0, recentAssists = 0, bonusGames = 0, recentCards = 0, teamConceded = 0, cleanSheets = 0;
+
+        recentFixtures.forEach(f => {
+            let concededInThisMatch = (f.team_h === player.team) ? f.team_a_score : f.team_h_score;
+            teamConceded += concededInThisMatch;
+            if (concededInThisMatch === 0) cleanSheets++;
+
+            if (f.stats) {
+                let getStat = (identifier) => {
+                    let statObj = f.stats.find(s => s.identifier === identifier);
+                    if (!statObj) return 0;
+                    let arr = (f.team_h === player.team) ? statObj.h : statObj.a;
+                    let pStat = arr.find(s => s.element === player.id);
+                    return pStat ? pStat.value : 0;
+                };
+
+                recentGoals += getStat('goals_scored');
+                recentAssists += getStat('assists');
+                if (getStat('bonus') > 0) bonusGames++;
+                recentCards += getStat('yellow_cards') + getStat('red_cards');
+            }
+        });
+
+        if (recentGoals >= 3) insights.push({ priority: 1, icon: '🔥', colorClass: 'badge-fire', text: `On Fire: Scored ${recentGoals} goals in the last ${recentFixtures.length} matches.` });
+        if (recentAssists >= 3) insights.push({ priority: 4, icon: '🎯', colorClass: 'badge-blue', text: `Playmaker: Provided ${recentAssists} assists in the last ${recentFixtures.length} matches.` });
+        if (bonusGames >= 3) insights.push({ priority: 5, icon: '⭐', colorClass: 'badge-blue', text: `Bonus Magnet: Earned bonus points in ${bonusGames} of the last ${recentFixtures.length} matches.` });
+        if (recentCards >= 2) insights.push({ priority: 6, icon: '⚠️', colorClass: 'badge-lucky', text: `Discipline: Received ${recentCards} cards in the last ${recentFixtures.length} matches.` });
+
+        let isDef = player.element_type === 1 || player.element_type === 2;
+        if (isDef) {
+            if (cleanSheets >= 2) insights.push({ priority: 3, icon: '🛡️', colorClass: 'badge-blue', text: `Solid Defense: Kept ${cleanSheets} clean sheets in last ${recentFixtures.length} matches.` });
+            if (teamConceded >= 8) insights.push({ priority: 3, icon: '📉', colorClass: 'badge-lucky', text: `Leaky Defense: Conceded ${teamConceded} goals in last ${recentFixtures.length} matches.` });
+        }
+    }
+
+    if (insights.length === 0) return null;
+    insights.sort((a, b) => a.priority - b.priority);
+    return insights;
 }
 
 function showOnboardingModal(assetPrefix = './', forceShow = false) {
@@ -272,4 +314,64 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- END ONBOARDING UX ---
+
+function generatePointsBreakdown(gwHistory, elementType) {
+    if (!gwHistory) return '';
+    let html = '';
+    
+    // Minutes played
+    let minsPts = gwHistory.minutes >= 60 ? 2 : (gwHistory.minutes > 0 ? 1 : 0);
+    html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Minutes played</span><span>' + gwHistory.minutes + '</span><span>' + minsPts + ' pts</span></div>';
+    
+    // Goals scored
+    if (gwHistory.goals_scored > 0) {
+        let ptsPerGoal = elementType === 1 ? 10 : (elementType === 2 ? 6 : (elementType === 3 ? 5 : 4));
+        html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Goals scored</span><span>' + gwHistory.goals_scored + '</span><span>' + (gwHistory.goals_scored * ptsPerGoal) + ' pts</span></div>';
+    }
+    // Assists
+    if (gwHistory.assists > 0) {
+        html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Assists</span><span>' + gwHistory.assists + '</span><span>' + (gwHistory.assists * 3) + ' pts</span></div>';
+    }
+    // Clean sheets
+    if (gwHistory.clean_sheets > 0) {
+        let ptsPerCS = elementType === 3 ? 1 : (elementType === 4 ? 0 : 4);
+        if (ptsPerCS > 0) {
+            html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Clean sheets</span><span>' + gwHistory.clean_sheets + '</span><span>' + (gwHistory.clean_sheets * ptsPerCS) + ' pts</span></div>';
+        }
+    }
+    // Goals conceded
+    if (gwHistory.goals_conceded >= 2 && (elementType === 1 || elementType === 2)) {
+        html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Goals conceded</span><span>' + gwHistory.goals_conceded + '</span><span>' + (Math.floor(gwHistory.goals_conceded / 2) * -1) + ' pts</span></div>';
+    }
+    // Own goals
+    if (gwHistory.own_goals > 0) {
+        html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Own goals</span><span>' + gwHistory.own_goals + '</span><span>' + (gwHistory.own_goals * -2) + ' pts</span></div>';
+    }
+    // Penalties saved
+    if (gwHistory.penalties_saved > 0) {
+        html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Penalties saved</span><span>' + gwHistory.penalties_saved + '</span><span>' + (gwHistory.penalties_saved * 5) + ' pts</span></div>';
+    }
+    // Penalties missed
+    if (gwHistory.penalties_missed > 0) {
+        html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Penalties missed</span><span>' + gwHistory.penalties_missed + '</span><span>' + (gwHistory.penalties_missed * -2) + ' pts</span></div>';
+    }
+    // Yellow cards
+    if (gwHistory.yellow_cards > 0) {
+        html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Yellow cards</span><span>' + gwHistory.yellow_cards + '</span><span>' + (gwHistory.yellow_cards * -1) + ' pts</span></div>';
+    }
+    // Red cards
+    if (gwHistory.red_cards > 0) {
+        html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Red cards</span><span>' + gwHistory.red_cards + '</span><span>' + (gwHistory.red_cards * -3) + ' pts</span></div>';
+    }
+    // Saves
+    if (gwHistory.saves > 0) {
+        html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Saves</span><span>' + gwHistory.saves + '</span><span>' + Math.floor(gwHistory.saves / 3) + ' pts</span></div>';
+    }
+    // Bonus
+    if (gwHistory.bonus > 0) {
+        html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Bonus</span><span>' + gwHistory.bonus + '</span><span>' + gwHistory.bonus + ' pts</span></div>';
+    }
+    return html;
+}
+
 

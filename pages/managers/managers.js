@@ -141,6 +141,22 @@ async function getLatestPicks(gameweek) {
     if (managerPicks.entry_history && gameweek <= getLastGameweekId() && !isPreviewMode) {
         document.getElementById("points").hidden = false;
         points = managerPicks.entry_history.points;
+        if (currentLiveData && managerPicks.picks) {
+            let calcPts = 0;
+            managerPicks.picks.forEach(pick => {
+                if (pick.multiplier > 0) {
+                    const element = currentLiveData.elements.find(e => e.id === pick.element);
+                    if (element) {
+                        calcPts += element.stats.total_points * pick.multiplier;
+                    }
+                }
+            });
+            let hits = managerPicks.entry_history.event_transfers_cost || 0;
+            let currentCalculatedPoints = calcPts - hits;
+            if (currentCalculatedPoints > points || points === 0) {
+                points = currentCalculatedPoints;
+            }
+        }
         updateTeamInfo("Points", points);
         rating = 100 - managerPicks.entry_history.percentile_rank;
         updateTeamInfo("GW Rating", rating + '%');
@@ -315,10 +331,19 @@ function renderPlayerElement(player) {
     const isGK = player.element_type === 1;
     const shirtUrl = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${player.team_code}${isGK ? '_1' : ''}-110.webp`;
     
-    const anomaly = typeof analyzePlayerAnomalies === 'function' ? analyzePlayerAnomalies(player) : null;
+    // Check for insights
+    const insights = typeof getPlayerInsights === 'function' ? getPlayerInsights(player, fixtures) : null;
     let badgeHtml = '';
-    if (anomaly) {
-        badgeHtml = `<div class="anomaly-badge ${anomaly.type}">!<span class="tooltip-text">${anomaly.text}</span></div>`;
+    if (insights && insights.length > 0) {
+        let primaryInsight = insights[0];
+        let tooltipList = insights.map(ins => `<li>${ins.text}</li>`).join('');
+        badgeHtml = `
+            <div class="anomaly-badge ${primaryInsight.colorClass}">
+                ${primaryInsight.icon}
+                <div class="tooltip-text">
+                    <ul class="text-start m-0 ps-3">${tooltipList}</ul>
+                </div>
+            </div>`;
     }
 
     const image = `
@@ -854,9 +879,16 @@ function populatePlayerModal(data, player) {
         fplPredictedElem.style.color = '#333';
         fplPredictedElem.style.textShadow = 'none';
         
+        const upcomingGameweek = gameweeks.find(gw => gw.id >= (typeof currentGW !== 'undefined' ? currentGW : selectedGameweek));
+        const gwNum = upcomingGameweek ? upcomingGameweek.id : (typeof currentGW !== 'undefined' ? currentGW : selectedGameweek);
+        
+        const fplTitle = document.getElementById('modal-fpl-title');
+        const ourTitle = document.getElementById('modal-our-title');
+        if (fplTitle) fplTitle.textContent = `FPL Model (GW${gwNum})`;
+        if (ourTitle) ourTitle.textContent = `Our Algorithm (GW${gwNum})`;
+        
         let predictedPoints = player.predicted_points;
         if (predictedPoints === undefined) {
-            const upcomingGameweek = gameweeks.find(gw => gw.id >= selectedGameweek);
             if (upcomingGameweek) {
                 const fixture = getPlayerFixture(player, upcomingGameweek.id);
                 if (fixture) {
@@ -873,6 +905,69 @@ function populatePlayerModal(data, player) {
         ourPredictedElem.textContent = (predictedPoints !== undefined && predictedPoints !== '?') ? Number(predictedPoints).toFixed(1) : (predictedPoints === '?' ? '?' : '0.0');
         ourPredictedElem.style.color = '#333';
         ourPredictedElem.style.textShadow = 'none';
+
+        // Populate Algorithm Breakdown Card
+        const breakdownCard = document.getElementById('modal-breakdown-card');
+        const breakdownBody = document.getElementById('modal-our-breakdown');
+        const algoTitle = document.getElementById('modal-algo-breakdown-title');
+        if (breakdownCard && breakdownBody) {
+            breakdownCard.style.display = 'block';
+            if (algoTitle) algoTitle.textContent = 'Algorithm Breakdown (GW' + gwNum + ')';
+            let playChance = 100;
+            if (player.chance_of_playing_next_round !== null && player.chance_of_playing_next_round !== undefined) playChance = player.chance_of_playing_next_round;
+            else if (player.chance_of_playing_this_round !== null && player.chance_of_playing_this_round !== undefined) playChance = player.chance_of_playing_this_round;
+            
+            let html = '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>Play Prob & App Base:</span><span class="text-success">60m+ <span class="text-white-50 small">(2.0 pts)</span> | <span class="text-info">' + playChance + '% prob</span></span></div>';
+            
+            let xG = parseFloat(player.expected_goals_per_90) || 0;
+            if (xG > 0) {
+                let ptsPerGoal = player.element_type === 1 ? 10 : (player.element_type === 2 ? 6 : (player.element_type === 3 ? 5 : 4));
+                html += '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>xG Base:</span><span class="text-success">' + xG.toFixed(2) + ' <span class="text-white-50 small">(' + (xG * ptsPerGoal).toFixed(1) + ' pts)</span></span></div>';
+            }
+            let xA = parseFloat(player.expected_assists_per_90) || 0;
+            if (xA > 0) {
+                html += '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>xA Base:</span><span class="text-success">' + xA.toFixed(2) + ' <span class="text-white-50 small">(' + (xA * 3).toFixed(1) + ' pts)</span></span></div>';
+            }
+            let xCS = parseFloat(player.clean_sheets_per_90) || 0;
+            if (xCS > 0 && player.element_type !== 4) {
+                let displayCS = Math.min(1.0, xCS);
+                let ptsPerCS = player.element_type === 3 ? 1 : 4;
+                html += '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>Clean Sheet:</span><span class="text-success">' + (displayCS*100).toFixed(0) + '% <span class="text-white-50 small">(' + (displayCS * ptsPerCS).toFixed(1) + ' pts)</span></span></div>';
+            }
+            let defCon = parseFloat(player.defensive_contribution_per_90) || 0;
+            if (defCon > 0 && (player.element_type === 2 || player.element_type === 3)) {
+                let prob = Math.min(1.0, defCon / (player.element_type === 2 ? 10 : 12));
+                html += '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>DEFCON / 90:</span><span class="text-warning">' + defCon.toFixed(1) + ' <span class="text-white-50 small">(' + prob.toFixed(1) + ' pts)</span></span></div>';
+            }
+            let saves = parseFloat(player.saves_per_90) || 0;
+            if (saves > 0 && player.element_type === 1) {
+                html += '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>Saves / 90:</span><span class="text-warning">' + saves.toFixed(1) + ' <span class="text-white-50 small">(' + (saves / 3).toFixed(1) + ' pts)</span></span></div>';
+            }
+            let xGC = parseFloat(player.expected_goals_conceded_per_90) || 0;
+            if (xGC > 0 && (player.element_type === 1 || player.element_type === 2)) {
+                html += '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>xGC Base:</span><span class="text-danger">' + xGC.toFixed(2) + ' <span class="text-white-50 small">(-' + (xGC / 2).toFixed(1) + ' pts)</span></span></div>';
+            }
+            
+            if (predictedPoints !== undefined) {
+                html += '<div class="d-flex justify-content-between pt-1 mt-1 border-top border-secondary fw-bold text-white"><span>Final Prediction:</span><span class="text-success">' + (predictedPoints === '?' ? '?' : predictedPoints.toFixed(1)) + ' pts</span></div>';
+            }
+            breakdownBody.innerHTML = html;
+        }
+
+        // Populate Points Breakdown
+        const pointsBreakdownCard = document.getElementById('modal-points-breakdown-card');
+        const pointsBreakdownBody = document.getElementById('modal-points-breakdown');
+        const pointsBreakdownTitle = document.getElementById('modal-points-breakdown-title');
+        if (pointsBreakdownCard && pointsBreakdownBody) {
+            const gwHistory = data.history.find(h => h.round === gwNum);
+            if (gwHistory) {
+                pointsBreakdownCard.style.display = 'block';
+                if (pointsBreakdownTitle) pointsBreakdownTitle.textContent = 'Points Breakdown (GW' + gwNum + ')';
+                pointsBreakdownBody.innerHTML = generatePointsBreakdown(gwHistory, player.element_type);
+            } else {
+                pointsBreakdownCard.style.display = 'none';
+            }
+        }
     }
 
     // Populate Upcoming Fixtures

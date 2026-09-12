@@ -107,6 +107,7 @@ async function getLatestPicks(gameweek) {
     }
 
     if (managerPicks.picks && gameweek <= getLastGameweekId()) {
+        liveData = await getGameweek(gameweek);
         addPlayers(managerPicks.picks);
     }
 
@@ -115,6 +116,22 @@ async function getLatestPicks(gameweek) {
     if (managerPicks.entry_history && gameweek <= getLastGameweekId()) {
         document.getElementById("points").hidden = false;
         points = managerPicks.entry_history.points;
+        if (liveData && managerPicks.picks) {
+            let calcPts = 0;
+            managerPicks.picks.forEach(pick => {
+                if (pick.multiplier > 0) {
+                    const element = liveData.elements.find(e => e.id === pick.element);
+                    if (element) {
+                        calcPts += element.stats.total_points * pick.multiplier;
+                    }
+                }
+            });
+            let hits = managerPicks.entry_history.event_transfers_cost || 0;
+            let currentCalculatedPoints = calcPts - hits;
+            if (currentCalculatedPoints > points || points === 0) {
+                points = currentCalculatedPoints;
+            }
+        }
         updateTeamInfo("Points", points);
         rating = 100 - managerPicks.entry_history.percentile_rank;
         updateTeamInfo("GW Rating", rating + '%');
@@ -134,14 +151,34 @@ async function getLiveData(gameweek) {
     liveData = await getGameweek(gameweek);
 
     points = 0;
-    myPlayers.forEach(player => {
-        if (!player.isSub && player.id) {
-            const element = liveData.elements.find(p => p.id == player.id);
-            if (element) {
-                points += element.stats.total_points;
+    if (managerPicks && managerPicks.picks) {
+        managerPicks.picks.forEach(pick => {
+            if (pick.multiplier > 0) {
+                const element = liveData.elements.find(e => e.id === pick.element);
+                if (element) {
+                    points += element.stats.total_points * pick.multiplier;
+                }
             }
+        });
+        if (managerPicks.entry_history && managerPicks.entry_history.event_transfers_cost) {
+            points -= managerPicks.entry_history.event_transfers_cost;
         }
-    });
+    } else {
+        myPlayers.forEach(player => {
+            if (!player.isSub && player.id) {
+                const element = liveData.elements.find(p => p.id == player.id);
+                if (element) {
+                    let mult = player.isCaptain ? 2 : 1;
+                    points += element.stats.total_points * mult;
+                }
+            }
+        });
+    }
+    
+    // Fallback if API entry_history points is somehow higher
+    if (managerPicks && managerPicks.entry_history && managerPicks.entry_history.points > points) {
+        points = managerPicks.entry_history.points;
+    }
 
     updateTeamInfo("Points", points);
 }
@@ -667,10 +704,19 @@ function renderPlayerElement(player) {
     const isGK = player.element_type === 1;
     const shirtUrl = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${player.team_code}${isGK ? '_1' : ''}-110.webp`;
     
-    const anomaly = analyzePlayerAnomalies(player);
+    // Check for insights
+    const insights = typeof getPlayerInsights === 'function' ? getPlayerInsights(player, fixtures) : null;
     let badgeHtml = '';
-    if (anomaly) {
-        badgeHtml = `<div class="anomaly-badge ${anomaly.type}">!<span class="tooltip-text">${anomaly.text}</span></div>`;
+    if (insights && insights.length > 0) {
+        let primaryInsight = insights[0];
+        let tooltipList = insights.map(ins => `<li>${ins.text}</li>`).join('');
+        badgeHtml = `
+            <div class="anomaly-badge ${primaryInsight.colorClass}">
+                ${primaryInsight.icon}
+                <div class="tooltip-text">
+                    <ul class="text-start m-0 ps-3">${tooltipList}</ul>
+                </div>
+            </div>`;
     }
 
     const image = `
@@ -1254,8 +1300,10 @@ function populatePlayerModal(data, player) {
         // Populate Breakdown Card
         const breakdownCard = document.getElementById('modal-breakdown-card');
         const breakdownBody = document.getElementById('modal-our-breakdown');
+        const algoTitle = document.getElementById('modal-algo-breakdown-title');
         if (breakdownCard && breakdownBody) {
             breakdownCard.style.display = 'block';
+            if (algoTitle) algoTitle.textContent = 'Algorithm Breakdown (GW' + gwNum + ')';
             let playChance = 100;
             if (player.chance_of_playing_next_round !== null && player.chance_of_playing_next_round !== undefined) playChance = player.chance_of_playing_next_round;
             else if (player.chance_of_playing_this_round !== null && player.chance_of_playing_this_round !== undefined) playChance = player.chance_of_playing_this_round;
@@ -1370,6 +1418,21 @@ function populatePlayerModal(data, player) {
             }
             
             breakdownBody.innerHTML = html;
+        }
+
+        const pointsBreakdownCard = document.getElementById('modal-points-breakdown-card');
+        const pointsBreakdownBody = document.getElementById('modal-points-breakdown');
+        const pointsBreakdownTitle = document.getElementById('modal-points-breakdown-title');
+        if (pointsBreakdownCard && pointsBreakdownBody) {
+            // we use gwNum which is either the upcoming GW or selectedGW. Wait, if we use next/prev arrows, gwNum reflects the navigated GW.
+            const gwHistory = data.history.find(h => h.round === gwNum);
+            if (gwHistory) {
+                pointsBreakdownCard.style.display = 'block';
+                if (pointsBreakdownTitle) pointsBreakdownTitle.textContent = 'Points Breakdown (GW' + gwNum + ')';
+                pointsBreakdownBody.innerHTML = generatePointsBreakdown(gwHistory, player.element_type);
+            } else {
+                pointsBreakdownCard.style.display = 'none';
+            }
         }
     }
 

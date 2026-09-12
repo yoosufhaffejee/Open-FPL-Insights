@@ -623,8 +623,10 @@ function populatePlayerModal(data, player) {
         // Populate Breakdown Card
         const breakdownCard = document.getElementById('modal-breakdown-card');
         const breakdownBody = document.getElementById('modal-our-breakdown');
+        const algoTitle = document.getElementById('modal-algo-breakdown-title');
         if (breakdownCard && breakdownBody) {
             breakdownCard.style.display = 'block';
+            if (algoTitle) algoTitle.textContent = 'Algorithm Breakdown (GW' + gwNum + ')';
             let playChance = 100;
             if (player.chance_of_playing_next_round !== null && player.chance_of_playing_next_round !== undefined) playChance = player.chance_of_playing_next_round;
             else if (player.chance_of_playing_this_round !== null && player.chance_of_playing_this_round !== undefined) playChance = player.chance_of_playing_this_round;
@@ -739,6 +741,20 @@ function populatePlayerModal(data, player) {
             }
             
             breakdownBody.innerHTML = html;
+        }
+
+        const pointsBreakdownCard = document.getElementById('modal-points-breakdown-card');
+        const pointsBreakdownBody = document.getElementById('modal-points-breakdown');
+        const pointsBreakdownTitle = document.getElementById('modal-points-breakdown-title');
+        if (pointsBreakdownCard && pointsBreakdownBody) {
+            const gwHistory = data.history.find(h => h.round === gwNum);
+            if (gwHistory) {
+                pointsBreakdownCard.style.display = 'block';
+                if (pointsBreakdownTitle) pointsBreakdownTitle.textContent = 'Points Breakdown (GW' + gwNum + ')';
+                pointsBreakdownBody.innerHTML = generatePointsBreakdown(gwHistory, player.element_type);
+            } else {
+                pointsBreakdownCard.style.display = 'none';
+            }
         }
     }
 

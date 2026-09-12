@@ -758,3 +758,33 @@ h1, h2, h3, h4, h5, h6 {
     margin: 0 2px;
     font-size: 0.9em;
 }
+
+.anomaly-badge.badge-fire {
+    background-color: #ff5722;
+}
+
+.anomaly-badge.badge-lucky {
+    background-color: #ff9800;
+}
+
+.anomaly-badge.badge-unlucky {
+    background-color: #4caf50;
+}
+
+.anomaly-badge.badge-blue {
+    background-color: #2196f3;
+}
+
+.anomaly-badge .tooltip-text ul {
+    list-style-type: disc;
+    padding-left: 1.2rem;
+    margin: 0;
+    text-align: left;
+}
+.anomaly-badge .tooltip-text li {
+    margin-bottom: 4px;
+}
+.anomaly-badge .tooltip-text {
+    width: 200px; /* Make slightly wider for lists */
+    margin-left: -100px;
+}
