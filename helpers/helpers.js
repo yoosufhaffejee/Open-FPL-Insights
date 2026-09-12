@@ -174,28 +174,28 @@ function getPlayerInsights(player, fixturesList) {
         
         // Based on FPL statistical distribution, these thresholds identify the top/bottom ~5% of players/teams:
         if (recentGoals >= 3) {
-            insights.push({ priority: 1, icon: '??', colorClass: 'badge-fire', text: `On Fire: Scored ${recentGoals} goals in the last ${numGames} matches.` });
+            insights.push({ priority: 1, icon: '🔥', colorClass: 'badge-fire', text: `On Fire: Scored ${recentGoals} goals in the last ${numGames} matches.` });
         }
         
         if (recentAssists >= 2) {
-            insights.push({ priority: 4, icon: '??', colorClass: 'badge-blue', text: `Playmaker: Provided ${recentAssists} assists in the last ${numGames} matches.` });
+            insights.push({ priority: 4, icon: '🎯', colorClass: 'badge-blue', text: `Playmaker: Provided ${recentAssists} assists in the last ${numGames} matches.` });
         }
         
         if (bonusGames >= 2) {
-            insights.push({ priority: 5, icon: '?', colorClass: 'badge-blue', text: `Bonus Magnet: Earned bonus points in ${bonusGames} of the last ${numGames} matches.` });
+            insights.push({ priority: 5, icon: '⭐', colorClass: 'badge-blue', text: `Bonus Magnet: Earned bonus points in ${bonusGames} of the last ${numGames} matches.` });
         }
         
         if (recentCards >= 2) {
-            insights.push({ priority: 6, icon: '??', colorClass: 'badge-lucky', text: `Discipline: Received ${recentCards} cards in the last ${numGames} matches.` });
+            insights.push({ priority: 6, icon: '⚠️', colorClass: 'badge-lucky', text: `Discipline: Received ${recentCards} cards in the last ${numGames} matches.` });
         }
 
         let isDef = player.element_type === 1 || player.element_type === 2;
         if (isDef) {
             if (cleanSheets >= 2) {
-                insights.push({ priority: 3, icon: '???', colorClass: 'badge-blue', text: `Solid Defense: Kept ${cleanSheets} clean sheets in last ${numGames} matches.` });
+                insights.push({ priority: 3, icon: '🛡️', colorClass: 'badge-blue', text: `Solid Defense: Kept ${cleanSheets} clean sheets in last ${numGames} matches.` });
             }
             if (teamConceded >= 7) {
-                insights.push({ priority: 3, icon: '??', colorClass: 'badge-lucky', text: `Leaky Defense: Conceded ${teamConceded} goals in last ${numGames} matches.` });
+                insights.push({ priority: 3, icon: '📉', colorClass: 'badge-lucky', text: `Leaky Defense: Conceded ${teamConceded} goals in last ${numGames} matches.` });
             }
         }
     }
