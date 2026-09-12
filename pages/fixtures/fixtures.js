@@ -29,6 +29,37 @@ function startCountdowns() {
     }, 1000);
 }
 
+function renderScoreBlock(fixture) {
+    if (!fixture.started) {
+        return `<div class="fw-bold fs-5 score-display">${new Date(fixture.kickoff_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>`;
+    }
+
+    const hScore = fixture.team_h_score !== null ? fixture.team_h_score : '0';
+    const aScore = fixture.team_a_score !== null ? fixture.team_a_score : '0';
+
+    let badgeHtml = '';
+    if (!fixture.finished) {
+        if (!fixture.finished_provisional) {
+            badgeHtml = `<span class="badge bg-success fixture-status-badge d-flex align-items-center justify-content-center gap-1 mx-auto mt-1" style="font-size:0.7rem; width:fit-content;">
+                <span class="live-dot"></span> ${fixture.minutes}'
+            </span>`;
+        } else {
+            badgeHtml = `<span class="badge bg-secondary fixture-status-badge mt-1" style="font-size:0.7rem;">FT</span>`;
+        }
+    } else {
+        badgeHtml = `<span class="badge bg-secondary fixture-status-badge mt-1" style="font-size:0.7rem;">FT</span>`;
+    }
+
+    return `
+        <div class="fw-bold fs-5 score-display d-flex align-items-center justify-content-center">
+            <span class="score-num">${hScore}</span>
+            <span class="score-dash">-</span>
+            <span class="score-num">${aScore}</span>
+        </div>
+        ${badgeHtml}
+    `;
+}
+
 // Global live refresh interval
 let liveRefreshInterval;
 function startLiveRefresh() {
@@ -46,16 +77,7 @@ function startLiveRefresh() {
                 if (fixture.started && !fixture.finished) {
                     const scoreDiv = document.querySelector(`#score-${fixture.code}`);
                     if (scoreDiv) {
-                        scoreDiv.innerHTML = `
-                            <div class="fw-bold fs-5">
-                                ${fixture.team_h_score !== null ? fixture.team_h_score : '0'} - ${fixture.team_a_score !== null ? fixture.team_a_score : '0'}
-                            </div>
-                            ${!fixture.finished_provisional ?
-                                `<span class="badge bg-success d-flex align-items-center justify-content-center gap-1 mx-auto mt-1" style="font-size:0.7rem; width:fit-content;">
-                                    <span class="live-dot"></span> ${fixture.minutes}'
-                                </span>` :
-                                `<span class="badge bg-secondary mt-1" style="font-size:0.7rem;">FT</span>`}
-                        `;
+                        scoreDiv.innerHTML = renderScoreBlock(fixture);
                     }
                     const statsTbody = document.querySelector(`#stats-tbody-${fixture.code}`);
                     if (statsTbody) {
@@ -63,10 +85,14 @@ function startLiveRefresh() {
                             ${renderStatRow(fixture, 'goals_scored', 'Goals Scored', 'fa-futbol', '#4ade80')}
                             ${renderStatRow(fixture, 'assists', 'Assists', 'fa-hands-helping', '#38bdf8')}
                             ${renderStatRow(fixture, 'yellow_cards', 'Yellow Cards', 'fa-square', '#facc15')}
+                            ${renderStatRow(fixture, 'red_cards', 'Red Cards', 'fa-square', '#ef4444')}
+                            ${renderStatRow(fixture, 'penalties_saved', 'Penalties Saved', 'fa-hands', '#3b82f6')}
+                            ${renderStatRow(fixture, 'penalties_missed', 'Penalties Missed', 'fa-xmark', '#f87171')}
                             ${renderStatRow(fixture, 'saves', 'Saves', 'fa-hand', '#a78bfa')}
-                            ${renderStatRow(fixture, 'bonus', 'Bonus Points', 'fa-star', '#fb923c')}
-                            ${renderStatRow(fixture, 'bps', 'BPS (Ranking)', 'fa-ranking-star', '#94a3b8')}
-                            ${renderStatRow(fixture, 'defensive_contribution', 'Defensive Contributions', 'fa-shield-halved', '#34d399')}
+                            ${renderStatRow(fixture, 'bonus', 'Bonus', 'fa-star', '#fb923c')}
+                            ${renderDefconRow(fixture, 'DEFCON', 'fa-user-shield', '#ec4899')}
+                            ${renderStatRow(fixture, 'bps', 'BPS (Ranking)', '', '')}
+                            ${renderStatRow(fixture, 'defensive_contribution', 'Defensive Contributions', '', '')}
                         `;
                     }
                     
@@ -135,26 +161,15 @@ function renderFixtures() {
         fixtureRow.innerHTML = `
                 <h2 class="accordion-header" id="heading${fixture.code}">
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${fixture.code}" aria-expanded="true" aria-controls="collapse${fixture.code}">
-                        <div class="d-flex justify-content-between w-100">
-                            <div class="d-flex align-items-center">
+                        <div class="fixture-header d-flex justify-content-between w-100">
+                            <div class="fixture-team fixture-team-home d-flex align-items-center">
                                 <img src="https://resources.premierleague.com/premierleague/badges/100/t${homeTeam.code}.png" class="team-logo me-2" alt="${homeTeam.short_name}">
                                 <span>${homeTeam.short_name}</span>
                             </div>
-                                                        <div class="text-center" id="score-${fixture.code}">
-                                <div class="fw-bold fs-5">
-                                    ${fixture.started ?
-                                        `${fixture.team_h_score !== null ? fixture.team_h_score : '0'} - ${fixture.team_a_score !== null ? fixture.team_a_score : '0'}` :
-                                        new Date(fixture.kickoff_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                </div>
-                                ${fixture.started && !fixture.finished ?
-                                    (!fixture.finished_provisional ?
-                                        `<span class="badge bg-success d-flex align-items-center justify-content-center gap-1 mx-auto mt-1" style="font-size:0.7rem; width:fit-content;">
-                                            <span class="live-dot"></span> ${fixture.minutes}'
-                                        </span>` :
-                                        `<span class="badge bg-secondary mt-1" style="font-size:0.7rem;">FT</span>`) :
-                                    (fixture.finished ? `<span class="badge bg-secondary mt-1" style="font-size:0.7rem;">FT</span>` : '')}
+                            <div class="text-center fixture-score" id="score-${fixture.code}">
+                                ${renderScoreBlock(fixture)}
                             </div>
-                            <div class="d-flex align-items-center">
+                            <div class="fixture-team fixture-team-away d-flex align-items-center">
                                 <img src="https://resources.premierleague.com/premierleague/badges/100/t${awayTeam.code}.png" class="team-logo me-2" alt="${awayTeam.short_name}">
                                 <span>${awayTeam.short_name}</span>
                             </div>
@@ -191,14 +206,18 @@ function renderFixtures() {
                                             <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#fb923c;margin-left:5px;"></span>
                                         </span>
                                     </div>
-                                    <div id="stats-tbody-${fixture.code}">
+                                     <div id="stats-tbody-${fixture.code}">
                                         ${renderStatRow(fixture, 'goals_scored', 'Goals Scored', 'fa-futbol', '#4ade80')}
                                         ${renderStatRow(fixture, 'assists', 'Assists', 'fa-hands-helping', '#38bdf8')}
                                         ${renderStatRow(fixture, 'yellow_cards', 'Yellow Cards', 'fa-square', '#facc15')}
+                                        ${renderStatRow(fixture, 'red_cards', 'Red Cards', 'fa-square', '#ef4444')}
+                                        ${renderStatRow(fixture, 'penalties_saved', 'Penalties Saved', 'fa-hands', '#3b82f6')}
+                                        ${renderStatRow(fixture, 'penalties_missed', 'Penalties Missed', 'fa-xmark', '#f87171')}
                                         ${renderStatRow(fixture, 'saves', 'Saves', 'fa-hand', '#a78bfa')}
-                                        ${renderStatRow(fixture, 'bonus', 'Bonus Points', 'fa-star', '#fb923c')}
-                                        ${renderStatRow(fixture, 'bps', 'BPS (Ranking)', 'fa-ranking-star', '#94a3b8')}
-                                        ${renderStatRow(fixture, 'defensive_contribution', 'Defensive Contributions', 'fa-shield-halved', '#34d399')}
+                                        ${renderStatRow(fixture, 'bonus', 'Bonus', 'fa-star', '#fb923c')}
+                                        ${renderDefconRow(fixture, 'DEFCON', 'fa-user-shield', '#ec4899')}
+                                        ${renderStatRow(fixture, 'bps', 'BPS (Ranking)', '', '')}
+                                        ${renderStatRow(fixture, 'defensive_contribution', 'Defensive Contributions', '', '')}
                                     </div>
                                 </div>
                             </div>
@@ -267,8 +286,75 @@ function renderStatRow(fixture, identifier, label, icon = 'fa-chart-bar', iconCo
 
     return `
         <div style="border-bottom:1px solid #1e1e1e; padding:8px 4px;">
-            <div style="display:flex; align-items:center; gap:6px; margin-bottom:7px;">
-                <i class="fas ${icon} fa-sm" style="color:${iconColor}; width:14px; text-align:center; flex-shrink:0;"></i>
+            <div style="display:flex; align-items:center; ${icon ? 'gap:6px;' : ''} margin-bottom:7px;">
+                ${icon ? `<i class="fas ${icon} fa-sm" style="color:${iconColor}; width:14px; text-align:center; flex-shrink:0;"></i>` : ''}
+                <span style="color:#555; font-size:0.73rem; text-transform:uppercase; letter-spacing:1.2px; font-weight:600;">${label}</span>
+            </div>
+            <div class="row g-0">
+                <div class="col-6" style="padding-right:10px; text-align:right; border-right:1px solid #252525;">
+                    ${renderPlayers(h, HOME_COLOR, 'right')}
+                </div>
+                <div class="col-6" style="padding-left:10px;">
+                    ${renderPlayers(a, AWAY_COLOR, 'left')}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderDefconRow(fixture, label = 'DEFCON Points', icon = 'fa-user-shield', iconColor = '#ec4899') {
+    const identifier = 'defensive_contribution';
+    const stats = fixture.stats.find(stat => stat.identifier === identifier);
+    if (!stats) return '';
+
+    const processTeam = (teamData) => {
+        if (!teamData) return [];
+        return teamData.map(stat => {
+            const player = allPlayers.find(p => p.id === stat.element);
+            if (!player) return null;
+            // 1: GK, 2: DEF, 3: MID, 4: FWD
+            let defconPoints = 0;
+            if (player.element_type === 2 && stat.value >= 10) {
+                defconPoints = 2;
+            } else if ((player.element_type === 3 || player.element_type === 4) && stat.value >= 12) {
+                defconPoints = 2;
+            }
+            if (defconPoints > 0) {
+                return {
+                    id: player.id,
+                    name: player.web_name,
+                    value: `${stat.value} (+${defconPoints})`
+                };
+            }
+            return null;
+        }).filter(p => p !== null);
+    };
+
+    const h = processTeam(stats.h);
+    const a = processTeam(stats.a);
+    const hasData = h.length > 0 || a.length > 0;
+    if (!hasData) return '';
+
+    const HOME_COLOR = '#0dcaf0';
+    const AWAY_COLOR = '#fb923c';
+
+    const renderPlayers = (players, color, align) => {
+        if (players.length === 0) return '';
+        return players.map(p => {
+            const badgeStyle = `display:inline-block; background:${color}18; color:${color}; font-size:0.72rem; font-weight:700; padding:1px 7px; border-radius:10px; border:1px solid ${color}40; flex-shrink:0;`;
+            const link = `<a href="javascript:void(0)" onclick="showPlayerInfo(${p.id})" class="player-stat-link">${p.name}</a>`;
+            const badge = `<span style="${badgeStyle}">${p.value}</span>`;
+            const row = align === 'right'
+                ? `${link}<span style="margin-left:5px;">${badge}</span>`
+                : `${badge}<span style="margin-left:5px;">${link}</span>`;
+            return `<div style="display:flex; align-items:center; justify-content:${align === 'right' ? 'flex-end' : 'flex-start'}; margin-bottom:3px;">${row}</div>`;
+        }).join('');
+    };
+
+    return `
+        <div style="border-bottom:1px solid #1e1e1e; padding:8px 4px;">
+            <div style="display:flex; align-items:center; ${icon ? 'gap:6px;' : ''} margin-bottom:7px;">
+                ${icon ? `<i class="fas ${icon} fa-sm" style="color:${iconColor}; width:14px; text-align:center; flex-shrink:0;"></i>` : ''}
                 <span style="color:#555; font-size:0.73rem; text-transform:uppercase; letter-spacing:1.2px; font-weight:600;">${label}</span>
             </div>
             <div class="row g-0">
@@ -288,10 +374,48 @@ function getStatPlayers(fixture, identifier, teamName) {
     if (!stats || !stats[teamName]) return [];
     return stats[teamName].map(stat => {
         const player = allPlayers.find(p => p.id === stat.element);
+        let displayValue = stat.value;
+        
+        if (player) {
+            let pts = null;
+            if (identifier === 'goals_scored') {
+                if (player.element_type === 1 || player.element_type === 2) pts = 6 * stat.value;
+                else if (player.element_type === 3) pts = 5 * stat.value;
+                else pts = 4 * stat.value;
+            } else if (identifier === 'assists') {
+                pts = 3 * stat.value;
+            } else if (identifier === 'yellow_cards') {
+                pts = -1 * stat.value;
+            } else if (identifier === 'red_cards') {
+                pts = -3 * stat.value;
+            } else if (identifier === 'penalties_saved') {
+                pts = 5 * stat.value;
+            } else if (identifier === 'penalties_missed') {
+                pts = -2 * stat.value;
+            } else if (identifier === 'bonus') {
+                pts = stat.value;
+                const bpsStat = fixture.stats.find(s => s.identifier === 'bps');
+                let bpsValue = 0;
+                if (bpsStat) {
+                    const bpsPlayer = (bpsStat.a || []).concat(bpsStat.h || []).find(s => s.element === stat.element);
+                    if (bpsPlayer) bpsValue = bpsPlayer.value;
+                }
+                displayValue = `${bpsValue} (+${pts})`;
+                pts = null; // Prevent default formatting
+            } else if (identifier === 'saves') {
+                pts = Math.floor(stat.value / 3);
+            }
+
+            if (pts !== null) {
+                const sign = pts >= 0 ? '+' : '';
+                displayValue = `${stat.value} (${sign}${pts})`;
+            }
+        }
+
         return {
             id: player ? player.id : null,
             name: player ? player.web_name : 'Unknown',
-            value: stat.value
+            value: displayValue
         };
     });
 }
