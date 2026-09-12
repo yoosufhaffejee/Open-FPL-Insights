@@ -712,10 +712,11 @@
     <div class="button-container text-center">
         <button id="suggestedTransfersButton" class="btn btn-success" style="display: none;" onclick="openSuggestedTransfersModal()">Suggested Transfers</button>
         <button id="recalculateButton" class="btn btn-warning" onclick="calculateAllPredictions()" disabled>Recalculate Predictions</button>
+        <button id="optimizeTeamButton" class="btn btn-info" style="display: none;" onclick="applyOptimizeTeam()">Optimize Team</button>
         <button id="resetButton" class="btn btn-danger" style="display: none;" onclick="resetPlayers()">Reset</button>
         <button id="saveButton" class="btn btn-primary" style="display: none;" onclick="savePlayers()">Save</button>
         <button id="autoPickButton" class="btn btn-secondary" onclick="autoPickPlayers()">Auto Pick</button>
-        <button id="importScreenshotButton" class="btn btn-info" onclick="openScreenshotImportModal()">Import Screenshot</button>
+        <button id="importScreenshotButton" class="btn" style="background-color: #6f42c1; color: white;" onclick="openScreenshotImportModal()">Import Screenshot</button>
     </div>
 
     <div id="filters">

@@ -1752,9 +1752,10 @@ async function Initialize() {
         if (window.fplGameUpdating) {
             document.body.innerHTML = `
                 <div class="container mt-5 text-center text-white p-5 border border-info rounded" style="background-color: #37003c;">
-                    <img src="https://fantasy.premierleague.com/static/media/logo-fpl.09c86a11.svg" alt="FPL Logo" style="width: 150px; margin-bottom: 20px;">
+                    <img src="https://logo.premierleague.com/img/lion-dark.svg" alt="FPL Logo" style="width: 150px; margin-bottom: 20px;">
                     <h2 class="text-white fw-bold mb-4">The game is updating and will be available soon.</h2>
                     <p class="fs-5">Please check back later.</p>
+                    <p class="text-light opacity-75">FYI: The game usually becomes available as soon as the first match of the gameweek kicks off.</p>
                     <button class="btn btn-light fw-bold mt-4 px-4 py-2" onclick="window.location.reload()">Refresh</button>
                 </div>
             `;
@@ -1967,6 +1968,22 @@ function updateActionButtonsVisibility() {
     
     const suggestBtn = document.getElementById('suggestedTransfersButton');
     if (suggestBtn) suggestBtn.style.display = hasPlayers ? 'inline-block' : 'none';
+    
+    const optimizeBtn = document.getElementById('optimizeTeamButton');
+    if (optimizeBtn) optimizeBtn.style.display = isTeamFull ? 'inline-block' : 'none';
+}
+
+function applyOptimizeTeam() {
+    if (myPlayers.length < 15) return;
+    
+    const best11 = optimizeTeam(myPlayers);
+    if (best11 && best11.length === 11) {
+        myPlayers.forEach(p => {
+            p.isSub = !best11.some(b => b.id === p.id);
+        });
+        
+        updateTeamUI();
+    }
 }
 
 

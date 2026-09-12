@@ -6,6 +6,7 @@ function optimizeTeam(players) {
               // Divide the captain's points by 2
         }
         player.isCaptain = false;  // Reset captain flag, we will assign a new one later
+        player.isVice = false;     // Reset vice captain flag
     });
 
     // Categorize players by position (element_type)
@@ -45,16 +46,16 @@ function optimizeTeam(players) {
         }
     }
 
-    // Set the captain as the player with the highest predicted points
+    // Set the captain as the player with the highest predicted points, vice captain to second highest
     if (bestTeam.length > 0) {
-        let highestPointsPlayer = bestTeam.reduce((prev, current) => (prev.predicted_points > current.predicted_points ? prev : current), bestTeam[0]);
+        // Sort best team descending by predicted points
+        let sortedTeam = [...bestTeam].sort((a, b) => b.predicted_points - a.predicted_points);
+        let highestPointsPlayer = sortedTeam[0];
+        let secondHighestPointsPlayer = sortedTeam.length > 1 ? sortedTeam[1] : null;
 
-        // Mark the highest points player as captain
         bestTeam.forEach(player => {
-            player.isCaptain = player.id === highestPointsPlayer.id;
-            if (player.isCaptain) {
-                
-            }
+            player.isCaptain = (player.id === highestPointsPlayer.id);
+            player.isVice = (secondHighestPointsPlayer && player.id === secondHighestPointsPlayer.id);
         });
     }
 
