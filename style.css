@@ -788,3 +788,17 @@ h1, h2, h3, h4, h5, h6 {
     width: 200px; /* Make slightly wider for lists */
     margin-left: -100px;
 }
+
+.badges-container {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    display: flex;
+    gap: 4px;
+    z-index: 10;
+}
+.badges-container .anomaly-badge {
+    position: relative;
+    top: auto;
+    right: auto;
+}

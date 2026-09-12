@@ -708,14 +708,26 @@ function renderPlayerElement(player) {
     const insights = typeof getPlayerInsights === 'function' ? getPlayerInsights(player, fixtures) : null;
     let badgeHtml = '';
     if (insights && insights.length > 0) {
-        let primaryInsight = insights[0];
-        let tooltipList = insights.map(ins => `<li>${ins.text}</li>`).join('');
+        let anomalyInsights = insights.filter(i => i.icon === '!');
+        let formInsights = insights.filter(i => i.icon !== '!');
+
+        let renderBadge = (badgeInsights) => {
+            if (badgeInsights.length === 0) return '';
+            let primary = badgeInsights[0];
+            let tooltipList = badgeInsights.map(ins => `<li>${ins.text}</li>`).join('');
+            return `
+                <div class="anomaly-badge ${primary.colorClass}">
+                    ${primary.icon}
+                    <div class="tooltip-text">
+                        <ul class="text-start m-0 ps-3">${tooltipList}</ul>
+                    </div>
+                </div>`;
+        };
+
         badgeHtml = `
-            <div class="anomaly-badge ${primaryInsight.colorClass}">
-                ${primaryInsight.icon}
-                <div class="tooltip-text">
-                    <ul class="text-start m-0 ps-3">${tooltipList}</ul>
-                </div>
+            <div class="badges-container">
+                ${renderBadge(anomalyInsights)}
+                ${renderBadge(formInsights)}
             </div>`;
     }
 
