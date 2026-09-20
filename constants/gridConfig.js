@@ -59,8 +59,9 @@ function setupGridOptions(filteredPlayers) {
                         let color = chance === 0 ? 'text-danger' : 'text-warning';
                         injuryIcon = `<i class="fa-solid fa-triangle-exclamation ${color}" title="${params.data.news}"></i>`;
                     }
+                    let isGK = params.data.element_type === 1;
                     return `<div class="d-flex align-items-center" style="height: 100%;">
-                                <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${params.data.team_code}-66.webp" style="width: 20px; margin-right: 8px;">
+                                <img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${params.data.team_code}${isGK ? '_1' : ''}-66.webp" style="width: 20px; margin-right: 8px;">
                                 <span onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${params.value}</span>
                                 ${injuryIcon ? `<span class="ms-2" style="font-size: 0.9em; cursor: help;">${injuryIcon}</span>` : ''}
                             </div>`;

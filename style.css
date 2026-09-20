@@ -802,3 +802,28 @@ h1, h2, h3, h4, h5, h6 {
     top: auto;
     right: auto;
 }
+
+html, body {
+    overflow-x: hidden;
+}
+
+/* Responsive tooltip anchoring for edge players to prevent clipping */
+.row .player:first-child .anomaly-badge .tooltip-text {
+    left: -10px;
+    margin-left: 0;
+}
+.row .player:first-child .anomaly-badge .tooltip-text::after {
+    left: 15px;
+    margin-left: 0;
+}
+
+.row .player:last-child .anomaly-badge .tooltip-text {
+    left: auto;
+    right: -10px;
+    margin-left: 0;
+}
+.row .player:last-child .anomaly-badge .tooltip-text::after {
+    left: auto;
+    right: 15px;
+    margin-left: 0;
+}

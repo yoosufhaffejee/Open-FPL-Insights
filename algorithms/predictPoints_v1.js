@@ -53,6 +53,26 @@ function calculateExpectedPointsCore_v1(player, fixture) {
     let expectedPoints = 0;
     expectedPoints += startingPoints;
 
+    // Smooth individual defensive stats with team-level stats to account for transfers and noisy individual metrics
+    let playerXGC = player.expected_goals_conceded_per_90 !== undefined ? playerXGC : 0;
+    let playerCS = player.clean_sheets_per_90 !== undefined ? parseFloat(player.clean_sheets_per_90) : 0;
+    
+    if (typeof allPlayers !== 'undefined') {
+        let teamGKs = allPlayers.filter(p => p.team === player.team && p.element_type === 1);
+        let teamMins = teamGKs.reduce((sum, gk) => sum + (gk.minutes || 0), 0);
+        if (teamMins > 0) {
+            let teamXGC = teamGKs.reduce((sum, gk) => sum + (parseFloat(gk.expected_goals_conceded) || 0), 0) / (teamMins / 90);
+            let teamCS = teamGKs.reduce((sum, gk) => sum + (parseFloat(gk.clean_sheets) || 0), 0) / (teamMins / 90);
+            
+            // Blend 50/50 for all players (individual variance vs team structural quality)
+            if (playerXGC > 0) playerXGC = (playerXGC * 0.5) + (teamXGC * 0.5);
+            else playerXGC = teamXGC;
+            
+            if (playerCS > 0) playerCS = (playerCS * 0.5) + (teamCS * 0.5);
+            else playerCS = teamCS;
+        }
+    }
+
     let minutes_per_90 = player.starts == 0 ? 0 : player.minutes / player.starts;
     if (minutes_per_90 >= 60) {
         expectedPoints += sixtyMinutesPlayedPoints;
@@ -119,14 +139,14 @@ function calculateExpectedPointsCore_v1(player, fixture) {
 
     if (player.element_type === 1) {
         // Goalkeeper
-        let cappedCS = player.clean_sheets_per_90 !== undefined ? Math.min(1.0, player.clean_sheets_per_90) : 0;
+        let cappedCS = playerCS > 0 ? Math.min(1.0, playerCS) : 0;
         let cleanSheetPointsPer90 = cappedCS !== 0 ? cappedCS * cleanSheetPoints : 0;
         expectedPoints += cleanSheetPointsPer90;
     
         let savePointsPer90 = player.saves_per_90 !== undefined && player.saves_per_90 !== 0 ? player.saves_per_90 * (threeShotsSavedPoints / 3) : 0;
         expectedPoints += savePointsPer90;
     
-        let goalsConcededPointsPer90 = player.expected_goals_conceded_per_90 !== undefined && player.expected_goals_conceded_per_90 !== 0 ? parseFloat(player.expected_goals_conceded_per_90) / 2 : 0;
+        let goalsConcededPointsPer90 = playerXGC > 0 ? playerXGC / 2 : 0;
         expectedPoints -= goalsConcededPointsPer90;
     
         let penaltiesSavedPer90 = player.penalties_saved !== undefined && player.minutes !== undefined && player.minutes !== 0 ? player.penalties_saved / (player.minutes / 90) : 0;
@@ -142,11 +162,11 @@ function calculateExpectedPointsCore_v1(player, fixture) {
         let goalPointsPer90 = player.expected_goals_per_90 !== undefined && player.expected_goals_per_90 !== 0 ? parseFloat(player.expected_goals_per_90) * goalPointsDEF : 0;
         expectedPoints += goalPointsPer90;
     
-        let cappedCS = player.clean_sheets_per_90 !== undefined ? Math.min(1.0, player.clean_sheets_per_90) : 0;
+        let cappedCS = playerCS > 0 ? Math.min(1.0, playerCS) : 0;
         let cleanSheetPointsPer90 = cappedCS !== 0 ? cappedCS * cleanSheetPoints : 0;
         expectedPoints += cleanSheetPointsPer90;
     
-        let goalsConcededPointsPer90 = player.expected_goals_conceded_per_90 !== undefined && player.expected_goals_conceded_per_90 !== 0 ? parseFloat(player.expected_goals_conceded_per_90) / 2 : 0;
+        let goalsConcededPointsPer90 = playerXGC > 0 ? playerXGC / 2 : 0;
         expectedPoints -= goalsConcededPointsPer90;
     }
     
@@ -155,7 +175,7 @@ function calculateExpectedPointsCore_v1(player, fixture) {
         let goalPointsPer90 = player.expected_goals_per_90 !== undefined && player.expected_goals_per_90 !== 0 ? parseFloat(player.expected_goals_per_90) * goalPointsMID : 0;
         expectedPoints += goalPointsPer90;
     
-        let cappedCS = player.clean_sheets_per_90 !== undefined ? Math.min(1.0, player.clean_sheets_per_90) : 0;
+        let cappedCS = playerCS > 0 ? Math.min(1.0, playerCS) : 0;
         let cleanSheetPointsPer90 = cappedCS !== 0 ? cappedCS * cleanSheetPointsMID : 0;
         expectedPoints += cleanSheetPointsPer90;
     
@@ -185,7 +205,19 @@ function calculateExpectedPointsCore_v1(player, fixture) {
         let formWeight = (lastFiveData.totalMinutes / 450) * 0.5;
         formWeight = Math.max(0, Math.min(0.5, formWeight)); // Cap at 50%
         
-        expectedPoints = (expectedPoints * (1 - formWeight)) + (lastFiveData.averagePoints * formWeight);
+        let blendedForm = lastFiveData.averagePoints;
+        // Blend historic individual form with current team's positional form to cater for transfers / outliers
+        if (typeof allPlayers !== 'undefined') {
+            let teamPosPlayers = allPlayers.filter(p => p.team === player.team && p.element_type === player.element_type && p.id !== player.id && p.minutes > 90);
+            if (teamPosPlayers.length > 0) {
+                let teamPosForm = teamPosPlayers.reduce((sum, p) => sum + (parseFloat(p.form) || 0), 0) / teamPosPlayers.length;
+                if (teamPosForm > 0) {
+                    blendedForm = (blendedForm * 0.5) + (teamPosForm * 0.5);
+                }
+            }
+        }
+        
+        expectedPoints = (expectedPoints * (1 - formWeight)) + (blendedForm * formWeight);
     }
 
     // Incorporate chance of playing
@@ -427,6 +459,35 @@ function calculateExpectedPointsCore_v1(player, fixture) {
     let truePlayProb = (chanceOfPlaying / 100) * startProb;
     expectedPoints = expectedPoints * truePlayProb;
     
+    // Divide standings into 4 groups (1-5, 6-10, 11-15, 16-20)
+    // Apply sliding scale penalty to lower groups: max 15% drop.
+    if (typeof teams !== 'undefined' && expectedPoints > 0) {
+        let playerTeam = teams.find(t => t.id === player.team);
+        
+        let teamGamesPlayed = 0;
+        if (typeof allPlayers !== 'undefined') {
+            let teammates = allPlayers.filter(p => p.team === player.team);
+            teamGamesPlayed = Math.max(...teammates.map(p => p.starts || 0), 0);
+        }
+
+        if (playerTeam && playerTeam.position && teamGamesPlayed >= 2) {
+            let pos = playerTeam.position;
+            let penaltyPercent = 0;
+            if (pos >= 16) penaltyPercent = 0.15;      // Bottom (e.g. 16-20)
+            else if (pos >= 11) penaltyPercent = 0.10; // Low Mid (e.g. 11-15)
+            else if (pos >= 6) penaltyPercent = 0.05;  // Upper Mid (e.g. 6-10)
+            
+            if (teamGamesPlayed === 2) {
+                // Scale max hit from 15% to 10%
+                penaltyPercent = penaltyPercent * (10 / 15);
+            }
+            
+            if (penaltyPercent > 0) {
+                expectedPoints = expectedPoints * (1 - penaltyPercent);
+            }
+        }
+    }
+
     return expectedPoints;
 }
 
