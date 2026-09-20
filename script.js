@@ -614,10 +614,14 @@ function updateTeamUI() {
 
     // Handle missing players/ghost players
     fillMissingPlayers(filledPositions, subs);
+
+    // Trigger a live background recalculation of the entire season rating to reflect any drafted changes!
+    calculateSeasonPoints(myPlayers);
+
     updateActionButtonsVisibility();
 }
 
-async function calculateSeasonPoints() {
+async function calculateSeasonPoints(liveTeamForCurrentGW = null) {
     let seasonPoints = 0;
     let totalIdealPoints = 0;
 
@@ -642,29 +646,40 @@ async function calculateSeasonPoints() {
             gwPoints += histEvent.points - histEvent.event_transfers_cost;
         }
         else {
-            let myPlayersCookie = getLocalCookie('myPlayersGW' + gw.id);
-            if (!myPlayersCookie) {
-                for (let prevGw = gw.id - 1; prevGw >= gameweeks[0].id; prevGw--) {
-                    myPlayersCookie = getLocalCookie('myPlayersGW' + prevGw);
-                    if (myPlayersCookie) {
-                        let gwTeam = JSON.parse(myPlayersCookie);
-                        if (gwTeam.players.length >= 15) break;
+            let tempPlayers = [];
+            
+            // If we have a live team being drafted for this specific gameweek, use it for real-time preview!
+            if (liveTeamForCurrentGW && liveTeamForCurrentGW.length >= 15 && gw.id === selectedGameweek) {
+                liveTeamForCurrentGW.forEach((player) => {
+                    let playerCopy = { ...player };
+                    let fixture = getPlayerFixture(playerCopy, gw.id);
+                    playerCopy.predicted_points = calculatePlayerPredictedPoints(playerCopy, fixture, gw.id);
+                    tempPlayers.push(playerCopy);
+                });
+            } else {
+                let myPlayersCookie = getLocalCookie('myPlayersGW' + gw.id);
+                if (!myPlayersCookie) {
+                    for (let prevGw = gw.id - 1; prevGw >= gameweeks[0].id; prevGw--) {
+                        myPlayersCookie = getLocalCookie('myPlayersGW' + prevGw);
+                        if (myPlayersCookie) {
+                            let gwTeam = JSON.parse(myPlayersCookie);
+                            if (gwTeam.players.length >= 15) break;
+                        }
                     }
                 }
-            }
 
-            let tempPlayers = [];
-            if (myPlayersCookie) {
-                let gwTeam = JSON.parse(myPlayersCookie);
-                if (gwTeam.players.length >= 15) {
-                    gwTeam.players.forEach((pick) => {
-                        let basePlayer = allPlayers.find(p => p.id == pick.id);
-                        if (!basePlayer) return;
-                        let player = { ...basePlayer, isCaptain: pick.isCaptain, isVice: pick.isVice, isSub: pick.isSub };
-                        let fixture = getPlayerFixture(player, gw.id);
-                        player.predicted_points = calculatePlayerPredictedPoints(player, fixture, gw.id);
-                        tempPlayers.push(player);
-                    });
+                if (myPlayersCookie) {
+                    let gwTeam = JSON.parse(myPlayersCookie);
+                    if (gwTeam.players.length >= 15) {
+                        gwTeam.players.forEach((pick) => {
+                            let basePlayer = allPlayers.find(p => p.id == pick.id);
+                            if (!basePlayer) return;
+                            let player = { ...basePlayer, isCaptain: pick.isCaptain, isVice: pick.isVice, isSub: pick.isSub };
+                            let fixture = getPlayerFixture(player, gw.id);
+                            player.predicted_points = calculatePlayerPredictedPoints(player, fixture, gw.id);
+                            tempPlayers.push(player);
+                        });
+                    }
                 }
             }
 
@@ -1694,7 +1709,7 @@ function loadPlayers(gameweek = selectedGameweek) {
     }
 }
 
-function savePlayers() {
+async function savePlayers() {
     // Disable the Save button
     document.getElementById('saveButton').style.display = 'none';
 
@@ -1712,6 +1727,10 @@ function savePlayers() {
 
     // Save the JSON string in a cookie
     document.cookie = `myPlayersGW${selectedGameweek}=${dataJSON}; path=/; max-age=31536000`; // Cookie expires in 1 year
+    
+    // Recalculate season points so the overall rating updates immediately
+    await calculateSeasonPoints();
+
     // Re‑enable Recalculate button after a successful save
     document.getElementById('recalculateButton').disabled = false;
 }

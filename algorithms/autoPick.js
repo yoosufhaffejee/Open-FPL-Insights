@@ -1,17 +1,6 @@
 function selectBestTeam(allPlayers, currentTeam = [], budget = 100.0) {
-    const requiredTeam = {
-        GK: 2,
-        DEF: 5,
-        MID: 5,
-        FWD: 3
-    };
-
-    const positionMap = {
-        1: 'GK',
-        2: 'DEF',
-        3: 'MID',
-        4: 'FWD'
-    };
+    const requiredTeam = { GK: 2, DEF: 5, MID: 5, FWD: 3 };
+    const positionMap = { 1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD' };
 
     let currentCost = 0;
     let preSelectedIds = new Set();
@@ -24,21 +13,8 @@ function selectBestTeam(allPlayers, currentTeam = [], budget = 100.0) {
         preSelectedIds.add(p.id);
     });
 
-    // 1. Filter out pre-selected, injured, and low-selection players to improve quality
     let availablePlayers = allPlayers.filter(p => !preSelectedIds.has(p.id));
     availablePlayers = availablePlayers.filter(p => p.status === 'a' || p.chance_of_playing_next_round === 100);
-
-    // Filter out absolute bench fodder that nobody owns if we want quality, 
-    // but we might need cheap players. Let's rely on composite score instead.
-
-    // 2. Define Weights
-    const WEIGHTS = {
-        total_points: 0.25,
-        ep: 0.20,
-        selected_by_percent: 0.35, // Heavily weight "highly selected" (template players)
-        form: 0.10,
-        value_for_money: 0.10
-    };
 
     function normalize(players, field) {
         const max = Math.max(...players.map(player => parseFloat(player[field]) || 0));
@@ -55,28 +31,20 @@ function selectBestTeam(allPlayers, currentTeam = [], budget = 100.0) {
         availablePlayers = normalize(availablePlayers, field);
     });
 
-    availablePlayers = availablePlayers.map(player => {
-        const cost = player.now_cost / 10.0;
-        const pointsPerCost = ((player.total_points_norm + player.ep_this_norm + player.ep_next_norm) / 3) / cost;
-        const valueForMoney = pointsPerCost;
-        
-        const compositeScore = (
-            WEIGHTS.total_points * player.total_points_norm +
-            WEIGHTS.ep * ((player.ep_this_norm + player.ep_next_norm) / 2) +
-            WEIGHTS.selected_by_percent * player.selected_by_percent_norm +
-            WEIGHTS.form * player.form_norm +
-            WEIGHTS.value_for_money * valueForMoney
-        );
+    // Templates to provide a wide variety of good teams
+    const templates = [
+        { name: 'Balanced', weights: { tp: 0.2, ep: 0.2, sel: 0.4, form: 0.1, vfm: 0.1 }, boost: {} },
+        { name: 'Strong Attack', weights: { tp: 0.2, ep: 0.2, sel: 0.3, form: 0.2, vfm: 0.1 }, boost: { MID: 1.3, FWD: 1.3 } },
+        { name: 'Strong Defense', weights: { tp: 0.2, ep: 0.2, sel: 0.3, form: 0.2, vfm: 0.1 }, boost: { GK: 1.3, DEF: 1.3 } },
+        { name: 'Premium Bias', weights: { tp: 0.3, ep: 0.3, sel: 0.4, form: 0.0, vfm: 0.0 }, boost: { PREMIUM: 1.5 } },
+        { name: 'Form Chaser', weights: { tp: 0.1, ep: 0.1, sel: 0.2, form: 0.6, vfm: 0.0 }, boost: {} }
+    ];
 
-        return { ...player, cost, compositeScore };
-    });
-
-    function buildTeam(players, preSelected, randomFactor) {
+    function buildTeam(players, preSelected, randomFactor, protectPremiums) {
         const team = { GK: [], DEF: [], MID: [], FWD: [] };
         const teamCounts = {};
         let totalCost = 0;
 
-        // Add preselected first
         preSelected.forEach(p => {
             const pos = positionMap[p.element_type];
             team[pos].push(p);
@@ -85,7 +53,6 @@ function selectBestTeam(allPlayers, currentTeam = [], budget = 100.0) {
             teamCounts[p.team]++;
         });
 
-        // Add slight randomization to scores and sort descending
         let sortedPlayers = [...players].sort((a, b) => {
             let scoreA = a.compositeScore * (1 + (Math.random() * randomFactor - randomFactor / 2));
             let scoreB = b.compositeScore * (1 + (Math.random() * randomFactor - randomFactor / 2));
@@ -98,7 +65,6 @@ function selectBestTeam(allPlayers, currentTeam = [], budget = 100.0) {
 
             if (!teamCounts[playerTeam]) teamCounts[playerTeam] = 0;
             
-            // Can we add this player?
             if (teamCounts[playerTeam] < 3 && team[position].length < requiredTeam[position]) {
                 team[position].push(player);
                 teamCounts[playerTeam]++;
@@ -106,12 +72,9 @@ function selectBestTeam(allPlayers, currentTeam = [], budget = 100.0) {
             }
         }
 
-        // If total cost exceeds budget, we need to iteratively replace the worst value players
-        // with cheaper options until we are under budget.
         let iterations = 0;
         while (totalCost > budget && iterations < 100) {
             iterations++;
-            // Find the most expensive non-preselected player with the lowest composite score
             let replaceablePlayers = [];
             for (const pos of Object.keys(team)) {
                 team[pos].forEach(p => {
@@ -121,18 +84,28 @@ function selectBestTeam(allPlayers, currentTeam = [], budget = 100.0) {
                 });
             }
             
-            if (replaceablePlayers.length === 0) break; // Can't remove preselected
+            if (replaceablePlayers.length === 0) break;
 
-            // Sort by cost descending to find the most expensive player to downgrade
-            replaceablePlayers.sort((a, b) => b.cost - a.cost);
-            let targetToRemove = replaceablePlayers[0];
+            // Sort by true value to identify who to downgrade
+            replaceablePlayers.sort((a, b) => b.compositeScore - a.compositeScore);
+            let vulnerablePlayers = replaceablePlayers;
+            
+            // If the template specifically biases premiums, protect the absolute best 2 players (e.g. Haaland/Salah)
+            if (protectPremiums) {
+                vulnerablePlayers = replaceablePlayers.length > 2 ? replaceablePlayers.slice(2) : replaceablePlayers;
+            }
 
-            // Remove target
+            let downgradeable = vulnerablePlayers.filter(p => p.cost > 4.5);
+            if (downgradeable.length === 0) downgradeable = vulnerablePlayers;
+            
+            downgradeable.sort((a, b) => (a.compositeScore / a.cost) - (b.compositeScore / b.cost));
+            let poolSize = Math.min(3, downgradeable.length);
+            let targetToRemove = downgradeable[Math.floor(Math.random() * poolSize)];
+
             team[targetToRemove.pos] = team[targetToRemove.pos].filter(p => p.id !== targetToRemove.id);
             totalCost -= targetToRemove.cost;
             teamCounts[targetToRemove.team]--;
 
-            // Find a cheaper replacement for this position
             let replacementFound = false;
             let potentialReplacements = sortedPlayers.filter(p => 
                 positionMap[p.element_type] === targetToRemove.pos && 
@@ -141,7 +114,6 @@ function selectBestTeam(allPlayers, currentTeam = [], budget = 100.0) {
                 !team[targetToRemove.pos].find(existing => existing.id === p.id)
             );
             
-            // Sort potential replacements by score, but prefer those we can afford
             let affordable = potentialReplacements.filter(p => (totalCost + p.cost) <= budget);
             if (affordable.length > 0) {
                 affordable.sort((a, b) => b.compositeScore - a.compositeScore);
@@ -151,7 +123,6 @@ function selectBestTeam(allPlayers, currentTeam = [], budget = 100.0) {
                 teamCounts[bestReplacement.team] = (teamCounts[bestReplacement.team] || 0) + 1;
                 replacementFound = true;
             } else if (potentialReplacements.length > 0) {
-                // If we still can't afford any, pick the absolute cheapest available to keep downgrading
                 potentialReplacements.sort((a, b) => a.cost - b.cost);
                 let cheapest = potentialReplacements[0];
                 team[targetToRemove.pos].push(cheapest);
@@ -161,7 +132,6 @@ function selectBestTeam(allPlayers, currentTeam = [], budget = 100.0) {
             }
             
             if (!replacementFound) {
-                // Failsafe: put them back if we couldn't find a replacement
                 team[targetToRemove.pos].push(targetToRemove);
                 totalCost += targetToRemove.cost;
                 teamCounts[targetToRemove.team]++;
@@ -172,37 +142,77 @@ function selectBestTeam(allPlayers, currentTeam = [], budget = 100.0) {
         return { team: Object.values(team).flat(), totalCost };
     }
 
-    const numAttempts = 20;
-    let bestResult = { team: [], totalCost: 999 };
-    let bestScore = -1;
+    const numAttempts = 40; 
+    let validResults = [];
 
     for (let i = 0; i < numAttempts; i++) {
-        // Random factor between 0.0 and 0.4 (10-40% score variance for diversity)
-        let result = buildTeam(availablePlayers, currentTeam, 0.3);
+        // Pick a random template
+        let template = templates[Math.floor(Math.random() * templates.length)];
         
-        // Ensure valid team size and within budget (added small epsilon for floating point math)
+        // Calculate composite score based on the template
+        let scoredPlayers = availablePlayers.map(player => {
+            const cost = player.now_cost / 10.0;
+            const pointsPerCost = ((player.total_points_norm + player.ep_this_norm + player.ep_next_norm) / 3) / cost;
+            
+            let compositeScore = (
+                template.weights.tp * player.total_points_norm +
+                template.weights.ep * ((player.ep_this_norm + player.ep_next_norm) / 2) +
+                template.weights.sel * player.selected_by_percent_norm +
+                template.weights.form * player.form_norm +
+                template.weights.vfm * pointsPerCost
+            );
+
+            // Apply position boosts
+            const pos = positionMap[player.element_type];
+            if (template.boost[pos]) {
+                compositeScore *= template.boost[pos];
+            }
+
+            // Apply premium boosts (for highly selected expensive players like Haaland/Salah)
+            if (template.boost.PREMIUM && cost >= 10.0) {
+                compositeScore *= template.boost.PREMIUM;
+            }
+
+            // Calculate a raw true score to evaluate the final team purely (independent of template bias)
+            const trueStandardScore = player.total_points_norm + ((player.ep_this_norm + player.ep_next_norm) / 2) + player.selected_by_percent_norm + player.form_norm;
+
+            return { ...player, cost, compositeScore, trueStandardScore };
+        });
+
+        let protectPremiums = (template.name === 'Premium Bias');
+        let result = buildTeam(scoredPlayers, currentTeam, 0.4, protectPremiums);
+        
         if (result.team.length === 15 && result.totalCost <= budget + 0.001) {
-            // Calculate total composite score of non-preselected additions
-            let addedScore = 0;
+            let standardScore = 0;
             result.team.forEach(p => {
-                if (!preSelectedIds.has(p.id) && p.compositeScore) {
-                    addedScore += p.compositeScore;
+                if (!preSelectedIds.has(p.id) && p.trueStandardScore) {
+                    standardScore += p.trueStandardScore;
                 }
             });
 
-            if (addedScore > bestScore) {
-                bestScore = addedScore;
-                bestResult = result;
-            }
+            validResults.push({ result, standardScore, templateName: template.name });
         }
     }
 
-    if (bestResult.team.length === 15) {
-        console.log("Selected Team:", bestResult);
-        return bestResult.team;
+    if (validResults.length > 0) {
+        // Sort all valid generated teams by their true un-biased score descending
+        validResults.sort((a, b) => b.standardScore - a.standardScore);
+        
+        // Pick randomly from the top 10 to give massive variety
+        let topN = Math.min(10, validResults.length);
+        let randomIndex = Math.floor(Math.random() * topN);
+        
+        let finalResult = validResults[randomIndex].result;
+        console.log("Selected Auto-Pick Team:", validResults[randomIndex].templateName, finalResult);
+        return finalResult.team;
     }
 
-    // Fallback if strict budget packing failed (just return what we got)
     console.log("Could not assemble a perfect team within the budget, returning best attempt.");
-    return bestResult.team.length > 0 ? bestResult.team : currentTeam;
+    // Fallback: Just try one balanced team with no noise
+    let fallbackScored = availablePlayers.map(player => {
+        const cost = player.now_cost / 10.0;
+        return { ...player, cost, compositeScore: player.total_points_norm };
+    });
+    let fallback = buildTeam(fallbackScored, currentTeam, 0.0, false);
+    return fallback.team.length > 0 ? fallback.team : currentTeam;
 }
