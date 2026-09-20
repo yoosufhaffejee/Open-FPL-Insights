@@ -159,7 +159,41 @@ if (document.readyState === 'loading') {
 }
 let isCalculating = false;
 
-window.calculateAllPredictions = async () => {
+
+window.autoCalculatePredictions = async () => {
+    // If no historic summaries exist, we cannot calculate accurately. 
+    if (!localStorage.getItem("fpl_historic_summaries")) return;
+
+    if (typeof clearPredictionCache === 'function') clearPredictionCache();
+    if (typeof initPredictionCacheForCalc === 'function') initPredictionCacheForCalc();
+
+    const targetFixtures = fixtures;
+    if (typeof calculateExpectedPointsCore !== 'function') return;
+
+    for (let player of allPlayers) {
+        for (let fixture of targetFixtures) {
+            if (fixture.team_a === player.team || fixture.team_h === player.team) {
+                let expectedPoints = calculateExpectedPointsCore(player, fixture);
+                const cacheKey = `${player.id}_${fixture.id}`;
+                if (typeof expectedPoints === 'object') {
+                    setPredictionCacheValue(cacheKey, Number(expectedPoints.xPoints.toFixed(2)));
+                } else {
+                    setPredictionCacheValue(cacheKey, Number(expectedPoints.toFixed(2)));
+                }
+            }
+        }
+        let ep = calculateExpectedPointsCore(player, null);
+        if (typeof ep === 'object') {
+            setPredictionCacheValue(`${player.id}_no_fixture`, Number(ep.xPoints.toFixed(2)));
+        } else {
+            setPredictionCacheValue(`${player.id}_no_fixture`, Number(ep.toFixed(2)));
+        }
+    }
+
+    if (typeof savePredictionCache === 'function') savePredictionCache();
+};
+
+window.syncHistoricData = async () => {
     if (isCalculating) return;
     isCalculating = true;
 
@@ -167,7 +201,7 @@ window.calculateAllPredictions = async () => {
     <div class="modal fade show" id="calcModal" tabindex="-1" style="display: block; background: rgba(0,0,0,0.8); z-index: 10000;">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content text-center p-4 bg-dark text-white border border-secondary">
-                <h4 id="calcStatus">Downloading FPL Data...</h4>
+                <h4 id="calcStatus">Syncing Historic Data (Once Per Season)...</h4>
                 <div class="progress mt-3" style="height: 25px;">
                     <div id="calcProgress" class="progress-bar progress-bar-striped progress-bar-animated bg-success text-center fw-bold" role="progressbar" style="width: 0%; line-height: 25px;">0%</div>
                 </div>
@@ -199,7 +233,7 @@ window.calculateAllPredictions = async () => {
             progressText.textContent = percent + "%";
         }
 
-        statusText.textContent = "Loading Database...";
+        statusText.textContent = "Processing Historic DB...";
         let buf = new Uint8Array(receivedLength);
         let position = 0;
         for(let chunk of chunks) {
@@ -210,48 +244,70 @@ window.calculateAllPredictions = async () => {
         const [SQL] = await Promise.all([sqlPromise]);
         db = new SQL.Database(buf);
 
-        statusText.textContent = "Calculating Predictions...";
-        progressText.style.width = "0%";
-        progressText.textContent = "0%";
+        statusText.textContent = "Building Historic Summaries Cache...";
+        progressText.style.width = "100%";
+        progressText.textContent = "Processing...";
+        
+        await new Promise(r => setTimeout(r, 50));
 
-        clearPredictionCache();
-        initPredictionCacheForCalc();
-
-        const targetFixtures = fixtures;
-        let totalCombos = allPlayers.length * targetFixtures.length;
-        let doneCombos = 0;
-
-        for (let player of allPlayers) {
-            for (let fixture of targetFixtures) {
-                if (fixture.team_a === player.team || fixture.team_h === player.team) {
-                    let expectedPoints = calculateExpectedPointsCore(player, fixture);
-                    const cacheKey = `${player.id}_${fixture.id}`;
-                    if (typeof expectedPoints === 'object') {
-                        setPredictionCacheValue(cacheKey, Number(expectedPoints.xPoints.toFixed(2)));
-                    } else {
-                        setPredictionCacheValue(cacheKey, Number(expectedPoints.toFixed(2)));
-                    }
-                }
-                doneCombos++;
-                if (doneCombos % 1000 === 0) {
-                    let percent = Math.round((doneCombos / totalCombos) * 100);
-                    progressText.style.width = percent + "%";
-                    progressText.textContent = percent + "%";
-                    await new Promise(r => setTimeout(r, 0));
-                }
+        let historicSummaries = {};
+        const twoYearsAgo = new Date().getTime() - (2 * 365 * 24 * 60 * 60 * 1000);
+        
+        const query = `SELECT name, opp_team_name, total_points, minutes, kickoff_time FROM fpl_data WHERE minutes >= 10 ORDER BY kickoff_time DESC`;
+        const stmt = db.prepare(query);
+        
+        while(stmt.step()) {
+            const row = stmt.get();
+            const pName = row[0];
+            const opp = row[1];
+            const pts = parseFloat(row[2]);
+            let mins = parseInt(row[3] || 0);
+            if (mins >= 70) mins = 90;
+            const matchTime = new Date(row[4]).getTime();
+            
+            if (!historicSummaries[pName]) {
+                historicSummaries[pName] = { overall: { pts: 0, mins: 0, count: 0 }, opp: {} };
             }
-            let ep = calculateExpectedPointsCore(player, null);
-            if (typeof ep === 'object') {
-                setPredictionCacheValue(`${player.id}_no_fixture`, Number(ep.xPoints.toFixed(2)));
-            } else {
-                setPredictionCacheValue(`${player.id}_no_fixture`, Number(ep.toFixed(2)));
+            
+            let pData = historicSummaries[pName];
+            
+            if (pData.overall.count < 5) {
+                pData.overall.pts += pts;
+                pData.overall.mins += mins;
+                pData.overall.count++;
+            }
+            
+            if (!isNaN(matchTime) && matchTime > twoYearsAgo) {
+                if (!pData.opp[opp]) pData.opp[opp] = { pts: 0, count: 0 };
+                if (pData.opp[opp].count < 5) {
+                    pData.opp[opp].pts += pts;
+                    pData.opp[opp].count++;
+                }
             }
         }
-
-        savePredictionCache();
+        stmt.free();
+        
+        let finalCache = {};
+        for (let name in historicSummaries) {
+            let p = historicSummaries[name];
+            finalCache[name] = {
+                avg: p.overall.count > 0 ? p.overall.pts / p.overall.count : 0,
+                count: p.overall.count,
+                mins: p.overall.mins,
+                opp: {}
+            };
+            for (let o in p.opp) {
+                finalCache[name].opp[o] = {
+                    avg: p.opp[o].count > 0 ? p.opp[o].pts / p.opp[o].count : 0,
+                    count: p.opp[o].count
+                };
+            }
+        }
+        
+        localStorage.setItem("fpl_historic_summaries", JSON.stringify(finalCache));
         statusText.textContent = "Done!";
-        progressText.style.width = "100%";
-        progressText.textContent = "100%";
+        
+        await window.autoCalculatePredictions();
 
         setTimeout(() => {
             document.getElementById("calcModal").remove();
@@ -260,27 +316,26 @@ window.calculateAllPredictions = async () => {
         }, 1000);
 
     } catch (error) {
-        console.error("Error calculating predictions:", error);
+        console.error("Error syncing historic data:", error);
         statusText.textContent = "Error occurred";
         progressText.classList.remove("bg-success");
         progressText.classList.add("bg-danger");
         setTimeout(() => {
-            document.getElementById("calcModal").remove();
+            if (document.getElementById("calcModal")) document.getElementById("calcModal").remove();
             isCalculating = false;
         }, 3000);
     }
 }
-
-
+window.calculateAllPredictions = window.syncHistoricData;
 
 function checkPredictionsCache() {
     if (typeof hasValidPredictionCache !== 'function') return;
     
-    if (!hasValidPredictionCache()) {
+    if (!localStorage.getItem("fpl_historic_summaries")) {
         const banner = document.createElement("div");
         banner.className = "alert alert-warning alert-dismissible fade show text-center";
         banner.style.margin = "10px";
-        banner.innerHTML = `<strong>Predictions not calculated!</strong> Click <a href="#" class="alert-link" onclick="calculateAllPredictions(); return false;">here</a> to run the calculation. <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>`;
+        banner.innerHTML = `<strong>Historic Data Missing!</strong> Click <a href="#" class="alert-link" onclick="syncHistoricData(); return false;">here</a> to sync historic data (done once per season). <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>`;
         const nav = document.querySelector("nav");
         if(nav) nav.after(banner);
     }

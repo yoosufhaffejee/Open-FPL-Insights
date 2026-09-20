@@ -54,7 +54,7 @@ function calculateExpectedPointsCore_v1(player, fixture) {
     expectedPoints += startingPoints;
 
     // Smooth individual defensive stats with team-level stats to account for transfers and noisy individual metrics
-    let playerXGC = player.expected_goals_conceded_per_90 !== undefined ? playerXGC : 0;
+    let playerXGC = player.expected_goals_conceded_per_90 !== undefined ? parseFloat(player.expected_goals_conceded_per_90) : 0;
     let playerCS = player.clean_sheets_per_90 !== undefined ? parseFloat(player.clean_sheets_per_90) : 0;
     
     if (typeof allPlayers !== 'undefined') {
