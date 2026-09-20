@@ -2088,6 +2088,7 @@ function applyOptimizeTeam() {
             p.isSub = !best11.some(b => b.id === p.id);
         });
         
+        document.getElementById('saveButton').style.display = 'inline-block';
         updateTeamUI();
     }
 }
