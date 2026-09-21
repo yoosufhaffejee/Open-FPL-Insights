@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "checkJs": true,
+    "noEmit": true,
+    "allowJs": true
+  },
+  "exclude": ["node_modules", "dist", "vendor"]
+}
