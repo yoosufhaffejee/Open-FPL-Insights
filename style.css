@@ -759,20 +759,25 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 0.9em;
 }
 
+.anomaly-badge {
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.4) !important;
+}
 .anomaly-badge.badge-fire {
-    background-color: #ff5722;
+    background: linear-gradient(135deg, #ff8a50, #ff5722);
+    box-shadow: 0 2px 4px rgba(255, 87, 34, 0.4);
 }
-
 .anomaly-badge.badge-lucky {
-    background-color: #ff9800;
+    background: linear-gradient(135deg, #ffb74d, #f57c00);
+    box-shadow: 0 2px 4px rgba(245, 124, 0, 0.4);
 }
-
 .anomaly-badge.badge-unlucky {
-    background-color: #4caf50;
+    background: linear-gradient(135deg, #81c784, #388e3c);
+    box-shadow: 0 2px 4px rgba(56, 142, 60, 0.4);
 }
-
 .anomaly-badge.badge-blue {
-    background-color: #2196f3;
+    background: linear-gradient(135deg, #64b5f6, #1976d2);
+    box-shadow: 0 2px 4px rgba(25, 118, 210, 0.4);
 }
 
 .anomaly-badge .tooltip-text ul {
@@ -789,15 +794,27 @@ h1, h2, h3, h4, h5, h6 {
     margin-left: -100px;
 }
 
-.badges-container {
+.badges-wrapper {
     position: absolute;
     top: -5px;
     right: -5px;
     display: flex;
+    flex-direction: row;
+    align-items: flex-start;
     gap: 4px;
     z-index: 10;
 }
-.badges-container .anomaly-badge {
+.anomalies-container {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+}
+.badges-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.badges-wrapper .anomaly-badge {
     position: relative;
     top: auto;
     right: auto;

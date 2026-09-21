@@ -124,20 +124,20 @@ function getPlayerInsights(player, fixturesList) {
 
         if (isDef) {
             if (xGC - gc > 2.5) {
-                insights.push({ priority: 2, icon: '!', colorClass: 'badge-lucky', text: `Lucky Defense: Expected to concede ${xGC.toFixed(1)} goals but only conceded ${gc}.` });
+                insights.push({ priority: 2, type: 'negative', icon: '!', colorClass: 'badge-lucky', text: `Lucky Defense: Expected to concede ${xGC.toFixed(1)} goals but only conceded ${gc}.` });
             } else if (gc - xGC > 2.5) {
-                insights.push({ priority: 2, icon: '!', colorClass: 'badge-unlucky', text: `Unlucky Defense: Conceded ${gc} goals but only expected to concede ${xGC.toFixed(1)}.` });
+                insights.push({ priority: 2, type: 'positive', icon: '!', colorClass: 'badge-unlucky', text: `Unlucky Defense: Conceded ${gc} goals but only expected to concede ${xGC.toFixed(1)}.` });
             }
         } else {
             if (xG - goals > 1.5) {
-                insights.push({ priority: 2, icon: '!', colorClass: 'badge-unlucky', text: `Unlucky Finisher: Expected ${xG.toFixed(1)} goals but only scored ${goals}.` });
+                insights.push({ priority: 2, type: 'positive', icon: '!', colorClass: 'badge-unlucky', text: `Unlucky Finisher: Expected ${xG.toFixed(1)} goals but only scored ${goals}.` });
             } else if (goals - xG > 1.5) {
-                insights.push({ priority: 2, icon: '!', colorClass: 'badge-lucky', text: `Lucky Finisher: Scored ${goals} goals from only ${xG.toFixed(1)} expected.` });
+                insights.push({ priority: 2, type: 'negative', icon: '!', colorClass: 'badge-lucky', text: `Lucky Finisher: Scored ${goals} goals from only ${xG.toFixed(1)} expected.` });
             }
             if (xA - assists > 1.5) {
-                insights.push({ priority: 2, icon: '!', colorClass: 'badge-unlucky', text: `Unlucky Playmaker: Expected ${xA.toFixed(1)} assists but only got ${assists}.` });
+                insights.push({ priority: 2, type: 'positive', icon: '!', colorClass: 'badge-unlucky', text: `Unlucky Playmaker: Expected ${xA.toFixed(1)} assists but only got ${assists}.` });
             } else if (assists - xA > 1.5) {
-                insights.push({ priority: 2, icon: '!', colorClass: 'badge-lucky', text: `Lucky Playmaker: Got ${assists} assists from only ${xA.toFixed(1)} expected.` });
+                insights.push({ priority: 2, type: 'negative', icon: '!', colorClass: 'badge-lucky', text: `Lucky Playmaker: Got ${assists} assists from only ${xA.toFixed(1)} expected.` });
             }
         }
     }
@@ -147,7 +147,7 @@ function getPlayerInsights(player, fixturesList) {
     let recentFixtures = teamFixtures.slice(0, 4);
 
     if (recentFixtures.length > 0) {
-        let recentGoals = 0, recentAssists = 0, bonusGames = 0, recentCards = 0, teamConceded = 0, cleanSheets = 0;
+        let recentGoals = 0, recentAssists = 0, bonusGames = 0, recentCards = 0, teamConceded = 0, cleanSheets = 0, recentDefCon = 0;
 
         recentFixtures.forEach(f => {
             let concededInThisMatch = (f.team_h === player.team) ? f.team_a_score : f.team_h_score;
@@ -167,43 +167,55 @@ function getPlayerInsights(player, fixturesList) {
                 recentAssists += getStat('assists');
                 if (getStat('bonus') > 0) bonusGames++;
                 recentCards += getStat('yellow_cards') + getStat('red_cards');
+                recentDefCon += getStat('defensive_contribution');
             }
         });
 
         let numGames = recentFixtures.length;
         
-        // Based on FPL statistical distribution, these thresholds identify the top/bottom ~5% of players/teams:
         if (recentGoals >= 3) {
-            insights.push({ priority: 1, icon: '🔥', colorClass: 'badge-fire', text: `On Fire: Scored ${recentGoals} goals in the last ${numGames} matches.` });
+            insights.push({ priority: 1, type: 'positive', icon: '🔥', colorClass: 'badge-fire', text: `On Fire: Scored ${recentGoals} goals in the last ${numGames} matches.` });
         }
         
         if (recentAssists >= 2) {
-            insights.push({ priority: 4, icon: '🎯', colorClass: 'badge-blue', text: `Playmaker: Provided ${recentAssists} assists in the last ${numGames} matches.` });
+            insights.push({ priority: 4, type: 'positive', icon: '🎯', colorClass: 'badge-blue', text: `Playmaker: Provided ${recentAssists} assists in the last ${numGames} matches.` });
         }
         
         if (bonusGames >= 2) {
-            insights.push({ priority: 5, icon: '⭐', colorClass: 'badge-blue', text: `Bonus Magnet: Earned bonus points in ${bonusGames} of the last ${numGames} matches.` });
+            insights.push({ priority: 5, type: 'positive', icon: '⭐', colorClass: 'badge-blue', text: `Bonus Magnet: Earned bonus points in ${bonusGames} of the last ${numGames} matches.` });
         }
         
         if (recentCards >= 2) {
-            insights.push({ priority: 6, icon: '⚠️', colorClass: 'badge-lucky', text: `Discipline: Received ${recentCards} cards in the last ${numGames} matches.` });
+            insights.push({ priority: 6, type: 'negative', icon: '🟨', colorClass: 'badge-lucky', text: `Discipline: Received ${recentCards} cards in the last ${numGames} matches.` });
+        }
+        
+        if (player.element_type !== 1) {
+            let defconThreshold = player.element_type === 2 ? 10 : 12;
+            if (recentDefCon >= (numGames * defconThreshold)) {
+                insights.push({ priority: 3, type: 'positive', icon: '🛡️', colorClass: 'badge-fire', text: `DEFCON King: ${recentDefCon} defensive contributions in last ${numGames} matches.` });
+            }
         }
 
         let isDef = player.element_type === 1 || player.element_type === 2;
         if (isDef) {
             if (cleanSheets >= 2) {
-                insights.push({ priority: 3, icon: '🛡️', colorClass: 'badge-blue', text: `Solid Defense: Kept ${cleanSheets} clean sheets in last ${numGames} matches.` });
+                insights.push({ priority: 3, type: 'positive', icon: '🧱', colorClass: 'badge-blue', text: `Solid Defense: Kept ${cleanSheets} clean sheets in last ${numGames} matches.` });
             }
             if (teamConceded >= 7) {
-                insights.push({ priority: 3, icon: '📉', colorClass: 'badge-lucky', text: `Leaky Defense: Conceded ${teamConceded} goals in last ${numGames} matches.` });
+                insights.push({ priority: 3, type: 'negative', icon: '📉', colorClass: 'badge-lucky', text: `Leaky Defense: Conceded ${teamConceded} goals in last ${numGames} matches.` });
             }
         }
     }
 
     if (insights.length === 0) return null;
     
-    // Sort by priority (lowest number first)
-    insights.sort((a, b) => a.priority - b.priority);
+    // Sort positive first, negative second, then by priority
+    insights.sort((a, b) => {
+        if (a.type !== b.type) {
+            return a.type === 'positive' ? -1 : 1;
+        }
+        return a.priority - b.priority;
+    });
     return insights;
 }
 
