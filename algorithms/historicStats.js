@@ -50,7 +50,7 @@ async function loadHistoricStats() {
                 if (done) break;
                 chunks.push(value);
                 receivedLength += value.length;
-                let percent = Math.round((receivedLength / contentLength) * 100);
+                let percent = Math.min(100, Math.round((receivedLength / contentLength) * 100));
                 if (statusText) statusText.textContent = `Downloading Database (37MB)... ${percent}%`;
             }
 

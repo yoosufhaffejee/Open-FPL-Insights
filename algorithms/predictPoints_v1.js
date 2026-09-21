@@ -125,16 +125,17 @@ function calculateExpectedPointsCore_v1(player, fixture) {
     let assistsPer90 = player.expected_assists_per_90 !== undefined && player.expected_assists_per_90 !== 0 ? parseFloat(player.expected_assists_per_90) : 0;
     expectedPoints += assistsPer90 * assistPoints;
 
-    // Defensive Contribution Points (DEF and MID only)
-    if (player.element_type === 2 || player.element_type === 3) {
+    // Defensive Contribution Points (Outfield players only)
+    if (player.element_type !== 1) {
         let defConPer90 = parseFloat(player.defensive_contribution_per_90);
         if (!isNaN(defConPer90) && defConPer90 > 0) {
-            // Defenders need 10 actions, Mid need 12 actions
+            // Defenders need 10 actions, Mid/Fwd need 12 actions for 2 pts
             let threshold = (player.element_type === 2) ? 10 : 12;
             let prob = defConPer90 / threshold;
             if (prob > 1.0) prob = 1.0; // Cap at 100%
-            expectedPoints += prob; // 1 expected point max for averaging the threshold (matches 0.36pts for 4.3)
+            expectedPoints += (prob * 2); // 2 expected points max
         }
+    }
     }
 
     if (player.element_type === 1) {

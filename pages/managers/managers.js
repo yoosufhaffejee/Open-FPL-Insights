@@ -947,9 +947,12 @@ function populatePlayerModal(data, player) {
                 html += '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>Clean Sheet:</span><span class="text-success">' + (displayCS*100).toFixed(0) + '% <span class="text-white-50 small">(' + (displayCS * ptsPerCS).toFixed(1) + ' pts)</span></span></div>';
             }
             let defCon = parseFloat(player.defensive_contribution_per_90) || 0;
-            if (defCon > 0 && (player.element_type === 2 || player.element_type === 3)) {
-                let prob = Math.min(1.0, defCon / (player.element_type === 2 ? 10 : 12));
-                html += '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>DEFCON / 90:</span><span class="text-warning">' + defCon.toFixed(1) + ' <span class="text-white-50 small">(' + prob.toFixed(1) + ' pts)</span></span></div>';
+            if (defCon > 0 && player.element_type !== 1) {
+                let threshold = (player.element_type === 2) ? 10 : 12;
+                let prob = defCon / threshold;
+                if (prob > 1.0) prob = 1.0;
+                let expectedDefconPts = (prob * 2).toFixed(1);
+                html += '<div class="d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary"><span>DEFCON / 90:</span><span class="text-warning">' + defCon.toFixed(1) + ' <span class="text-white-50 small">(' + expectedDefconPts + ' pts)</span></span></div>';
             }
             let saves = parseFloat(player.saves_per_90) || 0;
             if (saves > 0 && player.element_type === 1) {

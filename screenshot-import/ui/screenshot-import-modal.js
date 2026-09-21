@@ -101,9 +101,10 @@ function startImport() {
     screenshotImporterInstance.onProgress = (data) => {
         document.getElementById('progress-message').innerText = data.message;
         const pbar = document.getElementById('import-progress-bar');
-        pbar.style.width = data.progress + '%';
-        pbar.innerText = data.progress + '%';
-        pbar.setAttribute('aria-valuenow', data.progress);
+        let safeProgress = Math.min(100, Math.round(data.progress));
+        pbar.style.width = safeProgress + '%';
+        pbar.innerText = safeProgress + '%';
+        pbar.setAttribute('aria-valuenow', safeProgress);
     };
     
     screenshotImporterInstance.onComplete = (results) => {

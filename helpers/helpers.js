@@ -339,62 +339,80 @@ function generatePointsBreakdown(gwHistory, elementType) {
     if (!gwHistory) return '';
     let html = '';
     
+    const addRow = (label, value, pts) => {
+        return `<div class="d-flex border-bottom pb-1 mb-1 border-secondary">
+            <span class="flex-grow-1 text-start">${label}</span>
+            <span class="text-center" style="width: 60px;">${value}</span>
+            <span class="text-end" style="width: 50px;">${pts} pts</span>
+        </div>`;
+    };
+    
     // Minutes played
     let minsPts = gwHistory.minutes >= 60 ? 2 : (gwHistory.minutes > 0 ? 1 : 0);
-    html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Minutes played</span><span>' + gwHistory.minutes + '</span><span>' + minsPts + ' pts</span></div>';
+    html += addRow('Minutes played', gwHistory.minutes, minsPts);
     
     // Goals scored
     if (gwHistory.goals_scored > 0) {
         let ptsPerGoal = elementType === 1 ? 10 : (elementType === 2 ? 6 : (elementType === 3 ? 5 : 4));
-        html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Goals scored</span><span>' + gwHistory.goals_scored + '</span><span>' + (gwHistory.goals_scored * ptsPerGoal) + ' pts</span></div>';
+        html += addRow('Goals scored', gwHistory.goals_scored, gwHistory.goals_scored * ptsPerGoal);
     }
     // Assists
     if (gwHistory.assists > 0) {
-        html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Assists</span><span>' + gwHistory.assists + '</span><span>' + (gwHistory.assists * 3) + ' pts</span></div>';
+        html += addRow('Assists', gwHistory.assists, gwHistory.assists * 3);
     }
     // Clean sheets
     if (gwHistory.clean_sheets > 0) {
         let ptsPerCS = elementType === 3 ? 1 : (elementType === 4 ? 0 : 4);
         if (ptsPerCS > 0) {
-            html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Clean sheets</span><span>' + gwHistory.clean_sheets + '</span><span>' + (gwHistory.clean_sheets * ptsPerCS) + ' pts</span></div>';
+            html += addRow('Clean sheets', gwHistory.clean_sheets, gwHistory.clean_sheets * ptsPerCS);
         }
+    }
+    // Defensive Contributions
+    if (gwHistory.defensive_contribution !== undefined && gwHistory.defensive_contribution > 0 && elementType !== 1) {
+        let threshold = elementType === 2 ? 10 : 12;
+        let defPts = gwHistory.defensive_contribution >= threshold ? 2 : 0;
+        html += addRow('Defensive Contributions', gwHistory.defensive_contribution, defPts);
     }
     // Goals conceded
     if (gwHistory.goals_conceded >= 2 && (elementType === 1 || elementType === 2)) {
-        html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Goals conceded</span><span>' + gwHistory.goals_conceded + '</span><span>' + (Math.floor(gwHistory.goals_conceded / 2) * -1) + ' pts</span></div>';
+        html += addRow('Goals conceded', gwHistory.goals_conceded, Math.floor(gwHistory.goals_conceded / 2) * -1);
     }
     // Own goals
     if (gwHistory.own_goals > 0) {
-        html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Own goals</span><span>' + gwHistory.own_goals + '</span><span>' + (gwHistory.own_goals * -2) + ' pts</span></div>';
+        html += addRow('Own goals', gwHistory.own_goals, gwHistory.own_goals * -2);
     }
     // Penalties saved
     if (gwHistory.penalties_saved > 0) {
-        html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Penalties saved</span><span>' + gwHistory.penalties_saved + '</span><span>' + (gwHistory.penalties_saved * 5) + ' pts</span></div>';
+        html += addRow('Penalties saved', gwHistory.penalties_saved, gwHistory.penalties_saved * 5);
     }
     // Penalties missed
     if (gwHistory.penalties_missed > 0) {
-        html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Penalties missed</span><span>' + gwHistory.penalties_missed + '</span><span>' + (gwHistory.penalties_missed * -2) + ' pts</span></div>';
+        html += addRow('Penalties missed', gwHistory.penalties_missed, gwHistory.penalties_missed * -2);
     }
     // Yellow cards
     if (gwHistory.yellow_cards > 0) {
-        html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Yellow cards</span><span>' + gwHistory.yellow_cards + '</span><span>' + (gwHistory.yellow_cards * -1) + ' pts</span></div>';
+        html += addRow('Yellow cards', gwHistory.yellow_cards, gwHistory.yellow_cards * -1);
     }
     // Red cards
     if (gwHistory.red_cards > 0) {
-        html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Red cards</span><span>' + gwHistory.red_cards + '</span><span>' + (gwHistory.red_cards * -3) + ' pts</span></div>';
+        html += addRow('Red cards', gwHistory.red_cards, gwHistory.red_cards * -3);
     }
     // Saves
     if (gwHistory.saves > 0) {
-        html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Saves</span><span>' + gwHistory.saves + '</span><span>' + Math.floor(gwHistory.saves / 3) + ' pts</span></div>';
+        html += addRow('Saves', gwHistory.saves, Math.floor(gwHistory.saves / 3));
     }
     // Bonus
     if (gwHistory.bonus > 0) {
-        html += '<div class=\"d-flex justify-content-between border-bottom pb-1 mb-1 border-secondary\"><span>Bonus</span><span>' + gwHistory.bonus + '</span><span>' + gwHistory.bonus + ' pts</span></div>';
+        html += addRow('Bonus', gwHistory.bonus, gwHistory.bonus);
     }
     
     // Total Points
     let totalPts = gwHistory.total_points !== undefined ? gwHistory.total_points : 0;
-    html += '<div class=\"d-flex justify-content-between pt-1 fw-bold text-white\" style=\"border-top: 1px solid #6c757d;\"><span>Total Points</span><span></span><span>' + totalPts + ' pts</span></div>';
+    html += `<div class="d-flex pt-1 fw-bold text-white" style="border-top: 1px solid #6c757d;">
+        <span class="flex-grow-1 text-start">Total Points</span>
+        <span class="text-center" style="width: 60px;"></span>
+        <span class="text-end" style="width: 50px;">${totalPts} pts</span>
+    </div>`;
 
     return html;
 }

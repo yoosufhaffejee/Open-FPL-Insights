@@ -228,7 +228,7 @@ window.syncHistoricData = async () => {
             if (done) break;
             chunks.push(value);
             receivedLength += value.length;
-            let percent = Math.round((receivedLength / contentLength) * 100);
+            let percent = Math.min(100, Math.round((receivedLength / contentLength) * 100));
             progressText.style.width = percent + "%";
             progressText.textContent = percent + "%";
         }
