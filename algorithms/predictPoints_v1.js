@@ -136,7 +136,6 @@ function calculateExpectedPointsCore_v1(player, fixture) {
             expectedPoints += (prob * 2); // 2 expected points max
         }
     }
-    }
 
     if (player.element_type === 1) {
         // Goalkeeper
